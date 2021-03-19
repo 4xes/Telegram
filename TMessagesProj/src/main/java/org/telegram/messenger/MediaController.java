@@ -2157,18 +2157,16 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         Collections.sort(playlist, (o1, o2) -> {
             int mid1 = o1.getId();
             int mid2 = o2.getId();
-            long group1 = o1.messageOwner.grouped_id;
-            long group2 = o2.messageOwner.grouped_id;
-            if (mid1 < 0 && mid2 < 0) {
-                if (group1 != 0 && group1 == group2) {
+            long date1 = o1.messageOwner.date;
+            long date2 = o2.messageOwner.date;
+            if (date1 == date2) {
+                if (mid1 < 0 && mid2 < 0) {
                     return Integer.compare(mid1, mid2);
-                }
-            } else {
-                if (group1 != 0 && group1 == group2) {
+                } else {
                     return Integer.compare(mid2, mid1);
                 }
             }
-            return Long.compare(group2, group1);
+            return Long.compare(date2, date1);
         });
     }
 
