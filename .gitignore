@@ -4,3 +4,6 @@ build/
 obj/
 *.iml
 local.properties
+/TMessagesProj/afat/
+/TMessagesProj/.cxx/
+*.DS_Store
