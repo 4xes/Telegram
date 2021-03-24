@@ -7,6 +7,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Property;
 import android.view.Gravity;
@@ -42,7 +43,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.LoadingCell;
+import org.telegram.ui.Cells.SharedAudioCell;
+import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Cells.SharedLinkCell;
 import org.telegram.ui.Cells.SharedMediaSectionCell;
+import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimationProperties;
@@ -88,7 +94,6 @@ public class AnimationSettingsActivity extends BaseFragment {
 
     private ScrollSlidingTextTabStrip scrollSlidingTextTabStrip;
     private int initialTab;
-    private boolean swipeBackEnabled;
 
     private AnimatorSet tabsAnimation;
     private boolean tabsAnimationInProgress;
@@ -184,7 +189,6 @@ public class AnimationSettingsActivity extends BaseFragment {
                 if (mediaPages[0].selectedType == id) {
                     return;
                 }
-                swipeBackEnabled = id == scrollSlidingTextTabStrip.getFirstTabId();
                 mediaPages[1].selectedType = id;
                 mediaPages[1].setVisibility(View.VISIBLE);
                 switchToCurrentSelectedMode(true);
@@ -497,7 +501,6 @@ public class AnimationSettingsActivity extends BaseFragment {
                                         mediaPages[0] = mediaPages[1];
                                         mediaPages[1] = tempPage;
                                         mediaPages[1].setVisibility(View.GONE);
-                                        swipeBackEnabled = mediaPages[0].selectedType == scrollSlidingTextTabStrip.getFirstTabId();
                                         scrollSlidingTextTabStrip.selectTabWithId(mediaPages[0].selectedType, 1.0f);
                                     }
                                     tabsAnimationInProgress = false;
@@ -647,7 +650,6 @@ public class AnimationSettingsActivity extends BaseFragment {
         frameLayout.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         updateTabs();
         switchToCurrentSelectedMode(false);
-        swipeBackEnabled = scrollSlidingTextTabStrip.getCurrentTabId() == scrollSlidingTextTabStrip.getFirstTabId();
 
         return fragmentView;
     }
@@ -834,7 +836,11 @@ public class AnimationSettingsActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        //arrayList.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        for (int a = 0; a < mediaPages.length; a++) {
+            arrayList.add(new ThemeDescription(mediaPages[a].listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+            arrayList.add(new ThemeDescription(mediaPages[a].listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
+            arrayList.add(new ThemeDescription(mediaPages[a].listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        }
 
         arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
         arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"playButton"}, null, null, null, Theme.key_inappPlayerPlayPause));
