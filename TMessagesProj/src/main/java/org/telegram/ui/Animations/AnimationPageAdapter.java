@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.Cells.GradientSurfaceCell;
 import org.telegram.ui.Animations.Cells.InterpolatorCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -39,11 +40,15 @@ public class AnimationPageAdapter extends RecyclerListView.Adapter {
     private final static int section_cell = 2;
     private final static int header_cell = 4;
     private final static int interpolator_cell = 5;
+    private final static int background_cell = 6;
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = null;
         switch (viewType) {
+            case background_cell:
+                view = new GradientSurfaceCell(mContext);
+                break;
             case duration_cell:
                 view = new TextSettingsCell(mContext);
                 break;
@@ -93,7 +98,7 @@ public class AnimationPageAdapter extends RecyclerListView.Adapter {
     @Override
     public int getItemCount() {
         if (pageType == PAGE_BACKGROUND) {
-            return 4;
+            return 3;
         } else {
             return 14;
         }
@@ -103,16 +108,13 @@ public class AnimationPageAdapter extends RecyclerListView.Adapter {
     public int getItemViewType(int position) {
         if (pageType == PAGE_BACKGROUND) {
             if (position == 0) {
-                return duration_cell;
-            }
-            if (position == 1) {
-                return section_cell;
-            }
-            if (position == 2) {
                 return header_cell;
             }
-            if (position == 3) {
-                return interpolator_cell;
+            if (position == 1) {
+                return background_cell;
+            }
+            if (position == 2) {
+                return section_cell;
             }
         } else {
             if (position == 0) {
