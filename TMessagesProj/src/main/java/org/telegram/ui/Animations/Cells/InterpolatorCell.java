@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class InterpolatorCell extends View {
 
@@ -83,7 +84,6 @@ public class InterpolatorCell extends View {
     private final int timeColor = 0xffefd256;
     private final int progressionFillLineColor = 0xff89bce2;
     private final int progressionTrackLineColor = 0xffe3e4e6;
-    private final int thumbColor = Color.WHITE;
     private final int thumbShadow = 0x3b000000;
 
 
@@ -217,7 +217,7 @@ public class InterpolatorCell extends View {
 
     private void initPaints() {
         paintThumb.setStyle(Paint.Style.FILL_AND_STROKE);
-        paintThumb.setColor(thumbColor);
+        paintThumb.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         if (isSupportShadowLayer()) {
             paintThumb.setShadowLayer(thumbShadowRadius, 0f,  0f, thumbShadow);
         }
@@ -495,7 +495,6 @@ public class InterpolatorCell extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawColor(Color.WHITE);
         drawDots(canvas, timeStartX);
         drawDots(canvas, timeEndX);
         int clipSave = canvas.save();
@@ -656,7 +655,7 @@ public class InterpolatorCell extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(228), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(238), MeasureSpec.EXACTLY));
     }
 
     public static int getScaledHoverSlop(ViewConfiguration config) {

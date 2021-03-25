@@ -4,20 +4,26 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
+import android.os.Build;
 import android.util.Property;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -26,48 +32,26 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.LoadingCell;
-import org.telegram.ui.Cells.SharedAudioCell;
-import org.telegram.ui.Cells.SharedDocumentCell;
-import org.telegram.ui.Cells.SharedLinkCell;
 import org.telegram.ui.Cells.SharedMediaSectionCell;
-import org.telegram.ui.Cells.SharedPhotoVideoCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
-import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.MediaActivity;
 
 import java.util.ArrayList;
-import java.util.Collections;
-
-import static org.telegram.ui.Animations.AnimationPageAdapter.PAGE_BACKGROUND;
-import static org.telegram.ui.Animations.AnimationPageAdapter.PAGE_EMOJI;
-import static org.telegram.ui.Animations.AnimationPageAdapter.PAGE_LINKS;
-import static org.telegram.ui.Animations.AnimationPageAdapter.PAGE_SHORT_TEXT;
-import static org.telegram.ui.Animations.AnimationPageAdapter.PAGE_VIDEO;
-import static org.telegram.ui.Animations.AnimationPageAdapter.PAGE_VOICE;
 
 public class AnimationSettingsActivity extends BaseFragment {
 
@@ -78,19 +62,26 @@ public class AnimationSettingsActivity extends BaseFragment {
     private boolean scrolling;
     private boolean disableActionBarScrolling;
 
-    private static class MediaPage extends FrameLayout {
+    private AnimatorSet scrimAnimatorSet;
+    private ActionBarPopupWindow scrimPopupWindow;
+    private ActionBarMenuSubItem[] scrimPopupWindowItems;
+    private FrameLayout contentView;
+
+    public AnimationPreferences preferences;
+
+    private static class SettingsPage extends FrameLayout {
         private RecyclerListView listView;
         private LinearLayoutManager layoutManager;
         private int selectedType;
 
-        public MediaPage(Context context) {
+        public SettingsPage(Context context) {
             super(context);
         }
     }
 
     private AnimationPageAdapter[] adapters;
 
-    private final MediaPage[] mediaPages = new MediaPage[2];
+    private final SettingsPage[] settingsPages = new SettingsPage[2];
 
     private ScrollSlidingTextTabStrip scrollSlidingTextTabStrip;
     private int initialTab;
@@ -113,12 +104,13 @@ public class AnimationSettingsActivity extends BaseFragment {
         return t * t * t * t * t + 1.0F;
     };
 
+
     public final Property<AnimationSettingsActivity, Float> SCROLL_Y = new AnimationProperties.FloatProperty<AnimationSettingsActivity>("animationValue") {
         @Override
         public void setValue(AnimationSettingsActivity object, float value) {
             object.setScrollY(value);
-            for (int a = 0; a < mediaPages.length; a++) {
-                mediaPages[a].listView.checkSection();
+            for (int a = 0; a < settingsPages.length; a++) {
+                settingsPages[a].listView.checkSection();
             }
         }
 
@@ -132,6 +124,8 @@ public class AnimationSettingsActivity extends BaseFragment {
     public View createView(Context context) {
         ViewConfiguration configuration = ViewConfiguration.get(context);
         maximumVelocity = configuration.getScaledMaximumFlingVelocity();
+
+        preferences = new AnimationPreferences(context);
 
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
@@ -175,43 +169,43 @@ public class AnimationSettingsActivity extends BaseFragment {
         actionBar.addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.START | Gravity.BOTTOM));
 
         adapters = new AnimationPageAdapter[]{
-                new AnimationPageAdapter(context, PAGE_BACKGROUND),
-                new AnimationPageAdapter(context, PAGE_SHORT_TEXT),
-                new AnimationPageAdapter(context, PAGE_LINKS),
-                new AnimationPageAdapter(context, PAGE_EMOJI),
-                new AnimationPageAdapter(context, PAGE_VOICE),
-                new AnimationPageAdapter(context, PAGE_VIDEO)
+                new AnimationPageAdapter(context, AnimationType.Background, this),
+                new AnimationPageAdapter(context, AnimationType.ShortText, this),
+                new AnimationPageAdapter(context, AnimationType.ShortText, this),
+                new AnimationPageAdapter(context, AnimationType.Emoji, this),
+                new AnimationPageAdapter(context, AnimationType.Voice, this),
+                new AnimationPageAdapter(context, AnimationType.Video, this)
         };
 
         scrollSlidingTextTabStrip.setDelegate(new ScrollSlidingTextTabStrip.ScrollSlidingTabStripDelegate() {
             @Override
             public void onPageSelected(int id, boolean forward) {
-                if (mediaPages[0].selectedType == id) {
+                if (settingsPages[0].selectedType == id) {
                     return;
                 }
-                mediaPages[1].selectedType = id;
-                mediaPages[1].setVisibility(View.VISIBLE);
+                settingsPages[1].selectedType = id;
+                settingsPages[1].setVisibility(View.VISIBLE);
                 switchToCurrentSelectedMode(true);
                 animatingForward = forward;
             }
 
             @Override
             public void onPageScrolled(float progress) {
-                if (progress == 1 && mediaPages[1].getVisibility() != View.VISIBLE) {
+                if (progress == 1 && settingsPages[1].getVisibility() != View.VISIBLE) {
                     return;
                 }
                 if (animatingForward) {
-                    mediaPages[0].setTranslationX(-progress * mediaPages[0].getMeasuredWidth());
-                    mediaPages[1].setTranslationX(mediaPages[0].getMeasuredWidth() - progress * mediaPages[0].getMeasuredWidth());
+                    settingsPages[0].setTranslationX(-progress * settingsPages[0].getMeasuredWidth());
+                    settingsPages[1].setTranslationX(settingsPages[0].getMeasuredWidth() - progress * settingsPages[0].getMeasuredWidth());
                 } else {
-                    mediaPages[0].setTranslationX(progress * mediaPages[0].getMeasuredWidth());
-                    mediaPages[1].setTranslationX(progress * mediaPages[0].getMeasuredWidth() - mediaPages[0].getMeasuredWidth());
+                    settingsPages[0].setTranslationX(progress * settingsPages[0].getMeasuredWidth());
+                    settingsPages[1].setTranslationX(progress * settingsPages[0].getMeasuredWidth() - settingsPages[0].getMeasuredWidth());
                 }
                 if (progress == 1) {
-                    MediaPage tempPage = mediaPages[0];
-                    mediaPages[0] = mediaPages[1];
-                    mediaPages[1] = tempPage;
-                    mediaPages[1].setVisibility(View.GONE);
+                    SettingsPage tempPage = settingsPages[0];
+                    settingsPages[0] = settingsPages[1];
+                    settingsPages[1] = tempPage;
+                    settingsPages[1].setVisibility(View.GONE);
                 }
             }
         });
@@ -238,14 +232,14 @@ public class AnimationSettingsActivity extends BaseFragment {
                 startedTrackingX = (int) ev.getX();
                 actionBar.setEnabled(false);
                 scrollSlidingTextTabStrip.setEnabled(false);
-                mediaPages[1].selectedType = id;
-                mediaPages[1].setVisibility(View.VISIBLE);
+                settingsPages[1].selectedType = id;
+                settingsPages[1].setVisibility(View.VISIBLE);
                 animatingForward = forward;
                 switchToCurrentSelectedMode(true);
                 if (forward) {
-                    mediaPages[1].setTranslationX(mediaPages[0].getMeasuredWidth());
+                    settingsPages[1].setTranslationX(settingsPages[0].getMeasuredWidth());
                 } else {
-                    mediaPages[1].setTranslationX(-mediaPages[0].getMeasuredWidth());
+                    settingsPages[1].setTranslationX(-settingsPages[0].getMeasuredWidth());
                 }
                 return true;
             }
@@ -265,12 +259,12 @@ public class AnimationSettingsActivity extends BaseFragment {
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
                 int actionBarHeight = actionBar.getMeasuredHeight();
                 globalIgnoreLayout = true;
-                for (int a = 0; a < mediaPages.length; a++) {
-                    if (mediaPages[a] == null) {
+                for (int a = 0; a < settingsPages.length; a++) {
+                    if (settingsPages[a] == null) {
                         continue;
                     }
-                    if (mediaPages[a].listView != null) {
-                        mediaPages[a].listView.setPadding(0, actionBarHeight + additionalPadding, 0, AndroidUtilities.dp(4));
+                    if (settingsPages[a].listView != null) {
+                        settingsPages[a].listView.setPadding(0, actionBarHeight + additionalPadding, 0, AndroidUtilities.dp(4));
                     }
                 }
                 globalIgnoreLayout = false;
@@ -301,13 +295,13 @@ public class AnimationSettingsActivity extends BaseFragment {
                     fragmentContextView.setTranslationY(top + actionBar.getTranslationY());
                 }
                 int actionBarHeight = actionBar.getMeasuredHeight();
-                for (MediaPage mediaPage : mediaPages) {
-                    if (mediaPage == null) {
+                for (SettingsPage settingsPage : settingsPages) {
+                    if (settingsPage == null) {
                         continue;
                     }
-                    if (mediaPage.listView != null) {
-                        mediaPage.listView.setPadding(0, actionBarHeight + additionalPadding, 0, AndroidUtilities.dp(4));
-                        mediaPage.listView.checkSection();
+                    if (settingsPage.listView != null) {
+                        settingsPage.listView.setPadding(0, actionBarHeight + additionalPadding, 0, AndroidUtilities.dp(4));
+                        settingsPage.listView.checkSection();
                     }
                 }
                 fixScrollOffset();
@@ -349,14 +343,14 @@ public class AnimationSettingsActivity extends BaseFragment {
                 if (tabsAnimationInProgress) {
                     boolean cancel = false;
                     if (backAnimation) {
-                        if (Math.abs(mediaPages[0].getTranslationX()) < 1) {
-                            mediaPages[0].setTranslationX(0);
-                            mediaPages[1].setTranslationX(mediaPages[0].getMeasuredWidth() * (animatingForward ? 1 : -1));
+                        if (Math.abs(settingsPages[0].getTranslationX()) < 1) {
+                            settingsPages[0].setTranslationX(0);
+                            settingsPages[1].setTranslationX(settingsPages[0].getMeasuredWidth() * (animatingForward ? 1 : -1));
                             cancel = true;
                         }
-                    } else if (Math.abs(mediaPages[1].getTranslationX()) < 1) {
-                        mediaPages[0].setTranslationX(mediaPages[0].getMeasuredWidth() * (animatingForward ? -1 : 1));
-                        mediaPages[1].setTranslationX(0);
+                    } else if (Math.abs(settingsPages[1].getTranslationX()) < 1) {
+                        settingsPages[0].setTranslationX(settingsPages[0].getMeasuredWidth() * (animatingForward ? -1 : 1));
+                        settingsPages[1].setTranslationX(0);
                         cancel = true;
                     }
                     if (cancel) {
@@ -404,9 +398,9 @@ public class AnimationSettingsActivity extends BaseFragment {
                             if (!prepareForMoving(ev, dx < 0)) {
                                 maybeStartTracking = true;
                                 startedTracking = false;
-                                mediaPages[0].setTranslationX(0);
-                                mediaPages[1].setTranslationX(animatingForward ? mediaPages[0].getMeasuredWidth() : -mediaPages[0].getMeasuredWidth());
-                                scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, 0);
+                                settingsPages[0].setTranslationX(0);
+                                settingsPages[1].setTranslationX(animatingForward ? settingsPages[0].getMeasuredWidth() : -settingsPages[0].getMeasuredWidth());
+                                scrollSlidingTextTabStrip.selectTabWithId(settingsPages[1].selectedType, 0);
                             }
                         }
                         if (maybeStartTracking && !startedTracking) {
@@ -415,14 +409,14 @@ public class AnimationSettingsActivity extends BaseFragment {
                                 prepareForMoving(ev, dx < 0);
                             }
                         } else if (startedTracking) {
-                            mediaPages[0].setTranslationX(dx);
+                            settingsPages[0].setTranslationX(dx);
                             if (animatingForward) {
-                                mediaPages[1].setTranslationX(mediaPages[0].getMeasuredWidth() + dx);
+                                settingsPages[1].setTranslationX(settingsPages[0].getMeasuredWidth() + dx);
                             } else {
-                                mediaPages[1].setTranslationX(dx - mediaPages[0].getMeasuredWidth());
+                                settingsPages[1].setTranslationX(dx - settingsPages[0].getMeasuredWidth());
                             }
-                            float scrollProgress = Math.abs(dx) / (float) mediaPages[0].getMeasuredWidth();
-                            scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, scrollProgress);
+                            float scrollProgress = Math.abs(dx) / (float) settingsPages[0].getMeasuredWidth();
+                            scrollSlidingTextTabStrip.selectTabWithId(settingsPages[1].selectedType, scrollProgress);
                         }
                     } else if (ev == null || ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
                         velocityTracker.computeCurrentVelocity(1000, maximumVelocity);
@@ -441,35 +435,35 @@ public class AnimationSettingsActivity extends BaseFragment {
                             velY = 0;
                         }
                         if (startedTracking) {
-                            float x = mediaPages[0].getX();
+                            float x = settingsPages[0].getX();
                             tabsAnimation = new AnimatorSet();
-                            backAnimation = Math.abs(x) < mediaPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
+                            backAnimation = Math.abs(x) < settingsPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
                             float distToMove;
                             float dx;
                             if (backAnimation) {
                                 dx = Math.abs(x);
                                 if (animatingForward) {
                                     tabsAnimation.playTogether(
-                                            ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, 0),
-                                            ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, mediaPages[1].getMeasuredWidth())
+                                            ObjectAnimator.ofFloat(settingsPages[0], View.TRANSLATION_X, 0),
+                                            ObjectAnimator.ofFloat(settingsPages[1], View.TRANSLATION_X, settingsPages[1].getMeasuredWidth())
                                     );
                                 } else {
                                     tabsAnimation.playTogether(
-                                            ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, 0),
-                                            ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, -mediaPages[1].getMeasuredWidth())
+                                            ObjectAnimator.ofFloat(settingsPages[0], View.TRANSLATION_X, 0),
+                                            ObjectAnimator.ofFloat(settingsPages[1], View.TRANSLATION_X, -settingsPages[1].getMeasuredWidth())
                                     );
                                 }
                             } else {
-                                dx = mediaPages[0].getMeasuredWidth() - Math.abs(x);
+                                dx = settingsPages[0].getMeasuredWidth() - Math.abs(x);
                                 if (animatingForward) {
                                     tabsAnimation.playTogether(
-                                            ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, -mediaPages[0].getMeasuredWidth()),
-                                            ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, 0)
+                                            ObjectAnimator.ofFloat(settingsPages[0], View.TRANSLATION_X, -settingsPages[0].getMeasuredWidth()),
+                                            ObjectAnimator.ofFloat(settingsPages[1], View.TRANSLATION_X, 0)
                                     );
                                 } else {
                                     tabsAnimation.playTogether(
-                                            ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, mediaPages[0].getMeasuredWidth()),
-                                            ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, 0)
+                                            ObjectAnimator.ofFloat(settingsPages[0], View.TRANSLATION_X, settingsPages[0].getMeasuredWidth()),
+                                            ObjectAnimator.ofFloat(settingsPages[1], View.TRANSLATION_X, 0)
                                     );
                                 }
                             }
@@ -495,13 +489,13 @@ public class AnimationSettingsActivity extends BaseFragment {
                                 public void onAnimationEnd(Animator animator) {
                                     tabsAnimation = null;
                                     if (backAnimation) {
-                                        mediaPages[1].setVisibility(View.GONE);
+                                        settingsPages[1].setVisibility(View.GONE);
                                     } else {
-                                        MediaPage tempPage = mediaPages[0];
-                                        mediaPages[0] = mediaPages[1];
-                                        mediaPages[1] = tempPage;
-                                        mediaPages[1].setVisibility(View.GONE);
-                                        scrollSlidingTextTabStrip.selectTabWithId(mediaPages[0].selectedType, 1.0f);
+                                        SettingsPage tempPage = settingsPages[0];
+                                        settingsPages[0] = settingsPages[1];
+                                        settingsPages[1] = tempPage;
+                                        settingsPages[1].setVisibility(View.GONE);
+                                        scrollSlidingTextTabStrip.selectTabWithId(settingsPages[0].selectedType, 1.0f);
                                     }
                                     tabsAnimationInProgress = false;
                                     maybeStartTracking = false;
@@ -533,12 +527,12 @@ public class AnimationSettingsActivity extends BaseFragment {
         int scrollToPositionOnRecreate = -1;
         int scrollToOffsetOnRecreate = 0;
 
-        for (int a = 0; a < mediaPages.length; a++) {
+        for (int a = 0; a < settingsPages.length; a++) {
             if (a == 0) {
-                if (mediaPages[a] != null && mediaPages[a].layoutManager != null) {
-                    scrollToPositionOnRecreate = mediaPages[a].layoutManager.findFirstVisibleItemPosition();
-                    if (scrollToPositionOnRecreate != mediaPages[a].layoutManager.getItemCount() - 1) {
-                        RecyclerListView.Holder holder = (RecyclerListView.Holder) mediaPages[a].listView.findViewHolderForAdapterPosition(scrollToPositionOnRecreate);
+                if (settingsPages[a] != null && settingsPages[a].layoutManager != null) {
+                    scrollToPositionOnRecreate = settingsPages[a].layoutManager.findFirstVisibleItemPosition();
+                    if (scrollToPositionOnRecreate != settingsPages[a].layoutManager.getItemCount() - 1) {
+                        RecyclerListView.Holder holder = (RecyclerListView.Holder) settingsPages[a].listView.findViewHolderForAdapterPosition(scrollToPositionOnRecreate);
                         if (holder != null) {
                             scrollToOffsetOnRecreate = holder.itemView.getTop();
                         } else {
@@ -549,22 +543,22 @@ public class AnimationSettingsActivity extends BaseFragment {
                     }
                 }
             }
-            final MediaPage mediaPage = new MediaPage(context) {
+            final SettingsPage settingsPage = new SettingsPage(context) {
                 @Override
                 public void setTranslationX(float translationX) {
                     super.setTranslationX(translationX);
                     if (tabsAnimationInProgress) {
-                        if (mediaPages[0] == this) {
-                            float scrollProgress = Math.abs(mediaPages[0].getTranslationX()) / (float) mediaPages[0].getMeasuredWidth();
-                            scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, scrollProgress);
+                        if (settingsPages[0] == this) {
+                            float scrollProgress = Math.abs(settingsPages[0].getTranslationX()) / (float) settingsPages[0].getMeasuredWidth();
+                            scrollSlidingTextTabStrip.selectTabWithId(settingsPages[1].selectedType, scrollProgress);
                         }
                     }
                 }
             };
-            frameLayout.addView(mediaPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            mediaPages[a] = mediaPage;
+            frameLayout.addView(settingsPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            settingsPages[a] = settingsPage;
 
-            final LinearLayoutManager layoutManager = mediaPages[a].layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+            final LinearLayoutManager layoutManager = settingsPages[a].layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
                 @Override
                 public boolean supportsPredictiveItemAnimations() {
                     return false;
@@ -576,23 +570,23 @@ public class AnimationSettingsActivity extends BaseFragment {
                     extraLayoutSpace[1] = Math.max(extraLayoutSpace[1], AndroidUtilities.dp(56f) * 2);
                 }
             };
-            mediaPages[a].listView = new RecyclerListView(context) {
+            settingsPages[a].listView = new RecyclerListView(context) {
                 @Override
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     super.onLayout(changed, l, t, r, b);
                     updateSections(this, true);
                 }
             };
-            mediaPages[a].listView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
-            mediaPages[a].listView.setItemAnimator(null);
-            mediaPages[a].listView.setClipToPadding(false);
-            mediaPages[a].listView.setSectionsType(2);
-            mediaPages[a].listView.setLayoutManager(layoutManager);
-            mediaPages[a].addView(mediaPages[a].listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            mediaPages[a].listView.setOnItemClickListener((view, position) -> {
+            settingsPages[a].listView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
+            settingsPages[a].listView.setItemAnimator(null);
+            settingsPages[a].listView.setClipToPadding(false);
+            settingsPages[a].listView.setSectionsType(2);
+            settingsPages[a].listView.setLayoutManager(layoutManager);
+            settingsPages[a].addView(settingsPages[a].listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            settingsPages[a].listView.setOnItemClickListener((view, position) -> {
 
             });
-            mediaPages[a].listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            settingsPages[a].listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
 
                 @Override
                 public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -605,9 +599,9 @@ public class AnimationSettingsActivity extends BaseFragment {
                         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
                         if (scrollY != 0 && scrollY != actionBarHeight) {
                             if (scrollY < actionBarHeight / 2) {
-                                mediaPages[0].listView.smoothScrollBy(0, -scrollY);
-                            } else if (mediaPages[0].listView.canScrollVertically(1)) {
-                                mediaPages[0].listView.smoothScrollBy(0, actionBarHeight - scrollY);
+                                settingsPages[0].listView.smoothScrollBy(0, -scrollY);
+                            } else if (settingsPages[0].listView.canScrollVertically(1)) {
+                                settingsPages[0].listView.smoothScrollBy(0, actionBarHeight - scrollY);
                             }
                         }
                     }
@@ -615,7 +609,7 @@ public class AnimationSettingsActivity extends BaseFragment {
 
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                    if (recyclerView == mediaPages[0].listView && !actionBar.isActionModeShowed() && !disableActionBarScrolling) {
+                    if (recyclerView == settingsPages[0].listView && !actionBar.isActionModeShowed() && !disableActionBarScrolling) {
                         float currentTranslation = actionBar.getTranslationY();
                         float newTranslation = currentTranslation - dy;
                         if (newTranslation < -ActionBar.getCurrentActionBarHeight()) {
@@ -630,7 +624,7 @@ public class AnimationSettingsActivity extends BaseFragment {
                     updateSections(recyclerView, false);
                 }
             });
-            mediaPages[a].listView.setOnItemLongClickListener((view, position) -> {
+            settingsPages[a].listView.setOnItemLongClickListener((view, position) -> {
 
                 return false;
             });
@@ -639,7 +633,7 @@ public class AnimationSettingsActivity extends BaseFragment {
             }
 
             if (a != 0) {
-                mediaPages[a].setVisibility(View.GONE);
+                settingsPages[a].setVisibility(View.GONE);
             }
         }
 
@@ -651,6 +645,17 @@ public class AnimationSettingsActivity extends BaseFragment {
         updateTabs();
         switchToCurrentSelectedMode(false);
 
+        scrimPaint = new Paint() {
+            @Override
+            public void setAlpha(int a) {
+                super.setAlpha(a);
+                if (fragmentView != null) {
+                    fragmentView.invalidate();
+                }
+            }
+        };
+
+        contentView = (FrameLayout) fragmentView;
         return fragmentView;
     }
 
@@ -668,8 +673,8 @@ public class AnimationSettingsActivity extends BaseFragment {
         if (fragmentContextView != null) {
             fragmentContextView.setTranslationY(additionalPadding + value);
         }
-        for (int a = 0; a < mediaPages.length; a++) {
-            mediaPages[a].listView.setPinnedSectionOffsetY((int) value);
+        for (int a = 0; a < settingsPages.length; a++) {
+            settingsPages[a].listView.setPinnedSectionOffsetY((int) value);
         }
         fragmentView.invalidate();
     }
@@ -681,7 +686,7 @@ public class AnimationSettingsActivity extends BaseFragment {
         }
         boolean changed = false;
         for (AnimationPageAdapter page: adapters) {
-            if (!scrollSlidingTextTabStrip.hasTab(page.pageType)) {
+            if (!scrollSlidingTextTabStrip.hasTab(page.pageType.ordinal())) {
                 changed = true;
             }
         }
@@ -689,8 +694,8 @@ public class AnimationSettingsActivity extends BaseFragment {
         if (changed) {
             scrollSlidingTextTabStrip.removeTabs();
             for (AnimationPageAdapter page: adapters) {
-                if (!scrollSlidingTextTabStrip.hasTab(page.pageType)) {
-                    scrollSlidingTextTabStrip.addTextTab(page.pageType, page.getTitle());
+                if (!scrollSlidingTextTabStrip.hasTab(page.pageType.ordinal())) {
+                    scrollSlidingTextTabStrip.addTextTab(page.pageType.ordinal(), page.getTitle());
                 }
             }
         }
@@ -703,22 +708,23 @@ public class AnimationSettingsActivity extends BaseFragment {
         }
         int id = scrollSlidingTextTabStrip.getCurrentTabId();
         if (id >= 0) {
-            mediaPages[0].selectedType = id;
+            settingsPages[0].selectedType = id;
         }
         scrollSlidingTextTabStrip.finishAddingTabs();
     }
 
     private void switchToCurrentSelectedMode(boolean animated) {
-        for (int a = 0; a < mediaPages.length; a++) {
-            mediaPages[a].listView.stopScroll();
+        for (int a = 0; a < settingsPages.length; a++) {
+            settingsPages[a].listView.stopScroll();
         }
         int a = animated ? 1 : 0;
-        if (mediaPages[a].listView != null) {
-            RecyclerView.Adapter currentAdapter = mediaPages[a].listView.getAdapter();
+        if (settingsPages[a].listView != null) {
+            RecyclerView.Adapter currentAdapter = settingsPages[a].listView.getAdapter();
             for (AnimationPageAdapter adapter : adapters) {
-                if (mediaPages[a].selectedType == adapter.pageType) {
+                if (settingsPages[a].selectedType == adapter.pageType.ordinal()) {
                     if (currentAdapter != adapter) {
-                        mediaPages[a].listView.setAdapter(adapter);
+                        settingsPages[a].listView.setAdapter(adapter);
+                        settingsPages[a].listView.setOnItemClickListener(adapter);
                     }
                 }
             }
@@ -727,7 +733,7 @@ public class AnimationSettingsActivity extends BaseFragment {
 
     private void fixScrollOffset() {
         if (actionBar.getTranslationY() != 0f) {
-            final RecyclerListView listView = mediaPages[0].listView;
+            final RecyclerListView listView = settingsPages[0].listView;
             final View child = listView.getChildAt(0);
             if (child != null) {
                 final int offset = (int) (child.getY() - (actionBar.getMeasuredHeight() + actionBar.getTranslationY() + additionalPadding));
@@ -819,6 +825,180 @@ public class AnimationSettingsActivity extends BaseFragment {
         animatorSet.start();
     }
 
+    private Paint scrimPaint;
+
+    interface OnMenuItemClickListener {
+        void onMenuClick(int i);
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public void createMenu(View v, ArrayList<CharSequence> items, float x, float y, OnMenuItemClickListener listener) {
+        if (actionBar.isActionModeShowed()) {
+            return;
+        }
+
+        if (items.isEmpty()) {
+            return;
+        }
+
+        if (scrimPopupWindow != null) {
+            scrimPopupWindow.dismiss();
+            scrimPopupWindow = null;
+            scrimPopupWindowItems = null;
+            return;
+        }
+
+        Rect rect = new Rect();
+
+        ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity());
+        popupLayout.setOnTouchListener(new View.OnTouchListener() {
+
+            private int[] pos = new int[2];
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                        View contentView = scrimPopupWindow.getContentView();
+                        contentView.getLocationInWindow(pos);
+                        rect.set(pos[0], pos[1], pos[0] + contentView.getMeasuredWidth(), pos[1] + contentView.getMeasuredHeight());
+                        if (!rect.contains((int) event.getX(), (int) event.getY())) {
+                            scrimPopupWindow.dismiss();
+                        }
+                    }
+                } else if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                        scrimPopupWindow.dismiss();
+                    }
+                }
+                return false;
+            }
+        });
+        popupLayout.setDispatchKeyEventListener(keyEvent -> {
+            if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_BACK && keyEvent.getRepeatCount() == 0 && scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                scrimPopupWindow.dismiss();
+            }
+        });
+        Rect backgroundPaddings = new Rect();
+        Drawable shadowDrawable = getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
+        shadowDrawable.getPadding(backgroundPaddings);
+        popupLayout.setBackgroundDrawable(shadowDrawable);
+        popupLayout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+
+        LinearLayout linearLayout = new LinearLayout(getParentActivity());
+        ScrollView scrollView;
+        if (Build.VERSION.SDK_INT >= 21) {
+            scrollView = new ScrollView(getParentActivity(), null, 0, R.style.scrollbarShapeStyle) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                    setMeasuredDimension(linearLayout.getMeasuredWidth(), getMeasuredHeight());
+                }
+            };
+        } else {
+            scrollView = new ScrollView(getParentActivity());
+        }
+        scrollView.setClipToPadding(false);
+        popupLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        linearLayout.setMinimumWidth(AndroidUtilities.dp(115));
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        RecyclerListView chatListView = settingsPages[0].listView;
+        scrimPopupWindowItems = new ActionBarMenuSubItem[items.size()];
+        for (int a = 0, N = items.size(); a < N; a++) {
+            ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), a == 0, a == N - 1);
+            cell.setText(items.get(a).toString());
+            scrimPopupWindowItems[a] = cell;
+            linearLayout.addView(cell);
+            final int i = a;
+            cell.setOnClickListener(v1 -> {
+                listener.onMenuClick(i);
+                if (scrimPopupWindow != null) {
+                    scrimPopupWindow.dismiss();
+                }
+            });
+        }
+        scrollView.addView(linearLayout, LayoutHelper.createScroll(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        scrimPopupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+            @Override
+            public void dismiss() {
+                super.dismiss();
+                if (scrimPopupWindow != this) {
+                    return;
+                }
+                scrimPopupWindow = null;
+                scrimPopupWindowItems = null;
+                if (scrimAnimatorSet != null) {
+                    scrimAnimatorSet.cancel();
+                    scrimAnimatorSet = null;
+                }
+                scrimAnimatorSet = new AnimatorSet();
+                ArrayList<Animator> animators = new ArrayList<>();
+                animators.add(ObjectAnimator.ofInt(scrimPaint, AnimationProperties.PAINT_ALPHA, 0));
+                scrimAnimatorSet.playTogether(animators);
+                scrimAnimatorSet.setDuration(220);
+                scrimAnimatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        contentView.invalidate();
+                        chatListView.invalidate();
+                    }
+                });
+                scrimAnimatorSet.start();
+            }
+        };
+        scrimPopupWindow.setPauseNotifications(true);
+        scrimPopupWindow.setDismissAnimationDuration(220);
+        scrimPopupWindow.setOutsideTouchable(true);
+        scrimPopupWindow.setClippingEnabled(true);
+        scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+        scrimPopupWindow.setFocusable(true);
+        popupLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+        scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+        scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+        scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
+        int popupX = v.getLeft() + (int) x - popupLayout.getMeasuredWidth() + backgroundPaddings.left - AndroidUtilities.dp(28);
+        if (popupX < AndroidUtilities.dp(6)) {
+            popupX = AndroidUtilities.dp(6);
+        } else if (popupX > chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - popupLayout.getMeasuredWidth()) {
+            popupX = chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - popupLayout.getMeasuredWidth();
+        }
+        if (AndroidUtilities.isTablet()) {
+            int[] location = new int[2];
+            fragmentView.getLocationInWindow(location);
+            popupX += location[0];
+        }
+        int totalHeight = contentView.getHeight();
+        int height = popupLayout.getMeasuredHeight();
+        int popupY;
+        if (height < totalHeight) {
+            popupY = (int) (chatListView.getY() + v.getTop() + y);
+            if (height - backgroundPaddings.top - backgroundPaddings.bottom > AndroidUtilities.dp(240)) {
+                popupY += AndroidUtilities.dp(240) - height;
+            }
+            if (popupY < chatListView.getY() + AndroidUtilities.dp(24)) {
+                popupY = (int) (chatListView.getY() + AndroidUtilities.dp(24));
+            } else if (popupY > totalHeight - height - AndroidUtilities.dp(8)) {
+                popupY = totalHeight - height - AndroidUtilities.dp(8);
+            }
+        } else {
+            popupY = inBubbleMode ? 0 : AndroidUtilities.statusBarHeight;
+        }
+        scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
+        chatListView.stopScroll();
+        contentView.invalidate();
+        chatListView.invalidate();
+        if (scrimAnimatorSet != null) {
+            scrimAnimatorSet.cancel();
+        }
+        scrimAnimatorSet = new AnimatorSet();
+        ArrayList<Animator> animators = new ArrayList<>();
+        animators.add(ObjectAnimator.ofInt(scrimPaint, AnimationProperties.PAINT_ALPHA, 0, 50));
+        scrimAnimatorSet.playTogether(animators);
+        scrimAnimatorSet.setDuration(150);
+        scrimAnimatorSet.start();
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
@@ -836,10 +1016,10 @@ public class AnimationSettingsActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        for (int a = 0; a < mediaPages.length; a++) {
-            arrayList.add(new ThemeDescription(mediaPages[a].listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-            arrayList.add(new ThemeDescription(mediaPages[a].listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
-            arrayList.add(new ThemeDescription(mediaPages[a].listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        for (int a = 0; a < settingsPages.length; a++) {
+            arrayList.add(new ThemeDescription(settingsPages[a].listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+            arrayList.add(new ThemeDescription(settingsPages[a].listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
+            arrayList.add(new ThemeDescription(settingsPages[a].listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
         }
 
         arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
