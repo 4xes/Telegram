@@ -1,5 +1,6 @@
 package org.telegram.ui.Animations;
 import android.content.Context;
+import android.view.View;
 
 import androidx.collection.ArrayMap;
 
@@ -34,14 +35,14 @@ public class AnimationManager {
     }
 
     public interface AnimationDataListener {
-        void onAnimationDataUpdate(String key, Object value);
+        void onAnimationDataUpdate(View view, String key, Object value);
     }
 
-    public void notify(String key, Object value) {
+    public void notify(View view, String key, Object value) {
         List<AnimationDataListener> listeners = mapListeners.get(key);
         if (listeners != null) {
             for (AnimationDataListener listener: listeners) {
-                listener.onAnimationDataUpdate(key, value);
+                listener.onAnimationDataUpdate(view, key, value);
             }
         }
     }
