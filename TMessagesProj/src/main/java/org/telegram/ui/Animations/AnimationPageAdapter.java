@@ -161,6 +161,12 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 }
                 if (type == AnimationType.Background) {
                     notifyItemChanged(position + 1);
+                } else {
+                    for (int notifyPos = 0; notifyPos < models.size(); notifyPos++) {
+                        if (models.get(notifyPos).type == interpolator_cell) {
+                            notifyItemChanged(notifyPos);
+                        }
+                    }
                 }
             });
         }
