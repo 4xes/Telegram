@@ -1,9 +1,10 @@
 package org.telegram.ui.Animations;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -11,14 +12,13 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
+import org.telegram.ui.Animations.Cells.BottomTextLayout;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
@@ -42,8 +42,7 @@ public class AnimationBackgroundActivity extends BaseFragment {
 
     private GradientSurfaceView surfaceView;
 
-    private FrameLayout bottomOverlayAnimate;
-    private TextView bottomOverlayText;
+    private BottomTextLayout bottomOverlayAnimate;
 
     @Override
     public View createView(Context context) {
@@ -72,34 +71,27 @@ public class AnimationBackgroundActivity extends BaseFragment {
             }
         });
 
-        bottomOverlayAnimate = new FrameLayout(context) {
+        surfaceView = new GradientSurfaceView(context);
+        surfaceView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        surfaceView.animatorListener = new AnimatorListenerAdapter() {
             @Override
-            public void onDraw(Canvas canvas) {
-                int bottom = Theme.chat_composeShadowDrawable.getIntrinsicHeight();
-                Theme.chat_composeShadowDrawable.setBounds(0, 0, getMeasuredWidth(), bottom);
-                Theme.chat_composeShadowDrawable.draw(canvas);
-                canvas.drawRect(0, bottom, getMeasuredWidth(), getMeasuredHeight(), Theme.chat_composeBackgroundPaint);
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                bottomOverlayAnimate.setEnabled(true, true);
             }
         };
-        bottomOverlayAnimate.setWillNotDraw(false);
-        bottomOverlayAnimate.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.BOTTOM));
 
-        bottomOverlayText = new TextView(context);
-        bottomOverlayText.setPadding(0, AndroidUtilities.dp(3), 0, 0);
-        bottomOverlayText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        bottomOverlayText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        bottomOverlayText.setTextColor(Theme.getColor(Theme.key_chat_fieldOverlayText));
-        bottomOverlayText.setText("ANIMATE");
-        bottomOverlayText.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-        bottomOverlayText.setGravity(Gravity.CENTER);
-        bottomOverlayText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
+        bottomOverlayAnimate = new BottomTextLayout(context);
+        bottomOverlayAnimate.setText("ANIMATE");
+        bottomOverlayAnimate.setOnClickListener(v -> {
+            int tabId = scrollSlidingTextTabStrip.getCurrentTabId();
+            Interpolator[] interpolators =  AnimationType.Background.params;
+            if (tabId < AnimationType.Background.params.length )  {
+                bottomOverlayAnimate.setEnabled(false, true);
+                surfaceView.requestPositionAnimation(interpolators[tabId]);
             }
         });
-
-        bottomOverlayAnimate.addView(bottomOverlayText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+        bottomOverlayAnimate.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.BOTTOM));
 
         if (scrollSlidingTextTabStrip != null) {
             initialTab = scrollSlidingTextTabStrip.getCurrentTabId();
@@ -121,9 +113,6 @@ public class AnimationBackgroundActivity extends BaseFragment {
 
             }
         });
-
-        surfaceView = new GradientSurfaceView(context);
-        surfaceView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         FrameLayout frameLayout;
         fragmentView = frameLayout = new FrameLayout(context) {
@@ -256,7 +245,7 @@ public class AnimationBackgroundActivity extends BaseFragment {
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
-        final AnimationType.Interpolator[] params = AnimationType.Background.params;
+        final Interpolator[] params = AnimationType.Background.params;
 
         boolean changed = false;
         for (int i = 0; i < params.length; i++) {

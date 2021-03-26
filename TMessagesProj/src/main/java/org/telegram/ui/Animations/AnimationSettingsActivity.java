@@ -67,8 +67,6 @@ public class AnimationSettingsActivity extends BaseFragment {
     private ActionBarMenuSubItem[] scrimPopupWindowItems;
     private FrameLayout contentView;
 
-    public AnimationPreferences preferences;
-
     private static class SettingsPage extends FrameLayout {
         private RecyclerListView listView;
         private LinearLayoutManager layoutManager;
@@ -125,7 +123,6 @@ public class AnimationSettingsActivity extends BaseFragment {
         ViewConfiguration configuration = ViewConfiguration.get(context);
         maximumVelocity = configuration.getScaledMaximumFlingVelocity();
 
-        preferences = new AnimationPreferences(context);
 
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
@@ -686,7 +683,7 @@ public class AnimationSettingsActivity extends BaseFragment {
         }
         boolean changed = false;
         for (AnimationPageAdapter page: adapters) {
-            if (!scrollSlidingTextTabStrip.hasTab(page.pageType.ordinal())) {
+            if (!scrollSlidingTextTabStrip.hasTab(page.type.ordinal())) {
                 changed = true;
             }
         }
@@ -694,8 +691,8 @@ public class AnimationSettingsActivity extends BaseFragment {
         if (changed) {
             scrollSlidingTextTabStrip.removeTabs();
             for (AnimationPageAdapter page: adapters) {
-                if (!scrollSlidingTextTabStrip.hasTab(page.pageType.ordinal())) {
-                    scrollSlidingTextTabStrip.addTextTab(page.pageType.ordinal(), page.getTitle());
+                if (!scrollSlidingTextTabStrip.hasTab(page.type.ordinal())) {
+                    scrollSlidingTextTabStrip.addTextTab(page.type.ordinal(), page.getTitle());
                 }
             }
         }
@@ -721,7 +718,7 @@ public class AnimationSettingsActivity extends BaseFragment {
         if (settingsPages[a].listView != null) {
             RecyclerView.Adapter currentAdapter = settingsPages[a].listView.getAdapter();
             for (AnimationPageAdapter adapter : adapters) {
-                if (settingsPages[a].selectedType == adapter.pageType.ordinal()) {
+                if (settingsPages[a].selectedType == adapter.type.ordinal()) {
                     if (currentAdapter != adapter) {
                         settingsPages[a].listView.setAdapter(adapter);
                         settingsPages[a].listView.setOnItemClickListener(adapter);

@@ -2,20 +2,15 @@ package org.telegram.ui.Animations;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.zxing.qrcode.decoder.Mode;
-
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -32,14 +27,14 @@ import java.util.ArrayList;
 public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter implements RecyclerListView.OnItemClickListener {
 
     private final Context context;
-    public final AnimationType pageType;
+    public final AnimationType type;
     private final AnimationSettingsActivity activity;
 
     private final ArrayList<Model> models;
 
     public AnimationPageAdapter(Context context, AnimationType type, AnimationSettingsActivity activity) {
         this.context = context;
-        this.pageType = type;
+        this.type = type;
         this.activity = activity;
 
         models = new ArrayList<>();
@@ -58,13 +53,12 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
             models.add(new Model(color_cell, 3));
 
         } else {
-            models.add(new Model(duration_cell, type.name()));
+            models.add(new Model(duration_cell, null));
         }
         models.add(new Model(section_cell, null));
 
-        for (AnimationType.Interpolator i: pageType.params) {
-            String key = type.name() + "_" + i.name();
-            if (i == AnimationType.Interpolator.Scale) {
+        for (Interpolator i: this.type.params) {
+            if (i == Interpolator.Scale) {
                 if (type == AnimationType.ShortText || type == AnimationType.LongText) {
                     models.add(new Model(header_cell, "Text" + i.title));
                 }
@@ -72,9 +66,9 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 models.add(new Model(header_cell, i.title));
             }
             if (i.hasDuration) {
-                models.add(new Model(duration_cell, key));
+                models.add(new Model(duration_cell, i));
             }
-            models.add(new Model(interpolator_cell, key));
+            models.add(new Model(interpolator_cell, i));
             models.add(new Model(section_cell, null));
         }
     }
@@ -117,7 +111,7 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 view = new ShadowSectionCell(context, 12);
                 break;
             case interpolator_cell:
-                view = new InterpolatorCell(context);
+                view = new InterpolatorCell(context, AnimationManager.getInstance().preferences);
                 break;
             case color_cell:
                 view = new TextSettingsCell(context) {
@@ -157,10 +151,17 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     @Override
     public void onItemClick(View view, int position) {
         if (view instanceof TextSettingsCell) {
-            TextSettingsCell textSettingsCell = (TextSettingsCell) view;
+            Interpolator durationInterpolator = getItem(position);
             activity.createMenu(view, durations, 0, 0, i -> {
-                textSettingsCell.setTextAndValue("Duration", durations.get(i).toString(), pageType == AnimationType.Background);
-                activity.preferences.putDuration((String) view.getTag(), DURATIONS[i]);
+                long newDuration = DURATIONS[i];
+                long duration = AnimationManager.getInstance().getDuration(type, durationInterpolator);
+                if (duration != newDuration) {
+                    AnimationManager.getInstance().setDuration(type, durationInterpolator, DURATIONS[i]);
+                    notifyItemChanged(position);
+                }
+                if (type == AnimationType.Background) {
+                    notifyItemChanged(position + 1);
+                }
             });
         }
         if (view instanceof BottomSheet.BottomSheetCell) {
@@ -170,12 +171,24 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        switch (holder.getItemViewType()) {
+        int type = holder.getItemViewType();
+        switch (type) {
             case duration_cell:
-                String key = (String) models.get(position).value;
-                TextSettingsCell textSettingsCell = (TextSettingsCell) holder.itemView;
-                textSettingsCell.setTextAndValue("Duration", activity.preferences.getDuration(key) + "ms", pageType == AnimationType.Background);
-                textSettingsCell.setTag(key);
+            case interpolator_cell:
+                Interpolator interpolator = getItem(position);
+                long duration = AnimationManager.getInstance().getDuration(this.type, interpolator);
+                if (type == duration_cell) {
+                    TextSettingsCell view = (TextSettingsCell) holder.itemView;
+                    boolean hasDivider = this.type == AnimationType.Background;
+                    view.setTextAndValue("Duration", duration + "ms", hasDivider);
+                }
+                if (type == interpolator_cell) {
+                    InterpolatorCell view = (InterpolatorCell) holder.itemView;
+                    view.setDuration(duration);
+                    InterpolatorData data = AnimationManager.getInstance().getInterpolator(this.type, interpolator);
+                    String key = AnimationManager.key(this.type, interpolator);
+                    view.setInterpolationData(key, data);
+                }
                 break;
             case header_cell:
                 HeaderCell headerCell = (HeaderCell) holder.itemView;
@@ -206,13 +219,18 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
         return models.size();
     }
 
+    public <T> T getItem(int position) {
+        //noinspection unchecked
+        return (T) models.get(position).value;
+    }
+
     @Override
     public int getItemViewType(int position) {
         return models.get(position).type;
     }
 
     public String getTitle() {
-        return pageType.title;
+        return type.title;
     }
 
     private static final long[] DURATIONS = new long[] {

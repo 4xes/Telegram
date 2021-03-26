@@ -4,18 +4,25 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
-import android.view.View;
 
+import org.telegram.ui.Animations.AnimationManager;
+import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Animations.Background.gradient.GradientColorEvaluator;
 import org.telegram.ui.Animations.Background.gradient.GradientPointsEvaluator;
 import org.telegram.ui.Animations.Background.gradient.GradientRenderer;
 import org.telegram.ui.Animations.Background.gradient.Points;
+import org.telegram.ui.Animations.Interpolator;
+import org.telegram.ui.Animations.InterpolatorData;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class GradientSurfaceView extends GLTextureView {
 
     public int[] indexes = Points.startPoints();
 
+    AnimationType animationType = AnimationType.Background;
     private GradientRenderer gradientRenderer;
+
+    boolean scheduleAnimation = false;
 
     public GradientSurfaceView(Context context) {
         super(context);
@@ -34,12 +41,6 @@ public class GradientSurfaceView extends GLTextureView {
         Points.fillPoints(indexes, gradientRenderer.points);
         setRenderer(gradientRenderer);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-        setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                requestPositionAnimation();
-            }
-        });
     }
 
     private final ValueAnimator.AnimatorUpdateListener progressUpdateListener = new ValueAnimator.AnimatorUpdateListener() {
@@ -56,7 +57,7 @@ public class GradientSurfaceView extends GLTextureView {
         }
     };
 
-    private final Animator.AnimatorListener animatorListener = new Animator.AnimatorListener() {
+    private final Animator.AnimatorListener scheduleAnimatorListener = new Animator.AnimatorListener() {
         @Override
         public void onAnimationStart(Animator animation) {
 
@@ -64,9 +65,8 @@ public class GradientSurfaceView extends GLTextureView {
 
         @Override
         public void onAnimationEnd(Animator animation) {
-            if (requestedAnimation) {
-                requestedAnimation = false;
-                animatePosition();
+            if (nextInterpolator != null) {
+                animatePosition(nextInterpolator);
             }
         }
 
@@ -81,17 +81,20 @@ public class GradientSurfaceView extends GLTextureView {
         }
     };
 
-    private boolean requestedAnimation = false;
+    private Interpolator nextInterpolator = null;
 
-    public void requestPositionAnimation() {
-        if (positionAnimator != null && positionAnimator.isRunning()) {
-            requestedAnimation = true;
+    public void requestPositionAnimation(Interpolator interpolator) {
+        if (scheduleAnimation && nextInterpolator != null && positionAnimator != null && positionAnimator.isRunning()) {
+            nextInterpolator = interpolator;
         } else {
-            animatePosition();
+            animatePosition(interpolator);
         }
     }
 
-    private void animatePosition() {
+
+    public Animator.AnimatorListener animatorListener;
+
+    private void animatePosition(Interpolator interpolator) {
         float[][] start = Points.emptyPoints();
         Points.copyPoints(start, gradientRenderer.points);
         float[][] end = Points.emptyPoints();
@@ -102,10 +105,20 @@ public class GradientSurfaceView extends GLTextureView {
             positionAnimator.cancel();
             positionAnimator = null;
         }
+        long duration = AnimationManager.getInstance().getDuration(animationType, interpolator);
+        InterpolatorData data = AnimationManager.getInstance().getInterpolator(animationType,  interpolator);
+
+        CubicBezierInterpolator bezierInterpolator = new CubicBezierInterpolator(data.progressionTop, data.timeStart, data.progressionBottom, data.timeEnd);
         positionAnimator = ValueAnimator.ofObject(new GradientPointsEvaluator(gradientRenderer.points), start, end);
-        positionAnimator.setDuration(1000L);
+        positionAnimator.setDuration(duration);
+        positionAnimator.setInterpolator(bezierInterpolator);
         positionAnimator.addUpdateListener(progressUpdateListener);
-        positionAnimator.addListener(animatorListener);
+        if (animatorListener != null) {
+            positionAnimator.addListener(animatorListener);
+        }
+        if (scheduleAnimation) {
+            positionAnimator.addListener(scheduleAnimatorListener);
+        }
         positionAnimator.start();
     }
 

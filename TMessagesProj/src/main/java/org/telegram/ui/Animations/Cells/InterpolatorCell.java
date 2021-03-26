@@ -16,6 +16,9 @@ import android.view.ViewConfiguration;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationPreferences;
+import org.telegram.ui.Animations.Interpolator;
+import org.telegram.ui.Animations.InterpolatorData;
 
 public class InterpolatorCell extends View {
 
@@ -32,9 +35,34 @@ public class InterpolatorCell extends View {
 
     private final Paint debug = null;
 
-    public InterpolatorCell(Context context) {
+    private String key = null;
+    private final InterpolatorData d = InterpolatorData.defaultData();
+    private final AnimationPreferences preferences;
+
+    public InterpolatorCell(Context context, AnimationPreferences preferences) {
         super(context);
         init();
+        this.preferences = preferences;
+    }
+
+    public void setInterpolationData(String key, InterpolatorData data) {
+        boolean invalidate = false;
+        if (setProgressionTop(data.progressionTop)) {
+            invalidate = true;
+        }
+        if (setProgressionBottom(data.progressionBottom)) {
+            invalidate = true;
+        }
+        if (setTimeStart(data.timeStart)) {
+            invalidate = true;
+        }
+        if (setTimeEnd(data.timeEnd)) {
+            invalidate = true;
+        }
+        if (invalidate) {
+            invalidate();
+        }
+        this.key = key;
     }
 
     private void init() {
@@ -97,17 +125,61 @@ public class InterpolatorCell extends View {
     private boolean isSlopZone(float dx, float dy) {
         return dx > -slopSize && dx < slopSize && dy > -slopSize && dy < slopSize;
     }
-
-    private float timeStart = 0f;
-    private float timeEnd = 1f;
     private final float timeRangeMin = 0.14f;
     private float timeRangeMinX;
-    private float progressionTop = 0f;
-    private float progressionBottom = 0.33f;
 
-    private long maxDuration = 1000L;
+    private long duration = 1000L;
 
     private float[] dots;
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+        invalidate();
+    }
+
+    private boolean setProgressionTop(float value) {
+        if (d.progressionTop != value) {
+            d.progressionTop = value;
+            if (key != null) {
+                preferences.putProgressionTop(key, value);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean setProgressionBottom(float value) {
+        if (d.progressionBottom != value) {
+            d.progressionBottom = value;
+            if (key != null) {
+                preferences.putProgressionBottom(key, value);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean setTimeStart(float value) {
+        if (d.timeStart != value) {
+            d.timeStart = value;
+            if (key != null) {
+                preferences.putTimeStart(key, value);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean setTimeEnd(float value) {
+        if (d.timeEnd != value) {
+            d.timeEnd = value;
+            if (key != null) {
+                preferences.putTimeEnd(key, value);
+            }
+            return true;
+        }
+        return false;
+    }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -145,16 +217,16 @@ public class InterpolatorCell extends View {
     }
 
     private void calculateZones() {
-        timeStartX = rangeBound.left + rangeBound.width() * timeStart;
-        timeEndX = rangeBound.left + rangeBound.width() * timeEnd;
+        timeStartX = rangeBound.left + rangeBound.width() * d.timeStart;
+        timeEndX = rangeBound.left + rangeBound.width() * d.timeEnd;
         timeBound.set(rangeBound);
         timeBound.left = timeStartX;
         timeBound.right = timeEndX;
 
         float timeWidth = timeEndX - timeStartX;
 
-        progressionTopX = timeStartX + timeWidth * progressionTop;
-        progressionBottomX = timeStartX + timeWidth * progressionBottom;
+        progressionTopX = timeStartX + timeWidth * d.progressionTop;
+        progressionBottomX = timeStartX + timeWidth * d.progressionBottom;
 
         final float insetTrackTouch = thumbProgressionRadius + touchOutset;
         progressionTopTrackTouch.set(
@@ -389,44 +461,32 @@ public class InterpolatorCell extends View {
             }
             dif = difX / timeBound.width();
         }
-
+        float value;
         switch (zone) {
             case TIME_START:
-                final float newTimeStart = Math.max(0f, Math.min(timeStart - dif, timeEnd - timeRangeMin));
-                if (newTimeStart != timeStart) {
-                    timeStart = newTimeStart;
-                    needInvalidate = true;
-                }
+                value = Math.max(0f, Math.min(d.timeStart - dif, d.timeEnd - timeRangeMin));
+                needInvalidate = setTimeStart(value);
                 break;
             case TIME_END:
-                final float newTimeEnd = Math.max(timeStart + timeRangeMin, Math.min(timeEnd - dif, 1f));
-                if (newTimeEnd != timeEnd) {
-                    timeEnd = newTimeEnd;
-                    needInvalidate = true;
-                }
+                value = Math.max(d.timeStart + timeRangeMin, Math.min(d.timeEnd - dif, 1f));
+                needInvalidate = setTimeEnd(value);
                 break;
             case TIME_MOVE:
-                final float range = timeEnd - timeStart;
-                final float moveTimeStart = Math.max(0f, Math.min(timeStart - dif, 1f - range));
-                if (moveTimeStart != timeStart) {
-                    timeStart = moveTimeStart;
-                    timeEnd = timeStart + range;
+                final float range = d.timeEnd - d.timeStart;
+                value = Math.max(0f, Math.min(d.timeStart - dif, 1f - range));
+                if (value != d.timeStart) {
+                    setTimeStart(value);
+                    setTimeEnd(value + range);
                     needInvalidate = true;
                 }
                 break;
             case PROGRESSION_TOP:
-                final float newProgressionTop = Math.max(0f, Math.min(progressionTop - dif, 1f));
-                if (newProgressionTop != progressionTop) {
-                    progressionTop = newProgressionTop;
-                    needInvalidate = true;
-                }
+                value = Math.max(0f, Math.min(d.progressionTop - dif, 1f));
+                needInvalidate = setProgressionTop(value);
                 break;
             case PROGRESSION_BOTTOM:
-                final float newProgressionBottom = Math.max(0f, Math.min(progressionBottom - dif, 1f));
-                if (newProgressionBottom != progressionBottom) {
-                    progressionBottom = newProgressionBottom;
-                    needInvalidate = true;
-                }
+                value = Math.max(0f, Math.min(d.progressionBottom - dif, 1f));
+                needInvalidate = setProgressionBottom(value);
                 break;
             case PROGRESSION_TOP_TRACK:
                 if (!progressionTopTrackTouch.contains(x, y)) {
@@ -473,22 +533,12 @@ public class InterpolatorCell extends View {
     }
 
     private boolean handleProgression(float x) {
-        float progressionPercent = (x - timeBound.left) / timeBound.width();
-        progressionPercent = Math.max(0f, Math.min(progressionPercent, 1f));
+        float progression = (x - timeBound.left) / timeBound.width();
+        progression = Math.max(0f, Math.min(progression, 1f));
         if (zone == PROGRESSION_TOP || zone == PROGRESSION_TOP_TRACK) {
-            if (progressionPercent != progressionTop) {
-                progressionTop = progressionPercent;
-                return true;
-            } else {
-                return false;
-            }
+            return setProgressionTop(progression);
         } else if (zone == PROGRESSION_BOTTOM || zone == PROGRESSION_BOTTOM_TRACK) {
-            if (progressionPercent != progressionBottom) {
-                progressionBottom = progressionPercent;
-                return true;
-            } else {
-                return false;
-            }
+            return setProgressionBottom(progression);
         }
         return false;
     }
@@ -606,14 +656,14 @@ public class InterpolatorCell extends View {
         paintLabel.setColor(progressionFillLineColor);
         paintLabel.setTextAlign(Paint.Align.LEFT);
 
-        canvas.drawText(formatPercent(1f - progressionTop), progressionTopBound.left + labelStartPadding, progressionTopBound.top - labelMinDistance, paintLabel);
+        canvas.drawText(formatPercent(1f - d.progressionTop), progressionTopBound.left + labelStartPadding, progressionTopBound.top - labelMinDistance, paintLabel);
         paintLabel.setTextAlign(Paint.Align.RIGHT);
-        canvas.drawText(formatPercent(progressionBottom), progressionBottomBound.right, progressionBottomBound.bottom + paintLabelHeight + labelMinDistance, paintLabel);
+        canvas.drawText(formatPercent(d.progressionBottom), progressionBottomBound.right, progressionBottomBound.bottom + paintLabelHeight + labelMinDistance, paintLabel);
 
         paintLabel.setColor(timeColor);
         final float timeOffsetHeight = paintLabelHeight / 2f;
-        String timeStartLabel = formatDuration(timeStart);
-        String timeEndLabel = formatDuration(timeEnd);
+        String timeStartLabel = formatDuration(d.timeStart);
+        String timeEndLabel = formatDuration(d.timeEnd);
         paintLabel.getTextBounds(timeStartLabel, 0, timeStartLabel.length(), labelBound);
         float timeStartLabelWidth = labelBound.width();
         paintLabel.getTextBounds(timeEndLabel, 0, timeEndLabel.length(), labelBound);
@@ -640,7 +690,7 @@ public class InterpolatorCell extends View {
     }
 
     private String formatDuration(float value) {
-        int duration = Math.round(value * maxDuration);
+        int duration = Math.round(value * this.duration);
         return duration + "mc";
     }
 

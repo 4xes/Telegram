@@ -11,26 +11,45 @@ public class AnimationPreferences {
     }
 
     public void putInterpolator(String key,
-                     float progressionStart,
-                     float progressionEnd,
+                     float progressionTop,
+                     float progressionBottom,
                      float timeStart,
                      float timeEnd) {
         sharedPreferences.edit()
-                .putFloat(key + keyProgressionStart, progressionStart)
-                .putFloat(key + keyProgressionEnd, progressionEnd)
+                .putFloat(key + keyProgressionTop, progressionTop)
+                .putFloat(key + keyProgressionBottom, progressionBottom)
                 .putFloat(key + keyTimeStart, timeStart)
                 .putFloat(key + keyTimeEnd, timeEnd).apply();
     }
 
+    public void putProgressionTop(String key, float value) {
+        sharedPreferences.edit()
+                .putFloat(key + keyProgressionTop, value).apply();
+    }
+
+    public void putProgressionBottom(String key, float value) {
+        sharedPreferences.edit()
+                .putFloat(key + keyProgressionBottom, value).apply();
+    }
+
+    public void putTimeStart(String key, float value) {
+        sharedPreferences.edit()
+                .putFloat(key + keyTimeStart, value).apply();
+    }
+
+    public void putTimeEnd(String key, float value) {
+        sharedPreferences.edit()
+                .putFloat(key + keyTimeEnd, value).apply();
+    }
+
     public InterpolatorData getInterpolator(String key) {
-        float progressionStart = sharedPreferences.getFloat(key + keyProgressionStart, 0f);
-        float progressionEnd = sharedPreferences.getFloat(key + keyProgressionEnd, 0.33f);
-        float timeStart = sharedPreferences.getFloat(key + keyTimeStart, 0f);
-        float timeEnd = sharedPreferences.getFloat(key + keyTimeEnd, 0.5f);
+        float progressionTop = sharedPreferences.getFloat(key + keyProgressionTop, InterpolatorData.DEFAULT_PROGRESSION_TOP);
+        float progressionBottom = sharedPreferences.getFloat(key + keyProgressionBottom, InterpolatorData.DEFAULT_PROGRESSION_BOTTOM);
+        float timeStart = sharedPreferences.getFloat(key + keyTimeStart, InterpolatorData.DEFAULT_TIME_START);
+        float timeEnd = sharedPreferences.getFloat(key + keyTimeEnd, InterpolatorData.DEFAULT_TIME_END);
         return new InterpolatorData(
-                key,
-                progressionStart,
-                progressionEnd,
+                progressionTop,
+                progressionBottom,
                 timeStart,
                 timeEnd
         );
@@ -46,8 +65,8 @@ public class AnimationPreferences {
         return sharedPreferences.getLong(key + keyDuration, 500L);
     }
 
-    private static final String keyProgressionStart = "_ps";
-    private static final String keyProgressionEnd = "_pe";
+    private static final String keyProgressionTop = "_pt";
+    private static final String keyProgressionBottom = "_pb";
     private static final String keyTimeStart = "_ts";
     private static final String keyTimeEnd = "_te";
     private static final String keyDuration = "_d";

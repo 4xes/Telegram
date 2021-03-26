@@ -2,17 +2,18 @@ package org.telegram.ui.Animations;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.Nullable;
 import androidx.collection.ArrayMap;
 
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class AnimationManager {
-    Map<String, List<AnimationDataListener>> mapListeners = new ArrayMap<>();
+    Map<String, List<AnimationDataListener>> mapDurationListeners = new ArrayMap<>();
 
     AnimationPreferences preferences;
 
@@ -35,34 +36,78 @@ public class AnimationManager {
     }
 
     public interface AnimationDataListener {
-        void onAnimationDataUpdate(View view, String key, Object value);
+        void onDurationUpdate(String key, long value);
     }
 
-    public void notify(View view, String key, Object value) {
-        List<AnimationDataListener> listeners = mapListeners.get(key);
+    public void notifyDurationListener(String key, long value) {
+        List<AnimationDataListener> listeners = mapDurationListeners.get(key);
         if (listeners != null) {
             for (AnimationDataListener listener: listeners) {
-                listener.onAnimationDataUpdate(view, key, value);
+                listener.onDurationUpdate(key, value);
             }
         }
     }
 
-    private void addListener(String key, AnimationDataListener listener) {
-        List<AnimationDataListener> listeners = mapListeners.get(key);
+    public InterpolatorData getInterpolator(AnimationType animationType, Interpolator interpolator) {
+        return preferences.getInterpolator(key(animationType, interpolator));
+    }
+
+    public long getDuration(AnimationType animationType, @Nullable Interpolator interpolator) {
+        String key;
+        if (animationType == AnimationType.Background) {
+            key = key(animationType, interpolator);
+        } else {
+            key = key(animationType, null);
+        }
+        return preferences.getDuration(key);
+    }
+
+    public void setDuration(AnimationType animationType, @Nullable Interpolator interpolator, long duration) {
+        String key;
+        if (animationType == AnimationType.Background) {
+            key = key(animationType, interpolator);
+        } else {
+            key = key(animationType, null);
+        }
+        preferences.putDuration(key, duration);
+        notifyDurationListener(key, duration);
+    }
+
+    private void addListener(AnimationType animationType, @Nullable Interpolator interpolator, AnimationDataListener listener) {
+        String key;
+        if (animationType == AnimationType.Background) {
+            key = key(animationType, interpolator);
+        } else {
+            key = key(animationType, null);
+        }
+        List<AnimationDataListener> listeners = mapDurationListeners.get(key);
         if (listeners == null) {
             listeners = new ArrayList<>();
-            mapListeners.put(key, listeners);
+            mapDurationListeners.put(key, listeners);
         }
         if (!listeners.contains(listener)) {
             listeners.add(listener);
         }
     }
 
-    private void removeListener(String key, AnimationDataListener listener) {
-        List<AnimationDataListener> listeners = mapListeners.get(key);
+    private void removeListener(AnimationType animationType, @Nullable Interpolator interpolator, AnimationDataListener listener) {
+        String key;
+        if (animationType == AnimationType.Background) {
+            key = key(animationType, interpolator);
+        } else {
+            key = key(animationType, null);
+        }
+        List<AnimationDataListener> listeners = mapDurationListeners.get(key);
         if (listeners != null) {
             listeners.remove(listener);
         }
     }
 
+    public static String key(AnimationType type, Interpolator interpolator) {
+        if (interpolator != null) {
+            return (type.name() + "_" + interpolator.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
+        } else {
+            return (type.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
+        }
+    }
 }
