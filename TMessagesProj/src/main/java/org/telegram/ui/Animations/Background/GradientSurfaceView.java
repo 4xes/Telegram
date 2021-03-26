@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
-import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.ui.Animations.Background.gradient.GradientColorEvaluator;

@@ -60,10 +60,10 @@ public class GradientRenderer implements GLTextureView.Renderer {
 
     private void initVertexData() {
         float[] vertices = {
-                -1,  1,
-                -1, -1,
-                1,  1,
-                1, -1
+                -1f,  1f,
+                -1f, -1f,
+                1f,  1f,
+                1f, -1f
         };
         vertexData = GlUtils.toBuffer(vertices);
     }

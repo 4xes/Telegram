@@ -163,6 +163,9 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 activity.preferences.putDuration((String) view.getTag(), DURATIONS[i]);
             });
         }
+        if (view instanceof BottomSheet.BottomSheetCell) {
+            activity.presentFragment(new AnimationBackgroundActivity());
+        }
     }
 
     @Override
