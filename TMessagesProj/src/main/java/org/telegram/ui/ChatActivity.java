@@ -148,9 +148,8 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Adapters.StickersAdapter;
-import org.telegram.ui.Animations.AnimationSettingsActivity;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
-import org.telegram.ui.Animations.Background.debug.DebugFrameLayout;
+import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.BotSwitchCell;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -1632,7 +1631,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    FrameLayout debugFrame;
+    private boolean startOpenChatAnimation = true;
     GradientSurfaceView gradientView;
 
     @Override
@@ -2253,7 +2252,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         actionBar.setTranslationY(y);
                         emptyViewContainer.setTranslationY(y / 2);
                         progressView.setTranslationY(y / 2);
-                        debugFrame.setTranslationY(y);
+                        gradientView.setTranslationY(y);
                         contentView.setBackgroundTranslation((int) y);
                         instantCameraView.onPanTranslationUpdate(y);
                         setFragmentPanTranslationOffset((int) y);
@@ -2693,7 +2692,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
                         int contentHeightSpec = MeasureSpec.makeMeasureSpec(allHeight, MeasureSpec.EXACTLY);
                         child.measure(contentWidthSpec, contentHeightSpec);
-                    } else if(child == debugFrame) {
+                    } else if(child == gradientView) {
                         int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
                         int contentHeightSpec = MeasureSpec.makeMeasureSpec(heightNoKeyboard - actionBarHeight  - AndroidUtilities.dp(48), MeasureSpec.EXACTLY);
                         child.measure(contentWidthSpec, contentHeightSpec);
@@ -2835,9 +2834,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     final int width = child.getMeasuredWidth();
                     final int height = child.getMeasuredHeight();
-                    if (child == debugFrame) {
-                        Log.e("back", "onLayout debugFrame height: " + height);
-                    }
 
                     int childLeft;
                     int childTop;
@@ -2937,9 +2933,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             childTop -= keyboardSize;
                         }
                     }
-                    if (child == debugFrame) {
-                        Log.e("childTop", childTop + "");
-                    }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
 
@@ -2979,10 +2972,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         gradientView = new GradientSurfaceView(context);
-
-        debugFrame = new DebugFrameLayout(context, AndroidUtilities.dp(40), Color.GREEN);
-        debugFrame.addView(gradientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        contentView.addView(debugFrame, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        contentView.addView(gradientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         emptyViewContainer = new FrameLayout(context);
         emptyViewContainer.setVisibility(View.INVISIBLE);
