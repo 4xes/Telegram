@@ -20,6 +20,10 @@ public class AnimationManager {
         this.preferences = new AnimationPreferences(context);
     }
 
+    public static AnimationPreferences getPreferences() {
+        return getInstance().preferences;
+    }
+
     private static volatile AnimationManager Instance = null;
     public static AnimationManager getInstance() {
         AnimationManager localInstance = Instance;

@@ -3,6 +3,8 @@ package org.telegram.ui.Animations;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import static com.microsoft.appcenter.utils.storage.SharedPreferencesManager.putInt;
+
 public class AnimationPreferences {
     final SharedPreferences sharedPreferences;
 
@@ -16,37 +18,37 @@ public class AnimationPreferences {
                      float timeStart,
                      float timeEnd) {
         sharedPreferences.edit()
-                .putFloat(key + keyProgressionTop, progressionTop)
-                .putFloat(key + keyProgressionBottom, progressionBottom)
-                .putFloat(key + keyTimeStart, timeStart)
-                .putFloat(key + keyTimeEnd, timeEnd).apply();
+                .putFloat(key + prefixProgressionTop, progressionTop)
+                .putFloat(key + prefixProgressionBottom, progressionBottom)
+                .putFloat(key + prefixTimeStart, timeStart)
+                .putFloat(key + prefixTimeEnd, timeEnd).apply();
     }
 
     public void putProgressionTop(String key, float value) {
         sharedPreferences.edit()
-                .putFloat(key + keyProgressionTop, value).apply();
+                .putFloat(key + prefixProgressionTop, value).apply();
     }
 
     public void putProgressionBottom(String key, float value) {
         sharedPreferences.edit()
-                .putFloat(key + keyProgressionBottom, value).apply();
+                .putFloat(key + prefixProgressionBottom, value).apply();
     }
 
     public void putTimeStart(String key, float value) {
         sharedPreferences.edit()
-                .putFloat(key + keyTimeStart, value).apply();
+                .putFloat(key + prefixTimeStart, value).apply();
     }
 
     public void putTimeEnd(String key, float value) {
         sharedPreferences.edit()
-                .putFloat(key + keyTimeEnd, value).apply();
+                .putFloat(key + prefixTimeEnd, value).apply();
     }
 
     public InterpolatorData getInterpolator(String key) {
-        float progressionTop = sharedPreferences.getFloat(key + keyProgressionTop, InterpolatorData.DEFAULT_PROGRESSION_TOP);
-        float progressionBottom = sharedPreferences.getFloat(key + keyProgressionBottom, InterpolatorData.DEFAULT_PROGRESSION_BOTTOM);
-        float timeStart = sharedPreferences.getFloat(key + keyTimeStart, InterpolatorData.DEFAULT_TIME_START);
-        float timeEnd = sharedPreferences.getFloat(key + keyTimeEnd, InterpolatorData.DEFAULT_TIME_END);
+        float progressionTop = sharedPreferences.getFloat(key + prefixProgressionTop, InterpolatorData.DEFAULT_PROGRESSION_TOP);
+        float progressionBottom = sharedPreferences.getFloat(key + prefixProgressionBottom, InterpolatorData.DEFAULT_PROGRESSION_BOTTOM);
+        float timeStart = sharedPreferences.getFloat(key + prefixTimeStart, InterpolatorData.DEFAULT_TIME_START);
+        float timeEnd = sharedPreferences.getFloat(key + prefixTimeEnd, InterpolatorData.DEFAULT_TIME_END);
         return new InterpolatorData(
                 progressionTop,
                 progressionBottom,
@@ -55,19 +57,34 @@ public class AnimationPreferences {
         );
     }
 
+    public void putBackgroundIndexes(int[] indexes) {
+        sharedPreferences.edit()
+                .putInt(keyBackgroundIndexes + 0, indexes[0])
+                .apply();
+    }
+
+    public int[] getBackgroundIndexes() {
+        int i0 = sharedPreferences.getInt(keyBackgroundIndexes + 0, 0);
+        int i1 = (i0 + 6) % 8;
+        int i2 = (i0 + 4) % 8;
+        int i3 = (i0 + 2) % 8;
+        return new int[] {i0, i1, i2, i3};
+    }
+
     public void putDuration(String key,
                      long duration) {
         sharedPreferences.edit()
-                .putLong(key + keyDuration, duration).apply();
+                .putLong(key + prefixDuration, duration).apply();
     }
 
     public long getDuration(String key) {
-        return sharedPreferences.getLong(key + keyDuration, 500L);
+        return sharedPreferences.getLong(key + prefixDuration, 500L);
     }
 
-    private static final String keyProgressionTop = "_pt";
-    private static final String keyProgressionBottom = "_pb";
-    private static final String keyTimeStart = "_ts";
-    private static final String keyTimeEnd = "_te";
-    private static final String keyDuration = "_d";
+    private static final String prefixProgressionTop = "_pt";
+    private static final String prefixProgressionBottom = "_pb";
+    private static final String prefixTimeStart = "_ts";
+    private static final String prefixTimeEnd = "_te";
+    private static final String prefixDuration = "_d";
+    private static final String keyBackgroundIndexes = "bg_i";
 }

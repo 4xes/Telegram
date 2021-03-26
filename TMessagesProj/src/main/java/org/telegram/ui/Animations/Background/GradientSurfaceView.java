@@ -6,6 +6,7 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 
 import org.telegram.ui.Animations.AnimationManager;
+import org.telegram.ui.Animations.AnimationPreferences;
 import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Animations.Background.gradient.GradientColorEvaluator;
 import org.telegram.ui.Animations.Background.gradient.GradientPointsEvaluator;
@@ -17,15 +18,24 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class GradientSurfaceView extends GLTextureView {
 
-    public int[] indexes = Points.startPoints();
+    public int[] indexes;
 
     AnimationType animationType = AnimationType.Background;
     private GradientRenderer gradientRenderer;
 
     boolean scheduleAnimation = false;
+    private AnimationPreferences preferences;
+
+    public GradientSurfaceView(Context context, AnimationPreferences preferences) {
+        super(context);
+        indexes = preferences.getBackgroundIndexes();
+        this.preferences = preferences;
+        init();
+    }
 
     public GradientSurfaceView(Context context) {
         super(context);
+        indexes = Points.startPoints();
         init();
     }
 
@@ -99,6 +109,9 @@ public class GradientSurfaceView extends GLTextureView {
         Points.copyPoints(start, gradientRenderer.points);
         float[][] end = Points.emptyPoints();
         Points.shiftIndexes(indexes);
+        if (preferences != null) {
+            preferences.putBackgroundIndexes(indexes);
+        }
         Points.fillPoints(indexes, end);
 
         if (positionAnimator != null) {

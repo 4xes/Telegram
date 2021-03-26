@@ -148,6 +148,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Adapters.StickersAdapter;
+import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
 import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Cells.BotHelpCell;
@@ -2971,7 +2972,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             contentView.setOccupyStatusBar(false);
         }
 
-        gradientView = new GradientSurfaceView(context);
+        gradientView = new GradientSurfaceView(context, AnimationManager.getPreferences());
         contentView.addView(gradientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         emptyViewContainer = new FrameLayout(context);
