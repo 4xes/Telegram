@@ -13,7 +13,6 @@ import java.util.Locale;
 import java.util.Map;
 
 public class AnimationManager {
-    Map<String, List<AnimationDataListener>> mapDurationListeners = new ArrayMap<>();
 
     AnimationPreferences preferences;
 
@@ -33,19 +32,6 @@ public class AnimationManager {
             }
         }
         return localInstance;
-    }
-
-    public interface AnimationDataListener {
-        void onDurationUpdate(String key, long value);
-    }
-
-    public void notifyDurationListener(String key, long value) {
-        List<AnimationDataListener> listeners = mapDurationListeners.get(key);
-        if (listeners != null) {
-            for (AnimationDataListener listener: listeners) {
-                listener.onDurationUpdate(key, value);
-            }
-        }
     }
 
     public InterpolatorData getInterpolator(AnimationType animationType, Interpolator interpolator) {
@@ -70,37 +56,6 @@ public class AnimationManager {
             key = key(animationType, null);
         }
         preferences.putDuration(key, duration);
-        notifyDurationListener(key, duration);
-    }
-
-    private void addListener(AnimationType animationType, @Nullable Interpolator interpolator, AnimationDataListener listener) {
-        String key;
-        if (animationType == AnimationType.Background) {
-            key = key(animationType, interpolator);
-        } else {
-            key = key(animationType, null);
-        }
-        List<AnimationDataListener> listeners = mapDurationListeners.get(key);
-        if (listeners == null) {
-            listeners = new ArrayList<>();
-            mapDurationListeners.put(key, listeners);
-        }
-        if (!listeners.contains(listener)) {
-            listeners.add(listener);
-        }
-    }
-
-    private void removeListener(AnimationType animationType, @Nullable Interpolator interpolator, AnimationDataListener listener) {
-        String key;
-        if (animationType == AnimationType.Background) {
-            key = key(animationType, interpolator);
-        } else {
-            key = key(animationType, null);
-        }
-        List<AnimationDataListener> listeners = mapDurationListeners.get(key);
-        if (listeners != null) {
-            listeners.remove(listener);
-        }
     }
 
     public static String key(AnimationType type, Interpolator interpolator) {
