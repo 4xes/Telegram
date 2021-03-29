@@ -14,6 +14,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.Cells.ColorSettingsCell;
 import org.telegram.ui.Animations.Cells.GradientSurfaceCell;
 import org.telegram.ui.Animations.Cells.InterpolatorCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -92,8 +93,6 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
         }
     }
 
-    Paint paintBackground;
-
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = null;
@@ -114,13 +113,7 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 view = new InterpolatorCell(context, AnimationManager.getInstance().preferences);
                 break;
             case color_cell:
-                view = new TextSettingsCell(context) {
-                    @Override
-                    protected void onDraw(Canvas canvas) {
-                        super.onDraw(canvas);
-                    }
-                };
-                view.setWillNotDraw(false);
+                view = new ColorSettingsCell(context);
                 break;
             case action_cell:
                 view = new BottomSheet.BottomSheetCell(context, 0);
@@ -151,24 +144,29 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     @Override
     public void onItemClick(View view, int position) {
         if (view instanceof TextSettingsCell) {
-            Interpolator durationInterpolator = getItem(position);
-            activity.createMenu(view, durations, 0, 0, i -> {
-                long newDuration = DURATIONS[i];
-                long duration = AnimationManager.getInstance().getDuration(type, durationInterpolator);
-                if (duration != newDuration) {
-                    AnimationManager.getInstance().setDuration(type, durationInterpolator, DURATIONS[i]);
-                    notifyItemChanged(position);
-                }
-                if (type == AnimationType.Background) {
-                    notifyItemChanged(position + 1);
-                } else {
-                    for (int notifyPos = 0; notifyPos < models.size(); notifyPos++) {
-                        if (models.get(notifyPos).type == interpolator_cell) {
-                            notifyItemChanged(notifyPos);
+            Object item = getItem(position);
+            if (item instanceof Interpolator) {
+                Interpolator durationInterpolator = getItem(position);
+                activity.createMenu(view, durations, 0, 0, i -> {
+                    long newDuration = DURATIONS[i];
+                    long duration = AnimationManager.getInstance().getDuration(type, durationInterpolator);
+                    if (duration != newDuration) {
+                        AnimationManager.getInstance().setDuration(type, durationInterpolator, DURATIONS[i]);
+                        notifyItemChanged(position);
+                    }
+                    if (type == AnimationType.Background) {
+                        notifyItemChanged(position + 1);
+                    } else {
+                        for (int notifyPos = 0; notifyPos < models.size(); notifyPos++) {
+                            if (models.get(notifyPos).type == interpolator_cell) {
+                                notifyItemChanged(notifyPos);
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else if (item instanceof Integer) {
+                //open colorWheel
+            }
         }
         if (view instanceof BottomSheet.BottomSheetCell) {
             activity.presentFragment(new AnimationBackgroundActivity());
@@ -213,9 +211,18 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 shadowSectionCell.setBackgroundDrawable(combinedDrawable);
                 break;
             case action_cell:
+                String text = getItem(position);
                 BottomSheet.BottomSheetCell cell = (BottomSheet.BottomSheetCell) holder.itemView;
                 cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-                cell.setTextAndIcon((String) models.get(position).value, null);
+                cell.setTextAndIcon(text, null);
+                break;
+            case color_cell:
+                Integer index = getItem(position);
+                int color = AnimationManager.getPreferences().getColor(index);
+                ColorSettingsCell colorCell = (ColorSettingsCell) holder.itemView;
+                colorCell.setTextAndValue("Color " + index, "test", false);
+                colorCell.setColor(color);
+                colorCell.setWillNotDraw(false);
                 break;
         }
     }

@@ -2972,7 +2972,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             contentView.setOccupyStatusBar(false);
         }
 
-        gradientView = new GradientSurfaceView(context, AnimationManager.getPreferences());
+        gradientView = new GradientSurfaceView(context, AnimationManager.getPreferences(), true);
         contentView.addView(gradientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         emptyViewContainer = new FrameLayout(context);
@@ -14912,6 +14912,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     hideInfoView();
                     hasFromMe = true;
                 }
+                if (hasFromMe) {
+                    if (gradientView != null) {
+                        gradientView.requestPositionAnimation(Interpolator.SendMsg);
+                    }
+                }
 
                 if (messageId > 0) {
                     maxMessageId[0] = Math.min(messageId, maxMessageId[0]);
@@ -17245,6 +17250,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         checkBotCommands();
         updateTitle();
+
+        if (gradientView != null && startOpenChatAnimation) {
+            gradientView.requestPositionAnimation(Interpolator.OpenChat);
+            startOpenChatAnimation = false;
+        }
     }
 
     @Override

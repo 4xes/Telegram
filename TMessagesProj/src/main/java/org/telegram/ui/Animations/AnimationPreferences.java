@@ -59,16 +59,26 @@ public class AnimationPreferences {
 
     public void putBackgroundIndexes(int[] indexes) {
         sharedPreferences.edit()
-                .putInt(keyBackgroundIndexes + 0, indexes[0])
+                .putInt(keyBackgroundIndexes, indexes[0])
                 .apply();
     }
 
     public int[] getBackgroundIndexes() {
-        int i0 = sharedPreferences.getInt(keyBackgroundIndexes + 0, 0);
+        int i0 = sharedPreferences.getInt(keyBackgroundIndexes, 0);
         int i1 = (i0 + 6) % 8;
         int i2 = (i0 + 4) % 8;
         int i3 = (i0 + 2) % 8;
         return new int[] {i0, i1, i2, i3};
+    }
+
+    public int getColor(int i) {
+        return sharedPreferences.getInt(keyBackgroundColor + i, colorsDefault[i]);
+    }
+
+    public void putColor(int i, int color) {
+        sharedPreferences.edit()
+                .putInt(keyBackgroundColor + i, color)
+                .apply();
     }
 
     public void putDuration(String key,
@@ -86,5 +96,8 @@ public class AnimationPreferences {
     private static final String prefixTimeStart = "_ts";
     private static final String prefixTimeEnd = "_te";
     private static final String prefixDuration = "_d";
-    private static final String keyBackgroundIndexes = "bg_i";
+    private static final String keyBackgroundIndexes = "bg";
+    private static final String keyBackgroundColor = "c";
+
+    private static final int[] colorsDefault = new int[]{0xfffff6bf, 0xff76a076, 0xfff6e477, 0xff316b4d};
 }

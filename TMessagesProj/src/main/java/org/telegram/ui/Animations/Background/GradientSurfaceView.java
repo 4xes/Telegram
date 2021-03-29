@@ -24,12 +24,14 @@ public class GradientSurfaceView extends GLTextureView {
     private GradientRenderer gradientRenderer;
 
     boolean scheduleAnimation = false;
+    private boolean needSaveIndexes;
     private AnimationPreferences preferences;
 
-    public GradientSurfaceView(Context context, AnimationPreferences preferences) {
+    public GradientSurfaceView(Context context, AnimationPreferences preferences, boolean needSaveIndexes) {
         super(context);
         indexes = preferences.getBackgroundIndexes();
         this.preferences = preferences;
+        this.needSaveIndexes = needSaveIndexes;
         init();
     }
 
@@ -101,7 +103,6 @@ public class GradientSurfaceView extends GLTextureView {
         }
     }
 
-
     public Animator.AnimatorListener animatorListener;
 
     private void animatePosition(Interpolator interpolator) {
@@ -109,7 +110,7 @@ public class GradientSurfaceView extends GLTextureView {
         Points.copyPoints(start, gradientRenderer.points);
         float[][] end = Points.emptyPoints();
         Points.shiftIndexes(indexes);
-        if (preferences != null) {
+        if (needSaveIndexes && preferences != null) {
             preferences.putBackgroundIndexes(indexes);
         }
         Points.fillPoints(indexes, end);
