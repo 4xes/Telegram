@@ -141,10 +141,38 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return radialProgress;
     }
 
-    boolean voiceTransitionInPorgress;
-    public void setVoiceTransitionInProgress(boolean b) {
-        voiceTransitionInPorgress = b;
+    private boolean transitionInProgress;
+    public void setTransitionInProgress(boolean b) {
+        transitionInProgress = b;
         invalidate();
+    }
+
+
+    public int getRecordDotRadius() {
+        return AndroidUtilities.dp(3);
+    }
+
+    public int getRecordDotCenterX(int timeAudioX) {
+        return timeAudioX + timeWidthAudio + AndroidUtilities.dp(6);
+    }
+
+    public int getRecordDotColor() {
+        return Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outVoiceSeekbarFill : Theme.key_chat_inVoiceSeekbarFill);
+    }
+
+    public int getRecordDotCenterY() {
+        return AndroidUtilities.dp(51) + namesOffset + mediaOffsetY;
+    }
+
+    public int getVoiceDurationY() {
+        return AndroidUtilities.dp(44) + namesOffset + mediaOffsetY;
+    }
+
+    public int getVoiceOffsetX() {
+        if (transitionParams.animateButton) {
+            return - (this.buttonX - (int) (transitionParams.animateFromButtonX * (1f - transitionParams.animateChangeProgress) + this.buttonX * (transitionParams.animateChangeProgress)));
+        }
+        return 0;
     }
 
     public interface ChatMessageCellDelegate {
@@ -495,13 +523,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private SeekBar seekBar;
     private SeekBarWaveform seekBarWaveform;
     private SeekBarAccessibilityDelegate seekBarAccessibilityDelegate;
-    private int seekBarX;
-    private int seekBarY;
+    public int seekBarX;
+    public int seekBarY;
 
-    private StaticLayout durationLayout;
+    public StaticLayout durationLayout;
     private int lastTime;
-    private int timeWidthAudio;
-    private int timeAudioX;
+    public int timeWidthAudio;
+    public int timeAudioX;
 
     private StaticLayout songLayout;
     private int songX;
@@ -6835,6 +6863,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (currentMessageObject.type != 0) {
                 x -= AndroidUtilities.dp(2);
             }
+            //image coordinates
             photoImage.setImageCoords((float) x, photoImage.getImageY(), photoImage.getImageWidth(), photoImage.getImageHeight());
             buttonX = (int) (x + (photoImage.getImageWidth() - AndroidUtilities.dp(48)) / 2.0f);
             buttonY = (int) (photoImage.getImageY() + (photoImage.getImageHeight() - AndroidUtilities.dp(48)) / 2);
@@ -6853,6 +6882,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public void drawRoundProgress(Canvas canvas) {
+        //image drawing
         rect.set(photoImage.getImageX() + AndroidUtilities.dpf2(1.5f), photoImage.getImageY() + AndroidUtilities.dpf2(1.5f), photoImage.getImageX2() - AndroidUtilities.dpf2(1.5f), photoImage.getImageY2() - AndroidUtilities.dpf2(1.5f));
         canvas.drawArc(rect, -90, 360 * currentMessageObject.audioProgress, false, Theme.chat_radialProgressPaint);
     }
@@ -7538,18 +7568,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 audioVisualizerDrawable.draw(canvas, buttonX + AndroidUtilities.dp(22), buttonY + AndroidUtilities.dp(22), currentMessageObject.isOutOwner());
             }
 
-            if (!voiceTransitionInPorgress) {
+            if (!transitionInProgress) {
                 radialProgress.setBackgroundDrawable(isDrawSelectionBackground() ? currentBackgroundSelectedDrawable : currentBackgroundDrawable);
                 radialProgress.draw(canvas);
             }
 
-            int seekBarX = this.seekBarX;
-            int timeAudioX = this.timeAudioX;
-            if (transitionParams.animateButton) {
-                int offset = this.buttonX - (int) (transitionParams.animateFromButtonX * (1f - transitionParams.animateChangeProgress) + this.buttonX * (transitionParams.animateChangeProgress));
-                seekBarX -= offset;
-                timeAudioX -= offset;
-            }
+            int offsetX = getVoiceOffsetX();
+            int seekBarX = this.seekBarX + offsetX;
+            int timeAudioX = this.timeAudioX + offsetX;
+
             canvas.save();
             if (useSeekBarWaweform) {
                 canvas.translate(seekBarX + AndroidUtilities.dp(13), seekBarY);
@@ -7561,13 +7588,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             canvas.restore();
 
             canvas.save();
-            canvas.translate(timeAudioX, AndroidUtilities.dp(44) + namesOffset + mediaOffsetY);
+            canvas.translate(timeAudioX, getVoiceDurationY());
             durationLayout.draw(canvas);
             canvas.restore();
 
             if (currentMessageObject.type != 0 && currentMessageObject.isContentUnread()) {
-                Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outVoiceSeekbarFill : Theme.key_chat_inVoiceSeekbarFill));
-                canvas.drawCircle(timeAudioX + timeWidthAudio + AndroidUtilities.dp(6), AndroidUtilities.dp(51) + namesOffset + mediaOffsetY, AndroidUtilities.dp(3), Theme.chat_docBackPaint);
+                Theme.chat_docBackPaint.setColor(getRecordDotColor());
+                canvas.drawCircle(getRecordDotCenterX(timeAudioX), getRecordDotCenterY(), getRecordDotRadius(), Theme.chat_docBackPaint);
             }
         }
 
@@ -9860,6 +9887,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             backgroundDrawableLeft -= AndroidUtilities.dp(6);
             backgroundDrawableRight += AndroidUtilities.dp(6);
         }
+
 
         if (hasPsaHint) {
             int x;
@@ -13565,6 +13593,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         public void recordDrawingState() {
             wasDraw = true;
+            //imageX
             lastDrawingImageX = photoImage.getImageX();
             lastDrawingImageY = photoImage.getImageY();
             lastDrawingImageW = photoImage.getImageWidth();

@@ -504,6 +504,7 @@ public class Theme {
                 } else {
                     if (currentType == TYPE_PREVIEW || paintToUse != null || topY + bounds.bottom - smallRad * 2 < currentBackgroundHeight) {
                         path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
+                        //хвост
                         rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
                         path.arcTo(rect, 180, -83, false);
                     } else {

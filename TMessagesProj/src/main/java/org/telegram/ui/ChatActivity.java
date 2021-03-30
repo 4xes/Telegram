@@ -55,7 +55,6 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.SparseArray;
@@ -222,6 +221,7 @@ import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.telegram.ui.Transitions.VoiceMessageEnterTransition;
 
 import java.io.BufferedWriter;
 import java.io.File;

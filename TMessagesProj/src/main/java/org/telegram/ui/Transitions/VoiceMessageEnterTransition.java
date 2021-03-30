@@ -1,23 +1,18 @@
-package org.telegram.ui;
+package org.telegram.ui.Transitions;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.FloatEvaluator;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.graphics.Shader;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.Evaluator.RectEvaluator;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -29,38 +24,41 @@ public class VoiceMessageEnterTransition {
 
     float fromRadius;
 
+    float dotFromRadius;
+
     float progress;
 
     final Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private final ValueAnimator animator;
 
-    private static RectEvaluator messageSizeEvaluator = new RectEvaluator(new Rect());
+    private static RectEvaluator rectEvaluator = new RectEvaluator(new Rect());
+    private static FloatEvaluator floatEvaluator = new FloatEvaluator();
+
+    float dotGetX;
+    float dotGetY;
 
     public VoiceMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
-        fromRadius = chatActivityEnterView.getRecordCircle().drawingCircleRadius;
-
         messageView.setTransitionInProgress(true);
 
         ChatActivityEnterView.RecordCircle recordCircle = chatActivityEnterView.getRecordCircle();
         chatActivityEnterView.startMessageTransition();
+
+        messageView.setVisibility(View.INVISIBLE);
+        fromRadius = recordCircle.drawingCircleRadius;
         recordCircle.voiceEnterTransitionInProgress = true;
         recordCircle.skipDraw = true;
 
         ChatActivityEnterView.RecordDot recordDot = chatActivityEnterView.getRecordDot();
-        recordDot.voiceEnterTransitionInProgress = true;
+        dotFromRadius = recordDot.drawingDotRadius;
         recordDot.skipDraw = true;
+        relativeRect(chatActivityEnterView, recordDot);
 
-        Matrix gradientMatrix = new Matrix();
-        Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        gradientPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+        dotGetX = location[0];
+        dotGetY = location[1];
 
-        LinearGradient gradientShader = new LinearGradient(0, AndroidUtilities.dp(12), 0, 0, 0, 0xFF000000, Shader.TileMode.CLAMP);
-        gradientPaint.setShader(gradientShader);
 
         int messageId = messageView.getMessageObject().stableId;
-
-        Theme.MessageDrawable messageDrawable = messageView.getCurrentBackgroundDrawable();
 
         View view = new View(containerView.getContext()) {
 
@@ -69,77 +67,89 @@ public class VoiceMessageEnterTransition {
 
             Rect enterRect = new Rect();
             Rect messageRect = new Rect();
-
             Rect drawRect = new Rect();
 
-            float xOffset;
-            float yOffset;
-
-            private void calculateBounds() {
-                yOffset = messageView.getY() + listView.getY() - getY();
-                xOffset = messageView.getX() + listView.getX() - getX();
-                if (messageView.getMessageObject().stableId == messageId) {
-                    messageRect.set(
-                            (int) (messageView.getBackgroundDrawableLeft() + xOffset),
-                            (int) (messageView.getBackgroundDrawableTop() + yOffset),
-                            (int) (messageView.getBackgroundDrawableRight() + xOffset),
-                            (int) (messageView.getBackgroundDrawableBottom() + yOffset)
-                    );
-
-                    enterRect.set(
-                            (int) (chatActivityEnterView.getLeft() - getX()),
-                            (int) (chatActivityEnterView.getTop() - getY()),
-                            (int) (chatActivityEnterView.getRight() - getX()),
-                            (int) (chatActivityEnterView.getBottom() - getY()));
-                }
-            }
+            float dotLastToCx;
+            float dotLastToCy;
 
             @Override
             protected void onDraw(Canvas canvas) {
-                calculateBounds();
                 float step1Time = 0.6f;
                 float moveProgress = progress;
                 float hideWavesProgress = progress > step1Time ? 1f : progress / step1Time;
 
+                float progress = CubicBezierInterpolator.DEFAULT.getInterpolation(moveProgress);
+                float xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(moveProgress);
+
                 float fromCx = recordCircle.drawingCx + recordCircle.getX() - getX();
                 float fromCy = recordCircle.drawingCy + recordCircle.getY() - getY();
+
+                float dotFromCx = recordDot.drawingCx + dotGetX + chatActivityEnterView.getX() - getX();
+                float dotFromCy = recordDot.drawingCy + dotGetY + chatActivityEnterView.getY() - getY();
 
                 float toCy;
                 float toCx;
 
+                float dotToCx;
+                float dotToCy;
+
+                enterRect.set(
+                        (int) (chatActivityEnterView.getLeft() - getX()),
+                        (int) (chatActivityEnterView.getTop() - getY()),
+                        (int) (chatActivityEnterView.getRight() - getX()),
+                        (int) (chatActivityEnterView.getBottom() - getY()));
+
                 if (messageView.getMessageObject().stableId != messageId) {
                     toCx = lastToCx;
                     toCy = lastToCy;
+
+                    dotToCx = dotLastToCx;
+                    dotToCy = dotLastToCy;
                 } else {
-                    toCy = messageView.getRadialProgress().getProgressRect().centerY() + yOffset;
-                    toCx = messageView.getRadialProgress().getProgressRect().centerX() + xOffset;
+                    float offsetX = messageView.getX() + listView.getX() - getX();
+                    float offsetY = messageView.getY() + listView.getY() - getY();
+
+                    messageRect.set(
+                            (int) (messageView.getBackgroundDrawableLeft() + offsetX),
+                            (int) (messageView.getBackgroundDrawableTop() + offsetY),
+                            (int) (messageView.getBackgroundDrawableRight() + offsetX),
+                            (int) (messageView.getBackgroundDrawableBottom() + offsetY)
+                    );
+
+                    toCx = messageView.getRadialProgress().getProgressRect().centerX() + offsetX;
+                    toCy = messageView.getRadialProgress().getProgressRect().centerY() + offsetY;
+
+                    int voiceOffset = messageView.getVoiceOffsetX();
+
+                    float timeAudioX = messageView.timeAudioX + voiceOffset;
+
+                    dotToCx = messageView.getRecordDotCenterX((int)timeAudioX) + offsetX;
+                    dotToCy = messageView.getRecordDotCenterY() + offsetY;
                 }
 
                 lastToCx = toCx;
                 lastToCy = toCy;
 
-                float progress = CubicBezierInterpolator.DEFAULT.getInterpolation(moveProgress);
-                float xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(moveProgress);
+                dotLastToCx = dotToCx;
+                dotLastToCy = dotToCy;
 
-                float cx = fromCx * (1f - xProgress) + toCx * xProgress;
-                float cy = fromCy * (1f - progress) + toCy * progress;
+                float cx = floatEvaluator.evaluate(xProgress, fromCx, toCx);
+                float cy = floatEvaluator.evaluate(progress, fromCy, toCy);
 
                 float toRadius = messageView.getRadialProgress().getProgressRect().height() / 2;
-                float radius = fromRadius * (1f - progress) + toRadius * progress;
-
-                float listViewBottom = listView.getY() - getY() + listView.getMeasuredHeight();
-                int clipBottom = 0;
-                if (getMeasuredHeight() > 0) {
-                    clipBottom = (int) (getMeasuredHeight() * (1f - progress) + listViewBottom * progress);
-                    canvas.saveLayerAlpha(0, getMeasuredHeight() - AndroidUtilities.dp(400), getMeasuredWidth(), getMeasuredHeight(), 255, canvas.ALL_SAVE_FLAG);
-                } else {
-                    canvas.save();
-                }
+                float radius = floatEvaluator.evaluate(progress, fromRadius, toRadius);
 
 
+                float dotCx = floatEvaluator.evaluate(xProgress, dotFromCx, dotToCx);
+                float dotCy = floatEvaluator.evaluate(progress, dotFromCy, dotToCy);
 
-                messageSizeEvaluator.evaluate(drawRect, progress, enterRect, messageRect);
+                float dotToRadius = messageView.getRecordDotRadius();
+                float dotRadius = floatEvaluator.evaluate(progress, dotFromRadius, dotToRadius);
 
+
+                rectEvaluator.evaluate(drawRect, progress, enterRect, messageRect);
+
+                Theme.MessageDrawable messageDrawable = Theme.chat_msgOutDrawable;
                 messageDrawable.setBounds(drawRect);
                 messageDrawable.draw(canvas);
 
@@ -147,6 +157,9 @@ public class VoiceMessageEnterTransition {
                 recordCircle.drawWaves(canvas, cx, cy, 1f - hideWavesProgress);
 
                 canvas.drawCircle(cx, cy, radius, circlePaint);
+
+                circlePaint.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_chat_recordedVoiceDot), messageView.getRecordDotColor(), progress));
+                canvas.drawCircle(dotCx, dotCy, dotRadius, circlePaint);
 
                 canvas.save();
 
@@ -159,20 +172,8 @@ public class VoiceMessageEnterTransition {
                 messageView.getRadialProgress().draw(canvas);
                 messageView.getRadialProgress().setDrawBackground(true);
                 messageView.getRadialProgress().setOverrideAlpha(1f);
-
-                int colorDot = Theme.getColor(Theme.key_chat_recordedVoiceDot);
-
-
                 canvas.restore();
 
-                if (getMeasuredHeight() > 0) {
-                    gradientMatrix.setTranslate(0, clipBottom);
-                    gradientShader.setLocalMatrix(gradientMatrix);
-                    canvas.drawRect(0, clipBottom, getMeasuredWidth(), getMeasuredHeight(), gradientPaint);
-                }
-
-                //restore clipRect
-                canvas.restore();
 
                 recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - moveProgress);
 
@@ -202,11 +203,21 @@ public class VoiceMessageEnterTransition {
                 if (view.getParent() != null) {
                     messageView.setTransitionInProgress(false);
                     containerView.removeView(view);
+                    messageView.setVisibility(View.VISIBLE);
                     recordCircle.skipDraw = false;
                     recordDot.skipDraw = false;
                 }
             }
         });
+    }
+    private final int[] location = new int[2];
+    private final int[] locationTemp = new int[2];
+
+    private void relativeRect(View parent, View child) {
+        child.getLocationOnScreen(location);
+        parent.getLocationOnScreen(locationTemp);
+        location[0]-= locationTemp[0];
+        location[1]-= locationTemp[1];
     }
 
     public void start() {

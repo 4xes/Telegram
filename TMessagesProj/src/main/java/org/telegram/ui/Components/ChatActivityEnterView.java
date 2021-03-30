@@ -314,6 +314,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private AnimatorSet emojiButtonAnimation;
     private ImageView audioSendButton;
     private ImageView videoSendButton;
+
+    public FrameLayout getRecordPanel() {
+        return recordPanel;
+    }
+
     private FrameLayout recordPanel;
     private FrameLayout recordedAudioPanel;
     private VideoTimelineView videoTimelineView;
@@ -324,6 +329,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private ImageView recordedAudioPlayButton;
     private TextView recordedAudioTimeTextView;
     private SlideTextView slideText;
+
+    public LinearLayout getRecordTimeContainer() {
+        return recordTimeContainer;
+    }
+
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayout recordTimeContainer;
     private RecordDot recordDot;
@@ -603,7 +613,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     private int notificationsIndex;
 
-    private class RecordDot extends View {
+    public class RecordDot extends View {
 
         private float alpha;
         private long lastUpdateTime;
@@ -612,6 +622,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         boolean playing;
         RLottieDrawable drawable;
         private boolean enterAnimation;
+
+        public boolean skipDraw = false;
+
+        public float drawingCx, drawingCy;
+        public float drawingDotRadius = AndroidUtilities.dp(5);
 
         @Override
         protected void onAttachedToWindow() {
@@ -673,6 +688,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         @Override
         protected void onDraw(Canvas canvas) {
+            if (skipDraw) {
+                return;
+            }
             if (playing) {
                 drawable.setAlpha((int) (255 * alpha));
             }
@@ -701,7 +719,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 drawable.draw(canvas);
             }
             if (!playing || !drawable.hasBitmap()) {
-                canvas.drawCircle(this.getMeasuredWidth() >> 1, this.getMeasuredHeight() >> 1, AndroidUtilities.dp(5), redDotPaint);
+                drawingCx = this.getMeasuredWidth() >> 1;
+                drawingCy = this.getMeasuredHeight() >> 1;
+
+                canvas.drawCircle(drawingCx, drawingCy, drawingDotRadius, redDotPaint);
             }
             invalidate();
         }
@@ -6384,6 +6405,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     @Override
     public void onStickerSelected(TLRPC.Document sticker, String query, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
+        //stricker
         if (isInScheduleMode() && scheduleDate == 0) {
             AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s) -> onStickerSelected(sticker, query, parent, clearsInputField, n, s));
         } else {
@@ -7920,7 +7942,19 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         return true;
     }
 
-    public RecordCircle getRecordCicle() {
+    public RecordCircle getRecordCircle() {
         return recordCircle;
+    }
+
+    public RecordDot getRecordDot() {
+        return recordDot;
+    }
+
+    public TimerView getTimerView() {
+        return recordTimerView;
+    }
+
+    public SlideTextView getSlideText() {
+        return slideText;
     }
 }
