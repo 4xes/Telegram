@@ -2287,6 +2287,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             int inputFieldHeight = 0;
             int lastHeight;
+            int lastHeightNoKeyboard;
 
             ArrayList<ChatMessageCell> drawTimeAfter = new ArrayList<>();
             ArrayList<ChatMessageCell> drawNamesAfter = new ArrayList<>();
@@ -2724,6 +2725,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (lastHeight != allHeight) {
                     measureKeyboardHeight();
                 }
+                if (heightSize > lastHeightNoKeyboard) {
+                    lastHeightNoKeyboard = heightSize;
+                }
                 int keyboardSize = getKeyboardHeight();
                 if (fixedKeyboardHeight > 0 && keyboardSize <= AndroidUtilities.dp(20)) {
                     chatEmojiViewPadding = fixedKeyboardHeight;
@@ -2758,7 +2762,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         child.measure(contentWidthSpec, contentHeightSpec);
                     } else if(child == gradientView) {
                         int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
-                        int contentHeightSpec = MeasureSpec.makeMeasureSpec(heightNoKeyboard - actionBarHeight  - AndroidUtilities.dp(48), MeasureSpec.EXACTLY);
+                        int contentHeightSpec = MeasureSpec.makeMeasureSpec(lastHeightNoKeyboard  - AndroidUtilities.dp(48), MeasureSpec.EXACTLY);
                         child.measure(contentWidthSpec, contentHeightSpec);
                     }
                     else if (child == chatListView) {
@@ -15150,6 +15154,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     removeUnreadPlane(true);
                     hideInfoView();
                     hasFromMe = true;
+
+                    if (gradientView != null) {
+                        gradientView.requestPositionAnimation(Interpolator.SendMsg);
+                    }
                 }
 
                 if (messageId > 0) {

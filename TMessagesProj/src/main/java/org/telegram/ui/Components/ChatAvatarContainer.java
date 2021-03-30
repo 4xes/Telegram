@@ -42,6 +42,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationSettingsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MediaActivity;
 import org.telegram.ui.ProfileActivity;
@@ -221,10 +222,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 if (timeItem != null) {
                     args.putLong("dialog_id", parentFragment.getDialogId());
                 }
-                ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
-                fragment.setUserInfo(parentFragment.getCurrentUserInfo());
-                fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
-                parentFragment.presentFragment(fragment);
+                parentFragment.presentFragment(new AnimationSettingsActivity());
             }
         } else if (chat != null) {
             Bundle args = new Bundle();

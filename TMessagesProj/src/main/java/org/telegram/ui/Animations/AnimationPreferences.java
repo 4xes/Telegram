@@ -3,7 +3,6 @@ package org.telegram.ui.Animations;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import static com.microsoft.appcenter.utils.storage.SharedPreferencesManager.putInt;
 
 public class AnimationPreferences {
     final SharedPreferences sharedPreferences;
