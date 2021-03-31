@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
@@ -18,14 +19,17 @@ import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RecyclerListView;
 
+import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
+
 public class BaseMessageTransition {
 
     float animatorProgress;
     float progress;
     float xProgress;
+    float alphaProgress;
 
-    float offsetX;
-    float offsetY;
+    float messageX;
+    float messageY;
 
     private final ValueAnimator animator;
 
@@ -35,6 +39,8 @@ public class BaseMessageTransition {
     final ChatActivityEnterView enterView;
     final RecyclerListView listView;
     final int messageId;
+
+    Paint messagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public BaseMessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
         this.containerView = containerView;
@@ -46,22 +52,25 @@ public class BaseMessageTransition {
         messageView.setVisibility(View.INVISIBLE);
         messageId = messageView.getMessageObject().stableId;
 
+
         view = new View(containerView.getContext()) {
             @Override
             protected void onDraw(Canvas canvas) {
                 int translateSave = canvas.save();
                 canvas.translate(-getX(), -getY());
                 progress = CubicBezierInterpolator.DEFAULT.getInterpolation(animatorProgress);
+                alphaProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animatorProgress);
                 xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animatorProgress);
 
                 if (messageView.getMessageObject().stableId == messageId) {
-                    offsetX = messageView.getX() + listView.getX();
-                    offsetY = messageView.getY() + listView.getY();
+                    messageX = messageView.getX() + listView.getX();
+                    messageY = messageView.getY() + listView.getY();
                 }
                 animationDraw(canvas);
                 canvas.restoreToCount(translateSave);
             }
         };
+        view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         containerView.addView(view);
 
         animator = ValueAnimator.ofFloat(0f, 1f);
@@ -71,7 +80,7 @@ public class BaseMessageTransition {
         });
 
         animator.setInterpolator(new LinearInterpolator());
-        animator.setDuration(10000);
+        animator.setDuration(15000);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -96,31 +105,45 @@ public class BaseMessageTransition {
         animator.start();
     }
 
-    Rect enterRect = new Rect();
-    Rect messageRect = new Rect();
-    Rect drawRect = new Rect();
+    RectF backgroundRectStart = new RectF();
+    RectF backgroundRectEnd = new RectF();
+    Rect backgroundRect = new Rect();
 
     protected void animateBackground(Canvas canvas) {
-        enterRect.set(
-                (int) (enterView.getLeft()),
-                (int) (enterView.getTop()),
-                (int) (enterView.getRight()),
-                (int) (enterView.getBottom()));
+        backgroundRectStart.set(
+                enterView.getLeft(),
+                enterView.getTop(),
+                enterView.getRight(),
+                enterView.getBottom());
+
+        messageView.updateBackgroundState();
+        Theme.MessageDrawable messageDrawable = messageView.getCurrentBackgroundDrawable();
 
         if (messageView.getMessageObject().stableId == messageId) {
-            messageRect.set(
-                    (int) (messageView.getBackgroundDrawableLeft() + offsetX),
-                    (int) (messageView.getBackgroundDrawableTop() + offsetY),
-                    (int) (messageView.getBackgroundDrawableRight() + offsetX),
-                    (int) (messageView.getBackgroundDrawableBottom() + offsetY)
+            backgroundRectEnd.set(
+                    messageView.getBackgroundDrawableLeft() + messageX,
+                    messageView.getBackgroundDrawableTop() + messageY,
+                    messageView.getBackgroundDrawableRight() + messageX,
+                    messageView.getBackgroundDrawableBottom() + messageY
             );
+            evaluate(backgroundRect, progress, backgroundRectStart, backgroundRectEnd);
         }
+        messageDrawable.setBounds(backgroundRect);
 
-        evaluate(drawRect, progress, enterRect, messageRect);
+        int startColor = Theme.getColor(Theme.key_chat_messagePanelBackground);
+        int endColor = Theme.getColor(key_chat_outBubble);
 
-        Theme.MessageDrawable messageDrawable = Theme.chat_msgOutDrawable;
-        messageDrawable.setBounds(drawRect);
-        messageDrawable.draw(canvas);
+        float hideShadowProgress = 0.4f;
+        if (progress > hideShadowProgress) {
+            messageDrawable.draw(canvas);
+        }
+        messagePaint.setColor(evaluateColor(progress, startColor, endColor));
+        messageDrawable.draw(canvas, messagePaint);
+        canvas.save();
+        float shiftY = backgroundRect.height() - backgroundRectEnd.height();
+        canvas.translate(messageX, backgroundRect.top + shiftY);
+        messageView.drawTime(canvas, 1f * alphaProgress, false);
+        canvas.restore();
     }
 
     protected final int[] location = new int[2];
@@ -138,6 +161,19 @@ public class BaseMessageTransition {
         int top = startValue.top + (int) ((endValue.top - startValue.top) * fraction);
         int right = startValue.right + (int) ((endValue.right - startValue.right) * fraction);
         int bottom = startValue.bottom + (int) ((endValue.bottom - startValue.bottom) * fraction);
+        if (rect == null) {
+            return new Rect(left, top, right, bottom);
+        } else {
+            rect.set(left, top, right, bottom);
+            return rect;
+        }
+    }
+
+    protected Rect evaluate(Rect rect, float fraction, RectF startValue, RectF endValue) {
+        int left = (int) (startValue.left +  ((endValue.left - startValue.left) * fraction));
+        int top = (int) (startValue.top + (int) ((endValue.top - startValue.top) * fraction));
+        int right = (int)(startValue.right + (int) ((endValue.right - startValue.right) * fraction));
+        int bottom = (int)(startValue.bottom + (int) ((endValue.bottom - startValue.bottom) * fraction));
         if (rect == null) {
             return new Rect(left, top, right, bottom);
         } else {

@@ -59,8 +59,8 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
             toCx = lastToCx;
             toCy = lastToCy;
         } else {
-            toCx = messageView.getRadialProgress().getProgressRect().centerX() + offsetX;
-            toCy = messageView.getRadialProgress().getProgressRect().centerY() + offsetY;
+            toCx = messageView.getRadialProgress().getProgressRect().centerX() + messageX;
+            toCy = messageView.getRadialProgress().getProgressRect().centerY() + messageY;
         }
 
         lastToCx = toCx;
@@ -120,8 +120,8 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
             toCx = dotLastToCx;
             toCy = dotLastToCy;
         } else {
-            toCx = messageView.getRecordDotCenterX(messageView.timeAudioX) + offsetX;
-            toCy = messageView.getRecordDotCenterY() + offsetY;
+            toCx = messageView.getRecordDotCenterX(messageView.timeAudioX) + messageX;
+            toCy = messageView.getRecordDotCenterY() + messageY;
         }
 
         dotLastToCx = toCx;
@@ -147,6 +147,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
 
     @Override
     public void animationDraw(Canvas canvas) {
+        super.animationDraw(canvas);
         animateBackground(canvas);
         animateRecordDot(canvas);
         animateRecordCircle(canvas);

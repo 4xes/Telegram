@@ -137,6 +137,8 @@ import java.util.Locale;
 
 public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate, ImageReceiver.ImageReceiverDelegate, DownloadController.FileDownloadProgressListener, TextSelectionHelper.SelectableView {
 
+    private Drawable currentBackgroundShadowDrawable;
+
     public RadialProgress2 getRadialProgress() {
         return radialProgress;
     }
@@ -9739,154 +9741,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
 
-        Drawable currentBackgroundShadowDrawable;
-        int additionalTop = 0;
-        int additionalBottom = 0;
-        boolean forceMediaByGroup = currentPosition != null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 && currentMessagesGroup.isDocuments && !drawPinnedBottom;
-        if (currentMessageObject.isOutOwner()) {
-            if (transitionParams.changePinnedBottomProgress >= 1 && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {
-                currentBackgroundDrawable = Theme.chat_msgOutDrawable;
-                currentBackgroundSelectedDrawable = Theme.chat_msgOutSelectedDrawable;
-                transitionParams.drawPinnedBottomBackground = false;
-            } else {
-                currentBackgroundDrawable = Theme.chat_msgOutMediaDrawable;
-                currentBackgroundSelectedDrawable = Theme.chat_msgOutMediaSelectedDrawable;
-                transitionParams.drawPinnedBottomBackground = true;
-            }
-            setBackgroundTopY();
-            if (isDrawSelectionBackground() && (currentPosition == null || getBackground() != null)) {
-                currentBackgroundShadowDrawable = currentBackgroundSelectedDrawable.getShadowDrawable();
-            } else {
-                currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
-            }
-            backgroundDrawableLeft = layoutWidth - backgroundWidth - (!mediaBackground ? 0 : AndroidUtilities.dp(9));
-            backgroundDrawableRight = backgroundWidth - (mediaBackground ? 0 : AndroidUtilities.dp(3));
-            if (currentMessagesGroup != null && !currentMessagesGroup.isDocuments) {
-                if (!currentPosition.edge) {
-                    backgroundDrawableRight += AndroidUtilities.dp(10);
-                }
-            }
-            int backgroundLeft = backgroundDrawableLeft;
-            if (!forceMediaByGroup && transitionParams.changePinnedBottomProgress != 1) {
-                if (!mediaBackground) {
-                    backgroundDrawableRight -= AndroidUtilities.dp(6);
-                }
-            } else if (!mediaBackground && drawPinnedBottom) {
-                backgroundDrawableRight -= AndroidUtilities.dp(6);
-            }
-
-            if (currentPosition != null) {
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
-                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
-                }
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
-                    backgroundLeft -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
-                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
-                }
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0) {
-                    additionalTop -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
-                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
-                }
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0) {
-                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
-                }
-            }
-            int offsetBottom;
-            if (drawPinnedBottom && drawPinnedTop) {
-                offsetBottom = 0;
-            } else if (drawPinnedBottom) {
-                offsetBottom = AndroidUtilities.dp(1);
-            } else {
-                offsetBottom = AndroidUtilities.dp(2);
-            }
-            backgroundDrawableTop = additionalTop + (drawPinnedTop ? 0 : AndroidUtilities.dp(1));
-            int backgroundHeight = layoutHeight - offsetBottom + additionalBottom;
-            backgroundDrawableBottom = backgroundDrawableTop + backgroundHeight;
-            if (forceMediaByGroup) {
-                setDrawableBoundsInner(currentBackgroundDrawable, backgroundLeft, backgroundDrawableTop - additionalTop, backgroundDrawableRight, backgroundHeight - additionalBottom + 10);
-                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight - AndroidUtilities.dp(6), backgroundHeight);
-            } else {
-                setDrawableBoundsInner(currentBackgroundDrawable, backgroundLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
-                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
-            }
-            setDrawableBoundsInner(currentBackgroundShadowDrawable, backgroundLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
-        } else {
-            if (transitionParams.changePinnedBottomProgress >= 1 && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {
-                currentBackgroundDrawable = Theme.chat_msgInDrawable;
-                currentBackgroundSelectedDrawable = Theme.chat_msgInSelectedDrawable;
-                transitionParams.drawPinnedBottomBackground = false;
-            } else {
-                currentBackgroundDrawable = Theme.chat_msgInMediaDrawable;
-                currentBackgroundSelectedDrawable = Theme.chat_msgInMediaSelectedDrawable;
-                transitionParams.drawPinnedBottomBackground = true;
-            }
-            setBackgroundTopY();
-            if (isDrawSelectionBackground() && (currentPosition == null || getBackground() != null)) {
-                currentBackgroundShadowDrawable = currentBackgroundSelectedDrawable.getShadowDrawable();
-            } else {
-                currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
-            }
-
-            backgroundDrawableLeft = AndroidUtilities.dp((isChat && isAvatarVisible ? 48 : 0) + (!mediaBackground ? 3 : 9));
-            backgroundDrawableRight = backgroundWidth - (mediaBackground ? 0 : AndroidUtilities.dp(3));
-            if (currentMessagesGroup != null && !currentMessagesGroup.isDocuments) {
-                if (!currentPosition.edge) {
-                    backgroundDrawableLeft -= AndroidUtilities.dp(10);
-                    backgroundDrawableRight += AndroidUtilities.dp(10);
-                }
-                if (currentPosition.leftSpanOffset != 0) {
-                    backgroundDrawableLeft += (int) Math.ceil(currentPosition.leftSpanOffset / 1000.0f * getGroupPhotosWidth());
-                }
-            }
-            if ((!mediaBackground && drawPinnedBottom) || !forceMediaByGroup && transitionParams.changePinnedBottomProgress != 1) {
-                if (!(!drawPinnedBottom && mediaBackground)) {
-                    backgroundDrawableRight -= AndroidUtilities.dp(6);
-                }
-                if (!mediaBackground) {
-                    backgroundDrawableLeft += AndroidUtilities.dp(6);
-                }
-
-            }
-            if (currentPosition != null) {
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
-                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
-                }
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
-                    backgroundDrawableLeft -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
-                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
-                }
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0) {
-                    additionalTop -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
-                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
-                }
-                if ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0) {
-                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 4);
-                }
-            }
-            int offsetBottom;
-            if (drawPinnedBottom && drawPinnedTop) {
-                offsetBottom = 0;
-            } else if (drawPinnedBottom) {
-                offsetBottom = AndroidUtilities.dp(1);
-            } else {
-                offsetBottom = AndroidUtilities.dp(2);
-            }
-            backgroundDrawableTop = additionalTop + (drawPinnedTop ? 0 : AndroidUtilities.dp(1));
-            int backgroundHeight = layoutHeight - offsetBottom + additionalBottom;
-            backgroundDrawableBottom = backgroundDrawableTop + backgroundHeight;
-            setDrawableBoundsInner(currentBackgroundDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
-            if (forceMediaByGroup) {
-                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundDrawableLeft + AndroidUtilities.dp(6), backgroundDrawableTop, backgroundDrawableRight - AndroidUtilities.dp(6), backgroundHeight);
-            } else {
-                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
-            }
-            setDrawableBoundsInner(currentBackgroundShadowDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
-        }
-
-        if (!currentMessageObject.isOutOwner() && transitionParams.changePinnedBottomProgress != 1 && !mediaBackground && !drawPinnedBottom) {
-            backgroundDrawableLeft -= AndroidUtilities.dp(6);
-            backgroundDrawableRight += AndroidUtilities.dp(6);
-        }
+        updateBackgroundState();
 
 
         if (hasPsaHint) {
@@ -10247,6 +10102,156 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             canvas.restoreToCount(restore);
         }
         updateSelectionTextPosition();
+    }
+
+    public void updateBackgroundState() {
+        int additionalTop = 0;
+        int additionalBottom = 0;
+        boolean forceMediaByGroup = currentPosition != null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 && currentMessagesGroup.isDocuments && !drawPinnedBottom;
+        if (currentMessageObject.isOutOwner()) {
+            if (transitionParams.changePinnedBottomProgress >= 1 && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {
+                currentBackgroundDrawable = Theme.chat_msgOutDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgOutSelectedDrawable;
+                transitionParams.drawPinnedBottomBackground = false;
+            } else {
+                currentBackgroundDrawable = Theme.chat_msgOutMediaDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgOutMediaSelectedDrawable;
+                transitionParams.drawPinnedBottomBackground = true;
+            }
+            setBackgroundTopY();
+            if (isDrawSelectionBackground() && (currentPosition == null || getBackground() != null)) {
+                currentBackgroundShadowDrawable = currentBackgroundSelectedDrawable.getShadowDrawable();
+            } else {
+                currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
+            }
+            backgroundDrawableLeft = layoutWidth - backgroundWidth - (!mediaBackground ? 0 : AndroidUtilities.dp(9));
+            backgroundDrawableRight = backgroundWidth - (mediaBackground ? 0 : AndroidUtilities.dp(3));
+            if (currentMessagesGroup != null && !currentMessagesGroup.isDocuments) {
+                if (!currentPosition.edge) {
+                    backgroundDrawableRight += AndroidUtilities.dp(10);
+                }
+            }
+            int backgroundLeft = backgroundDrawableLeft;
+            if (!forceMediaByGroup && transitionParams.changePinnedBottomProgress != 1) {
+                if (!mediaBackground) {
+                    backgroundDrawableRight -= AndroidUtilities.dp(6);
+                }
+            } else if (!mediaBackground && drawPinnedBottom) {
+                backgroundDrawableRight -= AndroidUtilities.dp(6);
+            }
+
+            if (currentPosition != null) {
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
+                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
+                }
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
+                    backgroundLeft -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
+                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
+                }
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0) {
+                    additionalTop -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
+                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
+                }
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0) {
+                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
+                }
+            }
+            int offsetBottom;
+            if (drawPinnedBottom && drawPinnedTop) {
+                offsetBottom = 0;
+            } else if (drawPinnedBottom) {
+                offsetBottom = AndroidUtilities.dp(1);
+            } else {
+                offsetBottom = AndroidUtilities.dp(2);
+            }
+            backgroundDrawableTop = additionalTop + (drawPinnedTop ? 0 : AndroidUtilities.dp(1));
+            int backgroundHeight = layoutHeight - offsetBottom + additionalBottom;
+            backgroundDrawableBottom = backgroundDrawableTop + backgroundHeight;
+            if (forceMediaByGroup) {
+                setDrawableBoundsInner(currentBackgroundDrawable, backgroundLeft, backgroundDrawableTop - additionalTop, backgroundDrawableRight, backgroundHeight - additionalBottom + 10);
+                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight - AndroidUtilities.dp(6), backgroundHeight);
+            } else {
+                setDrawableBoundsInner(currentBackgroundDrawable, backgroundLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
+                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
+            }
+            setDrawableBoundsInner(currentBackgroundShadowDrawable, backgroundLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
+        } else {
+            if (transitionParams.changePinnedBottomProgress >= 1 && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {
+                currentBackgroundDrawable = Theme.chat_msgInDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgInSelectedDrawable;
+                transitionParams.drawPinnedBottomBackground = false;
+            } else {
+                currentBackgroundDrawable = Theme.chat_msgInMediaDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgInMediaSelectedDrawable;
+                transitionParams.drawPinnedBottomBackground = true;
+            }
+            setBackgroundTopY();
+            if (isDrawSelectionBackground() && (currentPosition == null || getBackground() != null)) {
+                currentBackgroundShadowDrawable = currentBackgroundSelectedDrawable.getShadowDrawable();
+            } else {
+                currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
+            }
+
+            backgroundDrawableLeft = AndroidUtilities.dp((isChat && isAvatarVisible ? 48 : 0) + (!mediaBackground ? 3 : 9));
+            backgroundDrawableRight = backgroundWidth - (mediaBackground ? 0 : AndroidUtilities.dp(3));
+            if (currentMessagesGroup != null && !currentMessagesGroup.isDocuments) {
+                if (!currentPosition.edge) {
+                    backgroundDrawableLeft -= AndroidUtilities.dp(10);
+                    backgroundDrawableRight += AndroidUtilities.dp(10);
+                }
+                if (currentPosition.leftSpanOffset != 0) {
+                    backgroundDrawableLeft += (int) Math.ceil(currentPosition.leftSpanOffset / 1000.0f * getGroupPhotosWidth());
+                }
+            }
+            if ((!mediaBackground && drawPinnedBottom) || !forceMediaByGroup && transitionParams.changePinnedBottomProgress != 1) {
+                if (!(!drawPinnedBottom && mediaBackground)) {
+                    backgroundDrawableRight -= AndroidUtilities.dp(6);
+                }
+                if (!mediaBackground) {
+                    backgroundDrawableLeft += AndroidUtilities.dp(6);
+                }
+
+            }
+            if (currentPosition != null) {
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
+                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
+                }
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
+                    backgroundDrawableLeft -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
+                    backgroundDrawableRight += AndroidUtilities.dp(SharedConfig.bubbleRadius + 2);
+                }
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0) {
+                    additionalTop -= AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
+                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 3);
+                }
+                if ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0) {
+                    additionalBottom += AndroidUtilities.dp(SharedConfig.bubbleRadius + 4);
+                }
+            }
+            int offsetBottom;
+            if (drawPinnedBottom && drawPinnedTop) {
+                offsetBottom = 0;
+            } else if (drawPinnedBottom) {
+                offsetBottom = AndroidUtilities.dp(1);
+            } else {
+                offsetBottom = AndroidUtilities.dp(2);
+            }
+            backgroundDrawableTop = additionalTop + (drawPinnedTop ? 0 : AndroidUtilities.dp(1));
+            int backgroundHeight = layoutHeight - offsetBottom + additionalBottom;
+            backgroundDrawableBottom = backgroundDrawableTop + backgroundHeight;
+            setDrawableBoundsInner(currentBackgroundDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
+            if (forceMediaByGroup) {
+                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundDrawableLeft + AndroidUtilities.dp(6), backgroundDrawableTop, backgroundDrawableRight - AndroidUtilities.dp(6), backgroundHeight);
+            } else {
+                setDrawableBoundsInner(currentBackgroundSelectedDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
+            }
+            setDrawableBoundsInner(currentBackgroundShadowDrawable, backgroundDrawableLeft, backgroundDrawableTop, backgroundDrawableRight, backgroundHeight);
+        }
+
+        if (!currentMessageObject.isOutOwner() && transitionParams.changePinnedBottomProgress != 1 && !mediaBackground && !drawPinnedBottom) {
+            backgroundDrawableLeft -= AndroidUtilities.dp(6);
+            backgroundDrawableRight += AndroidUtilities.dp(6);
+        }
     }
 
     public void drawOutboundsContent(Canvas canvas) {
