@@ -14,6 +14,8 @@ import android.widget.FrameLayout;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationManager;
+import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -23,9 +25,10 @@ import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
 
 public class BaseMessageTransition {
 
-    float animatorProgress;
     float progress;
+    float yProgress;
     float xProgress;
+    float colorProgress;
     float alphaProgress;
 
     float messageX;
@@ -49,7 +52,7 @@ public class BaseMessageTransition {
         this.listView = listView;
 
         messageView.setTransitionInProgress(true);
-        messageView.setVisibility(View.INVISIBLE);
+        //messageView.setVisibility(View.INVISIBLE);
         messageId = messageView.getMessageObject().stableId;
 
 
@@ -58,9 +61,10 @@ public class BaseMessageTransition {
             protected void onDraw(Canvas canvas) {
                 int translateSave = canvas.save();
                 canvas.translate(-getX(), -getY());
-                progress = CubicBezierInterpolator.DEFAULT.getInterpolation(animatorProgress);
-                alphaProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animatorProgress);
-                xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animatorProgress);
+                yProgress = CubicBezierInterpolator.DEFAULT.getInterpolation(progress);
+                colorProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
+                alphaProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
+                xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
 
                 if (messageView.getMessageObject().stableId == messageId) {
                     messageX = messageView.getX() + listView.getX();
@@ -75,12 +79,14 @@ public class BaseMessageTransition {
 
         animator = ValueAnimator.ofFloat(0f, 1f);
         animator.addUpdateListener(valueAnimator -> {
-            animatorProgress = (float) valueAnimator.getAnimatedValue();
+            progress = (float) valueAnimator.getAnimatedValue();
             view.invalidate();
         });
 
+        long duration = AnimationManager.getInstance().getDuration(AnimationType.Voice, null);
+
         animator.setInterpolator(new LinearInterpolator());
-        animator.setDuration(15000);
+        animator.setDuration(duration);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -126,7 +132,7 @@ public class BaseMessageTransition {
                     messageView.getBackgroundDrawableRight() + messageX,
                     messageView.getBackgroundDrawableBottom() + messageY
             );
-            evaluate(backgroundRect, progress, backgroundRectStart, backgroundRectEnd);
+            evaluate(backgroundRect, yProgress, backgroundRectStart, backgroundRectEnd);
         }
         messageDrawable.setBounds(backgroundRect);
 
@@ -134,10 +140,10 @@ public class BaseMessageTransition {
         int endColor = Theme.getColor(key_chat_outBubble);
 
         float hideShadowProgress = 0.4f;
-        if (progress > hideShadowProgress) {
+        if (yProgress > hideShadowProgress) {
             messageDrawable.draw(canvas);
         }
-        messagePaint.setColor(evaluateColor(progress, startColor, endColor));
+        messagePaint.setColor(evaluateColor(yProgress, startColor, endColor));
         messageDrawable.draw(canvas, messagePaint);
         canvas.save();
         float shiftY = backgroundRect.height() - backgroundRectEnd.height();

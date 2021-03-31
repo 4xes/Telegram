@@ -7530,7 +7530,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
 
             canvas.save();
-            canvas.translate(timeAudioX, AndroidUtilities.dp(57) + namesOffset + mediaOffsetY);
+            canvas.translate(timeAudioX, getVoiceDurationY());
             durationLayout.draw(canvas);
             canvas.restore();
 

@@ -811,7 +811,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         public float drawingCx, drawingCy, drawingCircleRadius;
 
-        public boolean voiceEnterTransitionInProgress;
+        public boolean transitionInProgress;
         public boolean skipDraw;
 
         public RecordCircle(Context context) {
@@ -1171,7 +1171,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         wavesEnterAnimation = 1f;
                     }
                 }
-                if (!voiceEnterTransitionInProgress) {
+                if (!transitionInProgress) {
                     float enter = CubicBezierInterpolator.EASE_OUT.getInterpolation(wavesEnterAnimation);
                     canvas.save();
                     float s = scale * (1f - progressToSeekbarStep1) * slideToCancelProgress1 * enter * (BlobDrawable.SCALE_BIG_MIN + 1.4f * bigWaveDrawable.amplitude);
@@ -1187,7 +1187,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
 
 
-            if (!voiceEnterTransitionInProgress) {
+            if (!transitionInProgress) {
                 paint.setAlpha((int) (paintAlpha * circleAlpha));
                 if (this.scale == 1f) {
                     if (transformToSeekbar != 0) {
@@ -4726,7 +4726,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             AndroidUtilities.cancelRunOnUIThread(moveToSendStateRunnable);
             moveToSendStateRunnable = null;
         }
-        recordCircle.voiceEnterTransitionInProgress = false;
+        recordCircle.transitionInProgress = false;
+        slideText.transitionInProgress = false;
+        recordTimerView.transitionInProgress = false;
+
         if (recordingAudioVideo) {
             if (recordInterfaceState == 1) {
                 return;
@@ -7466,7 +7469,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     }
 
-    private class SlideTextView extends View {
+    public class SlideTextView extends View {
 
         TextPaint grayPaint;
         TextPaint bluePaint;
@@ -7499,6 +7502,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         private Rect cancelRect = new Rect();
 
         Drawable selectableBackground;
+
+        public boolean skipDraw = false;
+        public boolean transitionInProgress = false;
+
+        public float transitionAlpha = 1f;
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
@@ -7624,33 +7632,39 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         @Override
         protected void onDraw(Canvas canvas) {
+            if (skipDraw) {
+                return;
+            }
             if (slideToLayout == null || cancelLayout == null) {
                 return;
             }
             int w = cancelLayout.getWidth() + AndroidUtilities.dp(16);
 
             grayPaint.setColor(Theme.getColor(Theme.key_chat_recordTime));
-            grayPaint.setAlpha((int) (slideToAlpha * (1f - cancelToProgress) * slideProgress));
+            int alpha = (int) (slideToAlpha * (1f - cancelToProgress) * slideProgress * (transitionInProgress? transitionAlpha : 1f));
+            grayPaint.setAlpha(alpha);
             bluePaint.setAlpha((int) (cancelAlpha * cancelToProgress));
             arrowPaint.setColor(grayPaint.getColor());
 
             if (smallSize) {
                 xOffset = AndroidUtilities.dp(16);
             } else {
-                long dt = (System.currentTimeMillis() - lastUpdateTime);
-                lastUpdateTime = System.currentTimeMillis();
-                if (cancelToProgress == 0 && slideProgress > 0.8f) {
-                    if (moveForward) {
-                        xOffset += (AndroidUtilities.dp(3) / 250f) * dt;
-                        if (xOffset > AndroidUtilities.dp(6)) {
-                            xOffset = AndroidUtilities.dp(6);
-                            moveForward = false;
-                        }
-                    } else {
-                        xOffset -= (AndroidUtilities.dp(3) / 250f) * dt;
-                        if (xOffset < -AndroidUtilities.dp(6)) {
-                            xOffset = -AndroidUtilities.dp(6);
-                            moveForward = true;
+                if (!transitionInProgress) {
+                    long dt = (System.currentTimeMillis() - lastUpdateTime);
+                    lastUpdateTime = System.currentTimeMillis();
+                    if (cancelToProgress == 0 && slideProgress > 0.8f) {
+                        if (moveForward) {
+                            xOffset += (AndroidUtilities.dp(3) / 250f) * dt;
+                            if (xOffset > AndroidUtilities.dp(6)) {
+                                xOffset = AndroidUtilities.dp(6);
+                                moveForward = false;
+                            }
+                        } else {
+                            xOffset -= (AndroidUtilities.dp(3) / 250f) * dt;
+                            if (xOffset < -AndroidUtilities.dp(6)) {
+                                xOffset = -AndroidUtilities.dp(6);
+                                moveForward = true;
+                            }
                         }
                     }
                 }
@@ -7662,7 +7676,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             int cancelX = (int) ((getMeasuredWidth() - cancelWidth) / 2);
             float offset = enableTransition ? slideToLayout.getPrimaryHorizontal(cancelCharOffset) : 0;
             float cancelDiff = enableTransition ? slideX + offset - cancelX : 0;
-            float x = slideX + xOffset * (1f - cancelToProgress) * slideProgress - cancelDiff * cancelToProgress + AndroidUtilities.dp(16);
+            float x = slideX + xOffset * (1f - 0.5f) * slideProgress - cancelDiff * 0.5f + AndroidUtilities.dp(16);
 
             float offsetY = enableTransition ? 0 : cancelToProgress * AndroidUtilities.dp(12);
 
@@ -7741,15 +7755,19 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         SpannableStringBuilder replaceOut = new SpannableStringBuilder();
         SpannableStringBuilder replaceStable = new SpannableStringBuilder();
 
+        StaticLayout cacheLayout;
         StaticLayout inLayout;
         StaticLayout outLayout;
 
-        float replaceTransition;
+        public float replaceTransition;
 
         final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         final float replaceDistance = AndroidUtilities.dp(15);
         float left;
 
+        public boolean transitionInProgress = false;
+        public float overrideY;
+        public boolean isOverrideY;
 
         public TimerView(Context context) {
             super(context);
@@ -7776,13 +7794,51 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             lastSendTypingTime = 0;
         }
 
+        public String getTimeString() {
+            long currentTimeMillis = System.currentTimeMillis();
+            long t = (!transitionInProgress && isRunning) ? (currentTimeMillis - startTime) : stopTime - startTime;
+            long time = t / 1000;
+            int ms = (int) (t % 1000L) / 10;
+
+            String newString;
+            if (time / 60 >= 60) {
+                newString = String.format(Locale.US, "%01d:%02d:%02d,%d", (time / 60) / 60, (time / 60) % 60, time % 60, ms / 10);
+            } else {
+                newString = String.format(Locale.US, "%01d:%02d,%d", time / 60, time % 60, ms / 10);
+            }
+            return newString;
+        }
+
+        public TextPaint getTextPaint() {
+            return textPaint;
+        }
+
         @SuppressLint("DrawAllocation")
         @Override
         protected void onDraw(Canvas canvas) {
+            String newString = getTimeString();
+            drawText(canvas, newString, textPaint);
+        }
+
+        public void drawText(Canvas canvas, String newString, TextPaint textPaint) {
             long currentTimeMillis = System.currentTimeMillis();
-            long t = isRunning ? (currentTimeMillis - startTime) : stopTime - startTime;
-            long time = t / 1000;
-            int ms = (int) (t % 1000L) / 10;
+            long t = (!transitionInProgress && isRunning) ? (currentTimeMillis - startTime) : stopTime - startTime;
+
+            if (transitionInProgress) {
+                float x = 0;
+                float y = getTextY();
+                if ((replaceTransition == 0f && newString.equals(oldString))) {
+                    if (cacheLayout == null || cacheLayout.getPaint() != textPaint) {
+                        cacheLayout = new StaticLayout(oldString, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    }
+                    canvas.save();
+                    canvas.translate(x, isOverrideY? overrideY : y - cacheLayout.getHeight() / 2f);
+                    cacheLayout.draw(canvas);
+                    canvas.restore();
+                    left = x + cacheLayout.getLineWidth(0);
+                    return;
+                }
+            }
 
             if (videoSendButton != null && videoSendButton.getTag() != null) {
                 if (t >= 59500 && !stoppedInternal) {
@@ -7792,17 +7848,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             }
 
-            if (isRunning && currentTimeMillis > lastSendTypingTime + 5000) {
+            if ((!transitionInProgress && isRunning) && currentTimeMillis > lastSendTypingTime + 5000) {
                 lastSendTypingTime = currentTimeMillis;
                 MessagesController.getInstance(currentAccount).sendTyping(dialog_id, getThreadMessageId(), videoSendButton != null && videoSendButton.getTag() != null ? 7 : 1, 0);
             }
 
-            String newString;
-            if (time / 60 >= 60) {
-                newString = String.format(Locale.US, "%01d:%02d:%02d,%d", (time / 60) / 60, (time / 60) % 60, time % 60, ms / 10);
-            } else {
-                newString = String.format(Locale.US, "%01d:%02d,%d", time / 60, time % 60, ms / 10);
-            }
             if (newString.length() >= 3 && oldString != null && oldString.length() >= 3 && newString.length() == oldString.length() && newString.charAt(newString.length() - 3) != oldString.charAt(newString.length() - 3)) {
                 int n = newString.length();
 
@@ -7879,14 +7929,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             }
 
-            float y = getMeasuredHeight() / 2;
             float x = 0;
+            float y = getTextY();
 
             if (replaceTransition == 0) {
                 replaceStable.clearSpans();
                 StaticLayout staticLayout = new StaticLayout(replaceStable, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 canvas.save();
-                canvas.translate(x, y - staticLayout.getHeight() / 2f);
+                canvas.translate(x, isOverrideY? overrideY : y - staticLayout.getHeight() / 2f);
                 staticLayout.draw(canvas);
                 canvas.restore();
                 left = x + staticLayout.getLineWidth(0);
@@ -7894,7 +7944,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (inLayout != null) {
                     canvas.save();
                     textPaint.setAlpha((int) (255 * (1f - replaceTransition)));
-                    canvas.translate(x, y - inLayout.getHeight() / 2f - (replaceDistance * replaceTransition));
+                    canvas.translate(x, (isOverrideY? overrideY : y - inLayout.getHeight() / 2f) - (replaceDistance * replaceTransition));
                     inLayout.draw(canvas);
                     canvas.restore();
                 }
@@ -7902,7 +7952,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (outLayout != null) {
                     canvas.save();
                     textPaint.setAlpha((int) (255 * replaceTransition));
-                    canvas.translate(x, y - outLayout.getHeight() / 2f + (replaceDistance * (1f - replaceTransition)));
+                    canvas.translate(x, (isOverrideY? overrideY : y - outLayout.getHeight() / 2f) + (replaceDistance * (1f - replaceTransition)));
                     outLayout.draw(canvas);
                     canvas.restore();
                 }
@@ -7910,7 +7960,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 canvas.save();
                 textPaint.setAlpha(255);
                 StaticLayout staticLayout = new StaticLayout(replaceStable, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                canvas.translate(x, y - staticLayout.getHeight() / 2f);
+                canvas.translate(x, (isOverrideY? overrideY : y - staticLayout.getHeight() / 2f));
                 staticLayout.draw(canvas);
                 canvas.restore();
                 left = x + staticLayout.getLineWidth(0);
@@ -7923,8 +7973,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         }
 
+        public int getTextY() {
+            return getMeasuredHeight() / 2;
+        }
+
         public void updateColors() {
-            textPaint.setColor(Theme.getColor(Theme.key_chat_recordTime));
+            textPaint.setColor(Theme.getColor(getTextColorKey()));
+        }
+
+        public String getTextColorKey() {
+            return Theme.key_chat_recordTime;
         }
 
         public float getLeftProperty() {
