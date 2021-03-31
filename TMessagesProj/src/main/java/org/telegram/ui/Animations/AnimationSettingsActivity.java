@@ -165,14 +165,11 @@ public class AnimationSettingsActivity extends BaseFragment {
         }
         actionBar.addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.START | Gravity.BOTTOM));
 
-        adapters = new AnimationPageAdapter[]{
-                new AnimationPageAdapter(context, AnimationType.Background, this),
-                new AnimationPageAdapter(context, AnimationType.ShortText, this),
-                new AnimationPageAdapter(context, AnimationType.ShortText, this),
-                new AnimationPageAdapter(context, AnimationType.Emoji, this),
-                new AnimationPageAdapter(context, AnimationType.Voice, this),
-                new AnimationPageAdapter(context, AnimationType.Video, this)
-        };
+        AnimationType[] types = AnimationType.values();
+        adapters = new AnimationPageAdapter[types.length];
+        for (int i = 0; i < types.length; i++) {
+            adapters[i] = new AnimationPageAdapter(context, types[i], this);
+        }
 
         scrollSlidingTextTabStrip.setDelegate(new ScrollSlidingTextTabStrip.ScrollSlidingTabStripDelegate() {
             @Override

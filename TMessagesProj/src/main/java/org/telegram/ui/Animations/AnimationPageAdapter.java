@@ -145,28 +145,29 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     public void onItemClick(View view, int position) {
         if (view instanceof TextSettingsCell) {
             Object item = getItem(position);
+            Interpolator durationInterpolator;
             if (item instanceof Interpolator) {
-                Interpolator durationInterpolator = getItem(position);
-                activity.createMenu(view, durations, 0, 0, i -> {
-                    long newDuration = DURATIONS[i];
-                    long duration = AnimationManager.getInstance().getDuration(type, durationInterpolator);
-                    if (duration != newDuration) {
-                        AnimationManager.getInstance().setDuration(type, durationInterpolator, DURATIONS[i]);
-                        notifyItemChanged(position);
-                    }
-                    if (type == AnimationType.Background) {
-                        notifyItemChanged(position + 1);
-                    } else {
-                        for (int notifyPos = 0; notifyPos < models.size(); notifyPos++) {
-                            if (models.get(notifyPos).type == interpolator_cell) {
-                                notifyItemChanged(notifyPos);
-                            }
+                durationInterpolator = (Interpolator) item;
+            } else {
+                durationInterpolator = null;
+            }
+            activity.createMenu(view, durations, 0, 0, i -> {
+                long newDuration = DURATIONS[i];
+                long duration = AnimationManager.getInstance().getDuration(type, durationInterpolator);
+                if (duration != newDuration) {
+                    AnimationManager.getInstance().setDuration(type, durationInterpolator, DURATIONS[i]);
+                    notifyItemChanged(position);
+                }
+                if (type == AnimationType.Background) {
+                    notifyItemChanged(position + 1);
+                } else {
+                    for (int notifyPos = 0; notifyPos < models.size(); notifyPos++) {
+                        if (models.get(notifyPos).type == interpolator_cell) {
+                            notifyItemChanged(notifyPos);
                         }
                     }
-                });
-            } else if (item instanceof Integer) {
-                //open colorWheel
-            }
+                }
+            });
         }
         if (view instanceof BottomSheet.BottomSheetCell) {
             activity.presentFragment(new AnimationBackgroundActivity());
@@ -247,7 +248,7 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     }
 
     private static final long[] DURATIONS = new long[] {
-            200L, 300L, 400L, 500L, 600L, 700, 800L, 900L, 1000L, 1500L, 2000L, 3000L
+            200L, 300L, 400L, 500L, 600L, 700, 800L, 900L, 1000L, 1500L, 2000L, 3000L, 10000L, 15000L
     };
 
     private static final ArrayList<CharSequence> durations = new ArrayList<>();
