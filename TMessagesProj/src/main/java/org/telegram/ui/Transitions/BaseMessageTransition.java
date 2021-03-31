@@ -52,7 +52,7 @@ public class BaseMessageTransition {
         this.listView = listView;
 
         messageView.setTransitionInProgress(true);
-        //messageView.setVisibility(View.INVISIBLE);
+        messageView.setVisibility(View.INVISIBLE);
         messageId = messageView.getMessageObject().stableId;
 
 
@@ -115,15 +115,18 @@ public class BaseMessageTransition {
     RectF backgroundRectEnd = new RectF();
     Rect backgroundRect = new Rect();
 
+    float backgroundScaleX;
+    float backgroundScaleY;
+    float shiftY;
+    float shiftX;
     protected void animateBackground(Canvas canvas) {
+        messageView.updateBackgroundState();
+
         backgroundRectStart.set(
                 enterView.getLeft(),
                 enterView.getTop(),
                 enterView.getRight(),
                 enterView.getBottom());
-
-        messageView.updateBackgroundState();
-        Theme.MessageDrawable messageDrawable = messageView.getCurrentBackgroundDrawable();
 
         if (messageView.getMessageObject().stableId == messageId) {
             backgroundRectEnd.set(
@@ -134,6 +137,12 @@ public class BaseMessageTransition {
             );
             evaluate(backgroundRect, yProgress, backgroundRectStart, backgroundRectEnd);
         }
+
+
+        backgroundScaleX = backgroundRectEnd.width() / backgroundRect.width();
+        backgroundScaleY = backgroundRectEnd.height() / backgroundRect.height();
+
+        Theme.MessageDrawable messageDrawable = messageView.getCurrentBackgroundDrawable();
         messageDrawable.setBounds(backgroundRect);
 
         int startColor = Theme.getColor(Theme.key_chat_messagePanelBackground);
@@ -145,8 +154,24 @@ public class BaseMessageTransition {
         }
         messagePaint.setColor(evaluateColor(yProgress, startColor, endColor));
         messageDrawable.draw(canvas, messagePaint);
+
+//        messagePaint.setColor(0x50ff00ff);
+//        canvas.drawRect(
+//                messageView.getLeft() + messageX - messageView.getX(),
+//                messageView.getTop() + messageY - messageView.getY(),
+//                messageView.getRight() + messageX - messageView.getX(),
+//                messageView.getBottom()+ messageY - messageView.getY(),
+//                messagePaint
+//        );
+//
+//        canvas.drawRect(
+//                backgroundRect,
+//                messagePaint
+//        );
+
         canvas.save();
-        float shiftY = backgroundRect.height() - backgroundRectEnd.height();
+        shiftY = (backgroundRect.height() - backgroundRectEnd.height());
+        shiftX = (backgroundRect.width() - backgroundRectEnd.width());
         canvas.translate(messageX, backgroundRect.top + shiftY);
         messageView.drawTime(canvas, 1f * alphaProgress, false);
         canvas.restore();

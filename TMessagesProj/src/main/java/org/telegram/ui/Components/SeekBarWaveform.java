@@ -14,6 +14,8 @@ import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 
@@ -161,6 +163,16 @@ public class SeekBarWaveform {
         height = h;
     }
 
+    public int getHeight() {
+        return height;
+    }
+
+
+    float overrideAlpha = 1f;
+    public void setOverrideAlpha(float alpha) {
+        overrideAlpha = alpha;
+    }
+
     public void draw(Canvas canvas, View parentView) {
         if (waveformBytes == null || width == 0) {
             return;
@@ -179,6 +191,9 @@ public class SeekBarWaveform {
         paintInner.setColor(isUnread ? outerColor : (selected ? selectedColor : innerColor));
         paintOuter.setColor(outerColor);
 
+        paintInner.setAlpha((int) (255f * overrideAlpha));
+        paintOuter.setAlpha((int) (255f * overrideAlpha));
+
         int y = (height - AndroidUtilities.dp(14)) / 2;
         int barNum = 0;
         int lastBarNum;
@@ -189,7 +204,9 @@ public class SeekBarWaveform {
             if (clearProgress > 1f) {
                 clearProgress = 1f;
             } else {
-                parentView.invalidate();
+                if (parentView != null) {
+                    parentView.invalidate();
+                }
             }
         }
 

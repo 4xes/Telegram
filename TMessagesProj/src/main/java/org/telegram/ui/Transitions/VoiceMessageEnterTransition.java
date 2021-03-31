@@ -215,7 +215,19 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
     }
 
     public void animateWave(Canvas canvas) {
+        messageView.updatePaintState();
+        int waveFormX = messageView.seekBarX + messageView.getVoiceOffsetX() + AndroidUtilities.dp(13);
+        int waveFormY = messageView.seekBarY;
 
+        float offset = (messageView.getSeekBarWaveform().getHeight() / 2f) * reverse(progress);
+        int scaleSave = canvas.save();
+        canvas.translate(messageX, backgroundRect.top - offset );
+        canvas.translate(waveFormX * backgroundScaleX, waveFormY * backgroundScaleX);
+        canvas.scale(1f / backgroundScaleX, 1f /  backgroundScaleX);
+        messageView.getSeekBarWaveform().setOverrideAlpha(alphaProgress);
+        messageView.getSeekBarWaveform().draw(canvas, null);
+        messageView.getSeekBarWaveform().setOverrideAlpha(1f);
+        canvas.restoreToCount(scaleSave);
     }
 
     float timeLastToX;
@@ -239,14 +251,11 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         timeLastToX = toX;
         timeLastToY = toY;
 
-        chat_radialProgressPaint.setColor(Color.BLUE);
-        canvas.drawCircle(toX, toY, 1f, Theme.chat_radialProgressPaint);
-
         TextPaint timerPaint = timerView.getTextPaint();
 
 
-        float x = evaluate(xProgress, fromX, toX);
-        float y = evaluate(yProgress, fromY, toY);
+        int x = (int) Math.ceil(evaluate(xProgress, fromX, toX));
+        int y = (int) Math.ceil(evaluate(yProgress, fromY, toY));
 
         float textSize = evaluate(yProgress, fromTimeSize, toTimeSize);
 
@@ -287,7 +296,8 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
     @Override
     public void animationDraw(Canvas canvas) {
         super.animationDraw(canvas);
-        //animateBackground(canvas);
+        animateBackground(canvas);
+        animateWave(canvas);
         animateSlide(canvas);
         animateTime(canvas);
         animateRecordDot(canvas);

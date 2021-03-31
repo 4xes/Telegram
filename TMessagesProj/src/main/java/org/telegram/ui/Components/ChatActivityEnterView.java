@@ -7832,7 +7832,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         cacheLayout = new StaticLayout(oldString, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     }
                     canvas.save();
-                    canvas.translate(x, isOverrideY? overrideY : y - cacheLayout.getHeight() / 2f);
+                    canvas.translate(x, isOverrideY? overrideY : (y - cacheLayout.getHeight() / 2f));
                     cacheLayout.draw(canvas);
                     canvas.restore();
                     left = x + cacheLayout.getLineWidth(0);
