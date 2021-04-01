@@ -7802,9 +7802,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             String newString;
             if (time / 60 >= 60) {
-                newString = String.format(Locale.US, "%01d:%02d:%02d,%d", (time / 60) / 60, (time / 60) % 60, time % 60, ms / 10);
+                newString = String.format(Locale.US, "%02d:%02d:%02d,%d", (time / 60) / 60, (time / 60) % 60, time % 60, ms / 10);
             } else {
-                newString = String.format(Locale.US, "%01d:%02d,%d", time / 60, time % 60, ms / 10);
+                newString = String.format(Locale.US, "%02d:%02d,%d", time / 60, time % 60, ms / 10);
             }
             return newString;
         }
@@ -7817,7 +7817,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         @Override
         protected void onDraw(Canvas canvas) {
             String newString = getTimeString();
-            drawText(canvas, newString, textPaint);
+            drawText(canvas, newString.substring(0, newString.length() - 2), textPaint);
         }
 
         public void drawText(Canvas canvas, String newString, TextPaint textPaint) {

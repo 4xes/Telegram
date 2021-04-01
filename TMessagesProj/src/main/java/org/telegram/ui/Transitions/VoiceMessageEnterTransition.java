@@ -41,11 +41,11 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
     final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     final float fromTimeSize = AndroidUtilities.dp(15);
     final float toTimeSize = AndroidUtilities.dp(12);
-    final String time;
-    final String seconds;
-    final StaticLayout msLayout;
-    final StaticLayout zeroLayout;
+    final String timerEnd;
+    final String durationTime;
     final float timeOffsetY;
+    final StaticLayout msLayout;
+    float measureSeconds;
 
     public VoiceMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
         super(containerView, messageView, chatActivityEnterView, listView);
@@ -69,17 +69,13 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         timerView = chatActivityEnterView.getTimerView();
         textPaint.setTextSize(fromTimeSize);
         timerView.transitionInProgress = true;
-        time = timerView.getTimeString();
+        timerEnd = timerView.getTimeString();
         timerView.transitionInProgress = false;
-        seconds = time.substring(0, time.length() - 2);
-        String ms = time.substring(seconds.length());
+        durationTime = messageView.durationLayout.getText().toString();
+        String ms = timerEnd.substring(timerEnd.length() - 2);
         msLayout = new StaticLayout(ms, timerView.getTextPaint(), timerView.getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         timeOffsetY = (timerView.getHeight() - msLayout.getHeight()) / 2f;
-        if (seconds.length() < messageView.durationLayout.getText().length()) {
-            zeroLayout = new StaticLayout("0", textPaint, messageView.durationLayout.getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-        } else {
-            zeroLayout = null;
-        }
+        measureSeconds = timerView.getTextPaint().measureText(timerEnd, 0, 4);
 
         location(chatActivityEnterView, recordDot);
         dotGetX = location[0];
@@ -254,15 +250,12 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         TextPaint timerPaint = timerView.getTextPaint();
 
 
-        int x = (int) Math.ceil(evaluate(xProgress, fromX, toX));
-        int y = (int) Math.ceil(evaluate(yProgress, fromY, toY));
+        float x = evaluate(xProgress, fromX, toX);
+        float y = evaluate(yProgress, fromY, toY);
 
-        float textSize = evaluate(yProgress, fromTimeSize, toTimeSize);
-
+        float textSize = (int) Math.ceil(evaluate(yProgress, fromTimeSize, toTimeSize));
 
         timerView.transitionInProgress = true;
-
-        float measureSeconds = timerPaint.measureText(time, 0, 4);
 
         int hideAlpha = (int) (255 * reverse2x(alphaProgress));
         if (hideAlpha > 0) {
@@ -281,13 +274,9 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         canvas.translate(x, y);
         textPaint.setTextSize(textSize);
         textPaint.setColor(color);
-        if (zeroLayout != null) {
-            zeroLayout.draw(canvas);
-            canvas.translate(textPaint.measureText("0"), 0);
-        }
         timerView.overrideY = 0f;
         timerView.isOverrideY = true;
-        timerView.drawText(canvas, seconds, textPaint);
+        timerView.drawText(canvas, durationTime, textPaint);
         timerView.isOverrideY = false;
         timerView.transitionInProgress = false;
         canvas.restoreToCount(secondsSave);

@@ -127,6 +127,8 @@ import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.SecretMediaViewer;
+import org.telegram.ui.Transitions.BaseMessageTransition;
+import org.telegram.ui.Transitions.VoiceMessageEnterTransition;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -143,12 +145,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return radialProgress;
     }
 
-    private boolean transitionInProgress;
-    public void setTransitionInProgress(boolean b) {
-        transitionInProgress = b;
-        invalidate();
+    private BaseMessageTransition enterTransition;
+
+    public BaseMessageTransition getEnterTransition() {
+        return enterTransition;
     }
 
+    public void setEnterTransition(BaseMessageTransition enterTransition) {
+        this.enterTransition = enterTransition;
+    }
 
     public int getRecordDotRadius() {
         return AndroidUtilities.dp(3);
@@ -7574,10 +7579,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 audioVisualizerDrawable.draw(canvas, buttonX + AndroidUtilities.dp(22), buttonY + AndroidUtilities.dp(22), currentMessageObject.isOutOwner());
             }
 
-            if (!transitionInProgress) {
-                radialProgress.setBackgroundDrawable(isDrawSelectionBackground() ? currentBackgroundSelectedDrawable : currentBackgroundDrawable);
-                radialProgress.draw(canvas);
-            }
+            radialProgress.setBackgroundDrawable(isDrawSelectionBackground() ? currentBackgroundSelectedDrawable : currentBackgroundDrawable);
+            radialProgress.draw(canvas);
 
             int offsetX = getVoiceOffsetX();
             int seekBarX = this.seekBarX + offsetX;

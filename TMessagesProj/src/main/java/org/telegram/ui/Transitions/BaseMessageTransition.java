@@ -50,10 +50,9 @@ public class BaseMessageTransition {
         this.messageView = messageView;
         this.enterView = chatActivityEnterView;
         this.listView = listView;
-
-        messageView.setTransitionInProgress(true);
-        messageView.setVisibility(View.INVISIBLE);
         messageId = messageView.getMessageObject().stableId;
+        messageView.setEnterTransition(this);
+        messageView.setVisibility(View.INVISIBLE);
 
 
         view = new View(containerView.getContext()) {
@@ -79,8 +78,12 @@ public class BaseMessageTransition {
 
         animator = ValueAnimator.ofFloat(0f, 1f);
         animator.addUpdateListener(valueAnimator -> {
-            progress = (float) valueAnimator.getAnimatedValue();
-            view.invalidate();
+            if (messageView.getMessageObject().stableId != messageId) {
+                stop();
+            } else {
+                progress = (float) valueAnimator.getAnimatedValue();
+                view.invalidate();
+            }
         });
 
         long duration = AnimationManager.getInstance().getDuration(AnimationType.Voice, null);
@@ -101,9 +104,18 @@ public class BaseMessageTransition {
 
     }
 
+    public void stop() {
+        if (animator.isRunning()) {
+            animator.cancel();
+        }
+        release();
+    }
+
     public void release() {
-        messageView.setTransitionInProgress(false);
-        messageView.setVisibility(View.VISIBLE);
+        if (messageView.getEnterTransition() == this) {
+            messageView.setEnterTransition(null);
+            messageView.setVisibility(View.VISIBLE);
+        }
         containerView.removeView(view);
     }
 
