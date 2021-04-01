@@ -194,7 +194,7 @@ public class MessageObject {
     };
 
     public boolean isSupportAnimation() {
-        if (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || type == 0) {
+        if (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || type == 0 || isAnimatedSticker() || isAnimatedEmoji()) {
             return true;
         }
         return false;

@@ -681,7 +681,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
     @Override
     public void start() {
-        if (isRunning || autoRepeat >= 2 && autoRepeatPlayCount != 0) {
+        if (isRunning && autoRepeat >= 2 && autoRepeatPlayCount != 0) {
             return;
         }
         isRunning = true;
@@ -696,7 +696,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     }
 
     public boolean restart() {
-        if (autoRepeat < 2 || autoRepeatPlayCount == 0) {
+        if (isRunning && (autoRepeat < 2 || autoRepeatPlayCount == 0)) {
             return false;
         }
         autoRepeatPlayCount = 0;

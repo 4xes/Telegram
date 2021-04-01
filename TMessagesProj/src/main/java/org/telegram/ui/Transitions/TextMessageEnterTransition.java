@@ -30,19 +30,19 @@ public class TextMessageEnterTransition extends BaseMessageTransition {
     @Override
     public void animationDraw(Canvas canvas) {
         float editTextX = enterView.getX() + editX;
-        float editTextY = enterView.getY() + editY + AndroidUtilities.dp(11);
+        float editTextY = enterView.getY() + editY + editPaddingVertical;
 
         setBackgroundRectEnd();
         messageView.onLayoutUpdateText();
 
-        float textX = messageView.textX - backgroundRectEnd.left;
+        float textX = messageView.textX - endRect.left;
         float textY = messageView.textY;
 
-        backgroundRectStart.set(
+        startRect.set(
                 editTextX - textX,
                 editTextY - textY,
                 enterView.getRight(),
-                editTextY + backgroundRectEnd.height());
+                editTextY + endRect.height());
 
         animateBackground(canvas, 0.08f);
         Theme.dialogs_onlinePaint.setColor(Color.MAGENTA);
@@ -50,7 +50,7 @@ public class TextMessageEnterTransition extends BaseMessageTransition {
 
         canvas.save();
         float scale = evaluate(scaleProgress, startSize, endSize) / endSize;
-        canvas.translate(backgroundRect.left + textX, backgroundRect.top + textY);
+        canvas.translate(currentRect.left + textX, currentRect.top + textY);
         canvas.scale(scale, scale);
         messageView.textX = 0;
         messageView.textY = 0;

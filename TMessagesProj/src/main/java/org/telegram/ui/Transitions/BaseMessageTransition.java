@@ -7,19 +7,21 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.AnimationDrawable;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.AnimationType;
-import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
@@ -36,6 +38,9 @@ public abstract class BaseMessageTransition {
     float messageX;
     float messageY;
 
+    float editX;
+    float editY;
+
     private final ValueAnimator animator;
 
     final View view;
@@ -47,11 +52,18 @@ public abstract class BaseMessageTransition {
 
     Paint messagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    RLottieDrawable drawable;
+
     public BaseMessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
         this.containerView = containerView;
         this.messageView = messageView;
         this.enterView = chatActivityEnterView;
         this.listView = listView;
+
+        location(enterView, enterView.getEditField());
+        editX = location[0];
+        editY = location[1];
+
         messageId = messageView.getMessageObject().stableId;
         messageView.setEnterTransition(this);
         messageView.setVisibility(View.INVISIBLE);
@@ -126,9 +138,9 @@ public abstract class BaseMessageTransition {
         animator.start();
     }
 
-    RectF backgroundRectStart = new RectF();
-    RectF backgroundRectEnd = new RectF();
-    Rect backgroundRect = new Rect();
+    RectF startRect = new RectF();
+    RectF endRect = new RectF();
+    RectF currentRect = new RectF();
 
     float backgroundScaleX;
     float backgroundScaleY;
@@ -140,7 +152,7 @@ public abstract class BaseMessageTransition {
 
 
         if (messageView.getMessageObject().stableId == messageId) {
-            backgroundRectEnd.set(
+            endRect.set(
                     messageView.getBackgroundDrawableLeft() + messageX,
                     messageView.getBackgroundDrawableTop() + messageY,
                     messageView.getBackgroundDrawableRight() + messageX,
@@ -151,7 +163,7 @@ public abstract class BaseMessageTransition {
     }
 
     public void setStartEnterEnter() {
-        backgroundRectStart.set(
+        startRect.set(
                 enterView.getLeft(),
                 enterView.getTop(),
                 enterView.getRight(),
@@ -159,13 +171,28 @@ public abstract class BaseMessageTransition {
 
     }
 
+
+    RectF editBounds = new RectF();
+    float editPaddingVertical = AndroidUtilities.dp(11);
+
+    public void setEditRect() {
+        float editTextY = enterView.getY() + editY;
+        float editTextX = enterView.getX() + editX;
+        editBounds.set(
+                editTextX,
+                editTextY,
+                editTextX + enterView.getEditField().getMeasuredWidth(),
+                editTextY + enterView.getEditField().getMeasuredHeight());
+
+    }
+
     protected void animateBackground(Canvas canvas, float showShadowProgress) {
-        evaluate(backgroundRect, xProgress, yProgress, backgroundRectStart, backgroundRectEnd);
-        backgroundScaleX = backgroundRectEnd.width() / backgroundRect.width();
-        backgroundScaleY = backgroundRectEnd.height() / backgroundRect.height();
+        evaluate(currentRect, xProgress, yProgress, startRect, endRect);
+        backgroundScaleX = endRect.width() / currentRect.width();
+        backgroundScaleY = endRect.height() / currentRect.height();
 
         Theme.MessageDrawable messageDrawable = messageView.getCurrentBackgroundDrawable();
-        messageDrawable.setBounds(backgroundRect);
+        messageDrawable.setBounds( (int) currentRect.left, (int) currentRect.top, (int) currentRect.right, (int)  currentRect.bottom);
 
         int startColor = Theme.getColor(Theme.key_chat_messagePanelBackground);
         int endColor = Theme.getColor(key_chat_outBubble);
@@ -191,9 +218,9 @@ public abstract class BaseMessageTransition {
 //        );
 
         canvas.save();
-        shiftY = (backgroundRect.height() - backgroundRectEnd.height());
-        shiftX = (backgroundRect.width() - backgroundRectEnd.width());
-        canvas.translate(messageX, backgroundRect.top + shiftY);
+        shiftY = (currentRect.height() - endRect.height());
+        shiftX = (currentRect.width() - endRect.width());
+        canvas.translate(messageX, currentRect.top + shiftY);
         messageView.drawTime(canvas, 1f * alphaProgress, false);
         canvas.restore();
     }
@@ -208,26 +235,28 @@ public abstract class BaseMessageTransition {
         location[1]-= locationTemp[1];
     }
 
-    protected Rect evaluate(Rect rect, float fraction, Rect startValue, Rect endValue) {
-        int left = startValue.left + (int) ((endValue.left - startValue.left) * fraction);
-        int top = startValue.top + (int) ((endValue.top - startValue.top) * fraction);
-        int right = startValue.right + (int) ((endValue.right - startValue.right) * fraction);
-        int bottom = startValue.bottom + (int) ((endValue.bottom - startValue.bottom) * fraction);
+    protected RectF evaluate(RectF rect, float fractionX, float fractionY, RectF startValue, RectF endValue) {
+        float left = (startValue.left +  ((endValue.left - startValue.left) * fractionX));
+        float top = (startValue.top + ((endValue.top - startValue.top) * fractionY));
+        float right = (startValue.right +  ((endValue.right - startValue.right) * fractionX));
+        float bottom = (startValue.bottom + ((endValue.bottom - startValue.bottom) * fractionY));
         if (rect == null) {
-            return new Rect(left, top, right, bottom);
+            return new RectF(left, top, right, bottom);
         } else {
             rect.set(left, top, right, bottom);
             return rect;
         }
     }
 
-    protected Rect evaluate(Rect rect, float fractionX, float fractionY, RectF startValue, RectF endValue) {
-        int left = (int) (startValue.left +  ((endValue.left - startValue.left) * fractionX));
-        int top = (int) (startValue.top + (int) ((endValue.top - startValue.top) * fractionY));
-        int right = (int)(startValue.right + (int) ((endValue.right - startValue.right) * fractionX));
-        int bottom = (int)(startValue.bottom + (int) ((endValue.bottom - startValue.bottom) * fractionY));
+    protected RectF evaluate(RectF rect, float fractionX, float fractionY, float fractionScale, RectF startValue, RectF endValue) {
+        float left = evaluate(fractionX, startValue.left, endValue.left);
+        float top = evaluate(fractionY, startValue.top, endValue.top);
+        float width = evaluate(fractionScale, startValue.width(), endValue.width());
+        float height = evaluate(fractionScale, startValue.height(), endValue.height());
+        float right = left + width;
+        float bottom = top + height;
         if (rect == null) {
-            return new Rect(left, top, right, bottom);
+            return new RectF(left, top, right, bottom);
         } else {
             rect.set(left, top, right, bottom);
             return rect;

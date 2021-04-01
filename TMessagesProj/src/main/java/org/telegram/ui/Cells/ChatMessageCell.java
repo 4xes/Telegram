@@ -2754,10 +2754,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return (int) (forwardNameX + forwardNameCenterX);
     }
 
+    //see checks for sticker
     public int getChecksX() {
         return layoutWidth - AndroidUtilities.dp(SharedConfig.bubbleRadius >= 10 ? 27.3f : 25.3f);
     }
 
+    //see checks for sticker
     public int getChecksY() {
         if (currentMessageObject.shouldDrawWithoutBackground()) {
             return (int) (drawTimeY - Theme.chat_msgStickerCheckDrawable.getIntrinsicHeight());
@@ -7344,6 +7346,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     photoImage.setSideClip(0);
                 }
+                //draw
                 imageDrawn = photoImage.draw(canvas);
                 boolean drawTimeOld = drawTime;
                 drawTime = photoImage.getVisible();

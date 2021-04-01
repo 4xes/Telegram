@@ -33,6 +33,12 @@ public enum AnimationType {
             Interpolator.Scale,
             Interpolator.Appears
     }),
+    Sticker("Sticker", new Interpolator[] {
+            Interpolator.X,
+            Interpolator.Y,
+            Interpolator.Scale,
+            Interpolator.Appears
+    }),
     Voice("Voice", new Interpolator[] {
             Interpolator.X,
             Interpolator.Y,

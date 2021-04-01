@@ -1,7 +1,6 @@
 package org.telegram.ui.Transitions;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -11,7 +10,6 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationType;
-import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -220,7 +218,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
 
         float offset = (messageView.getSeekBarWaveform().getHeight() / 2f) * reverse(progress);
         int scaleSave = canvas.save();
-        canvas.translate(messageX, backgroundRect.top - offset );
+        canvas.translate(messageX, currentRect.top - offset );
         canvas.translate(waveFormX * backgroundScaleX, waveFormY * backgroundScaleX);
         canvas.scale(1f / backgroundScaleX, 1f /  backgroundScaleX);
         messageView.getSeekBarWaveform().setOverrideAlpha(alphaProgress);

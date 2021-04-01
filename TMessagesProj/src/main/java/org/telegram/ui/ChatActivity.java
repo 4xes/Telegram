@@ -221,6 +221,7 @@ import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.telegram.ui.Transitions.EmojiMessageEnterTransition;
 import org.telegram.ui.Transitions.TextMessageEnterTransition;
 import org.telegram.ui.Transitions.VoiceMessageEnterTransition;
 
@@ -21930,6 +21931,21 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                         messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
                                         if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
                                             TextMessageEnterTransition transition = new TextMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                            transition.start();
+                                        } else {
+                                            chatActivityEnterView.startMessageTransition();
+                                        }
+                                        return true;
+                                    }
+                                });
+                            }
+                            if (message.isAnimatedEmoji()) {
+                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                    @Override
+                                    public boolean onPreDraw() {
+                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
+                                        if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
+                                            EmojiMessageEnterTransition transition = new EmojiMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
                                             transition.start();
                                         } else {
                                             chatActivityEnterView.startMessageTransition();

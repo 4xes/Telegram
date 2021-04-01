@@ -1510,6 +1510,13 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         imageH = height;
     }
 
+    public void setImageCoords(RectF coords) {
+        imageX = coords.left;
+        imageY = coords.top;
+        imageW = coords.width();
+        imageH = coords.height();
+    }
+
     public void setSideClip(float value) {
         sideClip = value;
     }
