@@ -221,6 +221,7 @@ import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.telegram.ui.Transitions.TextMessageEnterTransition;
 import org.telegram.ui.Transitions.VoiceMessageEnterTransition;
 
 import java.io.BufferedWriter;
@@ -5065,6 +5066,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } else if (returnToMessageId > 0) {
                 scrollToMessageId(returnToMessageId, 0, true, returnToLoadIndex, true, 0);
             } else {
+                if (!chatListView.isFastScrollAnimationRunning()) {
+                    gradientView.requestPositionAnimation(Interpolator.JumpToMsg);
+                }
                 scrollToLastMessage();
                 if (!pinnedMessageIds.isEmpty()) {
                     forceScrollToFirst = true;
@@ -10522,6 +10526,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     Runnable updatePinnedProgressRunnable;
 
     public void scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll, int forcePinnedMessageId) {
+        gradientView.requestPositionAnimation(Interpolator.JumpToMsg);
         if (id == 0 || NotificationCenter.getInstance(currentAccount).isAnimationInProgress() || getParentActivity() == null) {
             if (NotificationCenter.getInstance(currentAccount).isAnimationInProgress()) {
                 nextScrollToMessageId = id;
@@ -14933,7 +14938,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (currentChat != null && currentChat.megagroup && (action instanceof TLRPC.TL_messageActionChatAddUser || action instanceof TLRPC.TL_messageActionChatDeleteUser)) {
                     reloadMegagroup = true;
                 }
-                if (a == 0 && obj.messageOwner.id < 0 && (obj.type == MessageObject.TYPE_ROUND_VIDEO || obj.isVoice()) && chatMode != MODE_SCHEDULED) {
+                if (a == 0 && obj.messageOwner.id < 0 && obj.isSupportAnimation() && chatMode != MODE_SCHEDULED) {
                     needAnimateToMessage = obj;
                 }
                 if (obj.isOut() && obj.wasJustSent) {
@@ -15062,7 +15067,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 addToPolls(obj, null);
-                if (a == 0 && obj.messageOwner.id < 0 && (obj.type == MessageObject.TYPE_ROUND_VIDEO || obj.isVoice()) && chatMode != MODE_SCHEDULED) {
+                if (a == 0 && obj.messageOwner.id < 0 && obj.isSupportAnimation() && chatMode != MODE_SCHEDULED) {
                     animatingMessageObjects.add(obj);
                 }
 
@@ -21903,13 +21908,28 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 });
                             }
                         } else {
-                            if (chatActivityEnterView.canShowVoiceMessageTransition()) {
+                            if (message.isVoice() && chatActivityEnterView.canShowVoiceMessageTransition()) {
                                 messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                                     @Override
                                     public boolean onPreDraw() {
                                         messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
                                         if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
                                             VoiceMessageEnterTransition transition = new VoiceMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                            transition.start();
+                                        } else {
+                                            chatActivityEnterView.startMessageTransition();
+                                        }
+                                        return true;
+                                    }
+                                });
+                            }
+                            if (message.type == 0) {
+                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                    @Override
+                                    public boolean onPreDraw() {
+                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
+                                        if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
+                                            TextMessageEnterTransition transition = new TextMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
                                             transition.start();
                                         } else {
                                             chatActivityEnterView.startMessageTransition();

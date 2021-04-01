@@ -193,6 +193,13 @@ public class MessageObject {
             " . "
     };
 
+    public boolean isSupportAnimation() {
+        if (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || type == 0) {
+            return true;
+        }
+        return false;
+    }
+
     public static class VCardData {
 
         private String company;

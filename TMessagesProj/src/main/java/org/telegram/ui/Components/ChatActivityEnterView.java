@@ -198,7 +198,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     private final static int RECORD_STATE_ENTER = 0;
-    private final static int RECORD_STATE_SENDING = 1;
+    public final static int RECORD_STATE_SENDING = 1;
     private final static int RECORD_STATE_CANCEL = 2;
     private final static int RECORD_STATE_PREPARING = 3;
     private final static int RECORD_STATE_CANCEL_BY_TIME = 4;
@@ -4714,14 +4714,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             moveToSendStateRunnable = null;
         }
         messageTransitionIsRunning = true;
-        updateRecordIntefrace(RECORD_STATE_SENDING);
     }
 
     public boolean canShowVoiceMessageTransition() {
         return moveToSendStateRunnable != null;
     }
 
-    private void updateRecordIntefrace(int recordState) {
+    public void updateRecordIntefrace(int recordState) {
         if (moveToSendStateRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(moveToSendStateRunnable);
             moveToSendStateRunnable = null;

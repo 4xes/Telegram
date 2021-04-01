@@ -16,6 +16,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.AnimationType;
+import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -23,10 +24,11 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
 
-public class BaseMessageTransition {
+public abstract class BaseMessageTransition {
 
     float progress;
     float yProgress;
+    float scaleProgress;
     float xProgress;
     float colorProgress;
     float alphaProgress;
@@ -60,10 +62,11 @@ public class BaseMessageTransition {
             protected void onDraw(Canvas canvas) {
                 int translateSave = canvas.save();
                 canvas.translate(-getX(), -getY());
+                scaleProgress = progress;
                 yProgress = CubicBezierInterpolator.DEFAULT.getInterpolation(progress);
-                colorProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
-                alphaProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
                 xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
+                colorProgress = progress;
+                alphaProgress = progress;
 
                 if (messageView.getMessageObject().stableId == messageId) {
                     messageX = messageView.getX() + listView.getX();
@@ -86,7 +89,7 @@ public class BaseMessageTransition {
             }
         });
 
-        long duration = AnimationManager.getInstance().getDuration(AnimationType.Voice, null);
+        long duration = AnimationManager.getInstance().getDuration(getAnimationType(), null);
 
         animator.setInterpolator(new LinearInterpolator());
         animator.setDuration(duration);
@@ -131,14 +134,10 @@ public class BaseMessageTransition {
     float backgroundScaleY;
     float shiftY;
     float shiftX;
-    protected void animateBackground(Canvas canvas) {
+
+    public void setBackgroundRectEnd() {
         messageView.updateBackgroundState();
 
-        backgroundRectStart.set(
-                enterView.getLeft(),
-                enterView.getTop(),
-                enterView.getRight(),
-                enterView.getBottom());
 
         if (messageView.getMessageObject().stableId == messageId) {
             backgroundRectEnd.set(
@@ -147,10 +146,21 @@ public class BaseMessageTransition {
                     messageView.getBackgroundDrawableRight() + messageX,
                     messageView.getBackgroundDrawableBottom() + messageY
             );
-            evaluate(backgroundRect, yProgress, backgroundRectStart, backgroundRectEnd);
         }
 
+    }
 
+    public void setStartEnterEnter() {
+        backgroundRectStart.set(
+                enterView.getLeft(),
+                enterView.getTop(),
+                enterView.getRight(),
+                enterView.getBottom());
+
+    }
+
+    protected void animateBackground(Canvas canvas, float showShadowProgress) {
+        evaluate(backgroundRect, xProgress, yProgress, backgroundRectStart, backgroundRectEnd);
         backgroundScaleX = backgroundRectEnd.width() / backgroundRect.width();
         backgroundScaleY = backgroundRectEnd.height() / backgroundRect.height();
 
@@ -160,8 +170,7 @@ public class BaseMessageTransition {
         int startColor = Theme.getColor(Theme.key_chat_messagePanelBackground);
         int endColor = Theme.getColor(key_chat_outBubble);
 
-        float hideShadowProgress = 0.4f;
-        if (yProgress > hideShadowProgress) {
+        if (yProgress > showShadowProgress) {
             messageDrawable.draw(canvas);
         }
         messagePaint.setColor(evaluateColor(yProgress, startColor, endColor));
@@ -212,11 +221,11 @@ public class BaseMessageTransition {
         }
     }
 
-    protected Rect evaluate(Rect rect, float fraction, RectF startValue, RectF endValue) {
-        int left = (int) (startValue.left +  ((endValue.left - startValue.left) * fraction));
-        int top = (int) (startValue.top + (int) ((endValue.top - startValue.top) * fraction));
-        int right = (int)(startValue.right + (int) ((endValue.right - startValue.right) * fraction));
-        int bottom = (int)(startValue.bottom + (int) ((endValue.bottom - startValue.bottom) * fraction));
+    protected Rect evaluate(Rect rect, float fractionX, float fractionY, RectF startValue, RectF endValue) {
+        int left = (int) (startValue.left +  ((endValue.left - startValue.left) * fractionX));
+        int top = (int) (startValue.top + (int) ((endValue.top - startValue.top) * fractionY));
+        int right = (int)(startValue.right + (int) ((endValue.right - startValue.right) * fractionX));
+        int bottom = (int)(startValue.bottom + (int) ((endValue.bottom - startValue.bottom) * fractionY));
         if (rect == null) {
             return new Rect(left, top, right, bottom);
         } else {
@@ -245,4 +254,6 @@ public class BaseMessageTransition {
     protected int evaluateColor(float fraction, int startValue, int endValue) {
         return ColorUtils.blendARGB(startValue, endValue, fraction);
     }
+
+    protected abstract AnimationType getAnimationType();
 }

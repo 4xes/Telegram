@@ -10,11 +10,13 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationType;
+import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
 
-import static org.telegram.ui.ActionBar.Theme.chat_radialProgressPaint;
+import static org.telegram.ui.Components.ChatActivityEnterView.RECORD_STATE_SENDING;
 
 public class VoiceMessageEnterTransition extends BaseMessageTransition {
 
@@ -52,6 +54,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
 
         recordCircle = chatActivityEnterView.getRecordCircle();
         chatActivityEnterView.startMessageTransition();
+        chatActivityEnterView.updateRecordIntefrace(RECORD_STATE_SENDING);
 
         recordCircle.transitionInProgress = true;
         recordCircle.skipDraw = true;
@@ -285,7 +288,9 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
     @Override
     public void animationDraw(Canvas canvas) {
         super.animationDraw(canvas);
-        animateBackground(canvas);
+        setBackgroundRectEnd();
+        setStartEnterEnter();
+        animateBackground(canvas, 0.3f);
         animateWave(canvas);
         animateSlide(canvas);
         animateTime(canvas);
@@ -299,5 +304,10 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         recordCircle.skipDraw = false;
         recordDot.skipDraw = false;
         slideText.skipDraw = false;
+    }
+
+    @Override
+    protected AnimationType getAnimationType() {
+        return AnimationType.Voice;
     }
 }
