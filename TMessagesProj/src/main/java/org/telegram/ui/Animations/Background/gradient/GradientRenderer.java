@@ -54,8 +54,50 @@ public class GradientRenderer implements GLTextureView.Renderer {
     public final int[] colors = new int[4];
     public final float[][] points = new float[4][2];
 
+
+    private static final String defaultVertexShader =
+            "attribute vec4 a_Position;\n" +
+            "\n" +
+            "void main()\n" +
+            "{\n" +
+            "    gl_Position = a_Position;\n" +
+            "}";
+    private static final String gradientFragmentShader =
+            "precision highp float;\n" +
+            "\n" +
+            "uniform vec3 color1;\n" +
+            "uniform vec3 color2;\n" +
+            "uniform vec3 color3;\n" +
+            "uniform vec3 color4;\n" +
+            "uniform vec2 p1;\n" +
+            "uniform vec2 p2;\n" +
+            "uniform vec2 p3;\n" +
+            "uniform vec2 p4;\n" +
+            "uniform vec2 resolution;\n" +
+            "\n" +
+            "void main() {\n" +
+            "    vec2 uv = gl_FragCoord.xy / resolution;\n" +
+            "    uv.y = 1.0 - uv.y;\n" +
+            "\n" +
+            "    float dp1 = distance(uv, p1);\n" +
+            "    float dp2 = distance(uv, p2);\n" +
+            "    float dp3 = distance(uv, p3);\n" +
+            "    float dp4 = distance(uv, p4);\n" +
+            "    float minD = min(dp1, min(dp2, min(dp3, dp4)));\n" +
+            "    float p = 5.0;\n" +
+            "    dp1 = pow(1.0 - (dp1 - minD), p);\n" +
+            "    dp2 = pow(1.0 - (dp2 - minD), p);\n" +
+            "    dp3 = pow(1.0 - (dp3 - minD), p);\n" +
+            "    dp4 = pow(1.0 - (dp4 - minD), p);\n" +
+            "    float sumDp = dp1 + dp2 + dp3 + dp4;\n" +
+            "\n" +
+            "    vec3 color = (color1 * dp1 + color2 * dp2 + color3 * dp3 + color4 * dp4) / sumDp;\n" +
+            "    gl_FragColor = vec4(color, 1.0);\n" +
+            "}";
+
     public GradientRenderer(Context context) {
-        shader = Shader.read(context, R.raw.gradient_vertex_shader,  R.raw.gradient_fragment_shader);
+        //shader = Shader.read(context, R.raw.gradient_vertex_shader,  R.raw.gradient_fragment_shader);
+        shader = new Shader(defaultVertexShader, gradientFragmentShader);
     }
 
     private void initVertexData() {
