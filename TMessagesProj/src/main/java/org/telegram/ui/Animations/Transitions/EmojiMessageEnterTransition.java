@@ -1,4 +1,4 @@
-package org.telegram.ui.Transitions;
+package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -33,23 +33,34 @@ public class EmojiMessageEnterTransition extends BaseMessageTransition {
     final float emojiTextSize = AndroidUtilities.dp(20);
     final float emojiSize = emojiTextSize * 1.2f;
 
+    boolean restarted = false;
+    boolean stopped = false;
+
     @Override
     public void animationDraw(Canvas canvas) {
         ImageReceiver image = messageView.getPhotoImage();
         if (image == null) {
             return;
         }
-        Log.e("drawable", "drawable: " +  image.getDrawable());
         Drawable drawable = image.getDrawable();
         if (drawable instanceof RLottieDrawable) {
             RLottieDrawable lottieDrawable = (RLottieDrawable) image.getDrawable();
-            lottieDrawable.stop();
+
+            if (!stopped && lottieDrawable.isRunning()) {
+                lottieDrawable.stop();
+                stopped = true;
+            }
+            if (!restarted && scaleProgress == 1f ) {
+                lottieDrawable.restart();
+                restarted = true;
+            }
         }
 
         float tempX = image.getImageX();
         float tempY = image.getImageY();
         float tempWidth = image.getImageWidth();
         float tempHeight = image.getImageHeight();
+
         setEditRect();
 
         editBounds.right = editBounds.left + emojiSize;
@@ -81,26 +92,32 @@ public class EmojiMessageEnterTransition extends BaseMessageTransition {
         image.setImageCoords(currentRect);
         image.setCurrentAlpha(1f);
         image.draw(canvas);
+
         // reset image
         image.setImageCoords(tempX, tempY, tempWidth, tempHeight);
+        if (drawable instanceof RLottieDrawable) {
+            image.setCurrentAlpha(1f);
+        }
     }
 
     @Override
     protected AnimationType getAnimationType() {
-        return AnimationType.Sticker;
+        return AnimationType.Emoji;
     }
 
     @Override
     public void release() {
         super.release();
-        ImageReceiver image = messageView.getPhotoImage();
-        if (image == null) {
-            return;
-        }
-        Drawable drawable = image.getDrawable();
-        if (drawable instanceof RLottieDrawable) {
-            RLottieDrawable lottieDrawable = (RLottieDrawable) image.getDrawable();
-            lottieDrawable.restart();
+        if (!restarted) {
+            ImageReceiver image = messageView.getPhotoImage();
+            if (image == null) {
+                return;
+            }
+            Drawable drawable = image.getDrawable();
+            if (drawable instanceof RLottieDrawable) {
+                RLottieDrawable lottieDrawable = (RLottieDrawable) image.getDrawable();
+                lottieDrawable.restart();
+            }
         }
     }
 }

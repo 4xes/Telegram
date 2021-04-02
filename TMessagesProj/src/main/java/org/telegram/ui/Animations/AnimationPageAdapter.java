@@ -1,8 +1,6 @@
 package org.telegram.ui.Animations;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
@@ -58,10 +56,12 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
         }
         models.add(new Model(section_cell, null));
 
-        for (Interpolator i: this.type.params) {
-            if (i == Interpolator.Scale) {
+        for (Parameter i: this.type.params) {
+            if (i == Parameter.Scale) {
                 if (type == AnimationType.ShortText || type == AnimationType.LongText) {
-                    models.add(new Model(header_cell, "Text" + i.title));
+                    models.add(new Model(header_cell, "Text " + i.title));
+                } else {
+                    models.add(new Model(header_cell, type.title + " " + i.title));
                 }
             } else {
                 models.add(new Model(header_cell, i.title));
@@ -145,17 +145,17 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     public void onItemClick(View view, int position) {
         if (view instanceof TextSettingsCell) {
             Object item = getItem(position);
-            Interpolator durationInterpolator;
-            if (item instanceof Interpolator) {
-                durationInterpolator = (Interpolator) item;
+            Parameter durationParameter;
+            if (item instanceof Parameter) {
+                durationParameter = (Parameter) item;
             } else {
-                durationInterpolator = null;
+                durationParameter = null;
             }
             activity.createMenu(view, durations, 0, 0, i -> {
                 long newDuration = DURATIONS[i];
-                long duration = AnimationManager.getInstance().getDuration(type, durationInterpolator);
+                long duration = AnimationManager.getInstance().getDuration(type, durationParameter);
                 if (duration != newDuration) {
-                    AnimationManager.getInstance().setDuration(type, durationInterpolator, DURATIONS[i]);
+                    AnimationManager.getInstance().setDuration(type, durationParameter, DURATIONS[i]);
                     notifyItemChanged(position);
                 }
                 if (type == AnimationType.Background) {
@@ -180,8 +180,8 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
         switch (type) {
             case duration_cell:
             case interpolator_cell:
-                Interpolator interpolator = getItem(position);
-                long duration = AnimationManager.getInstance().getDuration(this.type, interpolator);
+                Parameter parameter = getItem(position);
+                long duration = AnimationManager.getInstance().getDuration(this.type, parameter);
                 if (type == duration_cell) {
                     TextSettingsCell view = (TextSettingsCell) holder.itemView;
                     boolean hasDivider = this.type == AnimationType.Background;
@@ -190,8 +190,8 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 if (type == interpolator_cell) {
                     InterpolatorCell view = (InterpolatorCell) holder.itemView;
                     view.setDuration(duration);
-                    InterpolatorData data = AnimationManager.getInstance().getInterpolator(this.type, interpolator);
-                    String key = AnimationManager.key(this.type, interpolator);
+                    InterpolatorData data = AnimationManager.getInstance().getInterpolatorData(this.type, parameter);
+                    String key = AnimationManager.key(this.type, parameter);
                     view.setInterpolationData(key, data);
                 }
                 break;

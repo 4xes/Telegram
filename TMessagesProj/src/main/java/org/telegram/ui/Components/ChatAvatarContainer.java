@@ -208,29 +208,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         if (user != null) {
-            Bundle args = new Bundle();
             if (UserObject.isUserSelf(user)) {
-                args.putLong("dialog_id", parentFragment.getDialogId());
-                int[] media = new int[MediaDataController.MEDIA_TYPES_COUNT];
-                System.arraycopy(sharedMediaPreloader.getLastMediaCount(), 0, media, 0, media.length);
-                MediaActivity fragment = new MediaActivity(args, media, sharedMediaPreloader.getSharedMediaData(), -1);
-                fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-                parentFragment.presentFragment(fragment);
+                parentFragment.presentFragment(new AnimationSettingsActivity());
             } else {
-                args.putInt("user_id", user.id);
-                args.putBoolean("reportSpam", parentFragment.hasReportSpam());
-                if (timeItem != null) {
-                    args.putLong("dialog_id", parentFragment.getDialogId());
-                }
                 parentFragment.presentFragment(new AnimationSettingsActivity());
             }
         } else if (chat != null) {
-            Bundle args = new Bundle();
-            args.putInt("chat_id", chat.id);
-            ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
-            fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-            fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
-            parentFragment.presentFragment(fragment);
+            parentFragment.presentFragment(new AnimationSettingsActivity());
         }
     }
 

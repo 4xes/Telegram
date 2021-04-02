@@ -1,16 +1,12 @@
 package org.telegram.ui.Animations;
 import android.content.Context;
-import android.view.View;
 
 import androidx.annotation.Nullable;
-import androidx.collection.ArrayMap;
 
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.Animations.Components.AnimationCubicBezierInterpolator;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class AnimationManager {
 
@@ -38,33 +34,39 @@ public class AnimationManager {
         return localInstance;
     }
 
-    public InterpolatorData getInterpolator(AnimationType animationType, Interpolator interpolator) {
-        return preferences.getInterpolator(key(animationType, interpolator));
+    public InterpolatorData getInterpolatorData(AnimationType animationType, Parameter parameter) {
+        return preferences.getInterpolator(key(animationType, parameter));
     }
 
-    public long getDuration(AnimationType animationType, @Nullable Interpolator interpolator) {
+    public AnimationCubicBezierInterpolator getInterpolator(AnimationType animationType, Parameter parameter) {
+        InterpolatorData data = getInterpolatorData(animationType, parameter);
+        AnimationCubicBezierInterpolator interpolator = new AnimationCubicBezierInterpolator(data);
+        return interpolator;
+    }
+
+    public long getDuration(AnimationType animationType, @Nullable Parameter parameter) {
         String key;
         if (animationType == AnimationType.Background) {
-            key = key(animationType, interpolator);
+            key = key(animationType, parameter);
         } else {
             key = key(animationType, null);
         }
         return preferences.getDuration(key);
     }
 
-    public void setDuration(AnimationType animationType, @Nullable Interpolator interpolator, long duration) {
+    public void setDuration(AnimationType animationType, @Nullable Parameter parameter, long duration) {
         String key;
         if (animationType == AnimationType.Background) {
-            key = key(animationType, interpolator);
+            key = key(animationType, parameter);
         } else {
             key = key(animationType, null);
         }
         preferences.putDuration(key, duration);
     }
 
-    public static String key(AnimationType type, Interpolator interpolator) {
-        if (interpolator != null) {
-            return (type.name() + "_" + interpolator.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
+    public static String key(AnimationType type, Parameter parameter) {
+        if (parameter != null) {
+            return (type.name() + "_" + parameter.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
         } else {
             return (type.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
         }

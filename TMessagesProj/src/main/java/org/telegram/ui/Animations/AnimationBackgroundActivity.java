@@ -85,10 +85,10 @@ public class AnimationBackgroundActivity extends BaseFragment {
         bottomOverlayAnimate.setText("ANIMATE");
         bottomOverlayAnimate.setOnClickListener(v -> {
             int tabId = scrollSlidingTextTabStrip.getCurrentTabId();
-            Interpolator[] interpolators =  AnimationType.Background.params;
+            Parameter[] parameters =  AnimationType.Background.params;
             if (tabId < AnimationType.Background.params.length )  {
                 bottomOverlayAnimate.setEnabled(false, true);
-                surfaceView.requestPositionAnimation(interpolators[tabId]);
+                surfaceView.requestPositionAnimation(parameters[tabId]);
             }
         });
         bottomOverlayAnimate.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.BOTTOM));
@@ -245,7 +245,7 @@ public class AnimationBackgroundActivity extends BaseFragment {
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
-        final Interpolator[] params = AnimationType.Background.params;
+        final Parameter[] params = AnimationType.Background.params;
 
         boolean changed = false;
         for (int i = 0; i < params.length; i++) {

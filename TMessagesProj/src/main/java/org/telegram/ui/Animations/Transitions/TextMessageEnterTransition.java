@@ -1,4 +1,4 @@
-package org.telegram.ui.Transitions;
+package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,6 +8,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationType;
+import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;

@@ -7816,28 +7816,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         @Override
         protected void onDraw(Canvas canvas) {
             String newString = getTimeString();
-            drawText(canvas, newString.substring(0, newString.length() - 2), textPaint);
+            drawText(canvas, newString, textPaint);
         }
 
         public void drawText(Canvas canvas, String newString, TextPaint textPaint) {
             long currentTimeMillis = System.currentTimeMillis();
             long t = (!transitionInProgress && isRunning) ? (currentTimeMillis - startTime) : stopTime - startTime;
-
-            if (transitionInProgress) {
-                float x = 0;
-                float y = getTextY();
-                if ((replaceTransition == 0f && newString.equals(oldString))) {
-                    if (cacheLayout == null || cacheLayout.getPaint() != textPaint) {
-                        cacheLayout = new StaticLayout(oldString, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                    }
-                    canvas.save();
-                    canvas.translate(x, isOverrideY? overrideY : (y - cacheLayout.getHeight() / 2f));
-                    cacheLayout.draw(canvas);
-                    canvas.restore();
-                    left = x + cacheLayout.getLineWidth(0);
-                    return;
-                }
-            }
 
             if (videoSendButton != null && videoSendButton.getTag() != null) {
                 if (t >= 59500 && !stoppedInternal) {

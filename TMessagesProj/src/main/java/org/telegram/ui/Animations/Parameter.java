@@ -1,12 +1,12 @@
 package org.telegram.ui.Animations;
 
-public enum Interpolator {
+public enum Parameter {
     X("X Position", false),
     Y("Y Position", false),
-    Shape("Bubble shape", false),
-    Scale(" scale", false),
+    Bubble("Bubble shape", false),
+    Scale("scale", false),
     Color("Color change", false),
-    Appears("Time appears", false),
+    TimeAppears("Time appears", false),
     SendMsg("Send Message",true),
     OpenChat("Open Chat",true),
     JumpToMsg("Jump to Message",true);
@@ -14,7 +14,7 @@ public enum Interpolator {
     final String title;
     final boolean hasDuration;
 
-    Interpolator(String title, boolean hasDuration) {
+    Parameter(String title, boolean hasDuration) {
         this.title = title;
         this.hasDuration = hasDuration;
     }

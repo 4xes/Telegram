@@ -17,7 +17,6 @@ import android.view.ViewConfiguration;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationPreferences;
-import org.telegram.ui.Animations.Interpolator;
 import org.telegram.ui.Animations.InterpolatorData;
 
 public class InterpolatorCell extends View {

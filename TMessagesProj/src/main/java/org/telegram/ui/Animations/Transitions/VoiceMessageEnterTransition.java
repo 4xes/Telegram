@@ -1,4 +1,4 @@
-package org.telegram.ui.Transitions;
+package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -123,7 +123,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
 
         int fromColor = Theme.getColor(Theme.key_chat_messagePanelVoiceBackground);
         int toColor = Theme.getColor(messageView.getRadialProgress().getCircleColorKey());
-        int color = evaluateColor(yProgress, fromColor, toColor);
+        int color = evaluateColor(colorProgress, fromColor, toColor);
 
         circlePaint.setColor(color);
         recordCircle.drawWaves(canvas, cx, cy, 1f - hideWavesProgress);
@@ -136,14 +136,14 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         canvas.scale(scale, scale, cx, cy);
         canvas.translate(cx - messageView.getRadialProgress().getProgressRect().centerX(), cy - messageView.getRadialProgress().getProgressRect().centerY());
 
-        messageView.getRadialProgress().setOverrideAlpha(yProgress);
+        messageView.getRadialProgress().setOverrideAlpha(colorProgress);
         messageView.getRadialProgress().setDrawBackground(false);
         messageView.getRadialProgress().draw(canvas);
         messageView.getRadialProgress().setDrawBackground(true);
         messageView.getRadialProgress().setOverrideAlpha(1f);
         canvas.restore();
 
-        recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - progress);
+        recordCircle.drawIcon(canvas, (int) fromCx, (int) fromCy, 1f - colorProgress);
 
         recordCircle.skipDraw = false;
         canvas.save();
@@ -179,14 +179,14 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         float cy = evaluate(yProgress, fromCy, toCy);
 
         float toRadius = messageView.getRecordDotRadius();
-        float radius = evaluate(yProgress, dotFromRadius, toRadius);
+        float radius = evaluate(scaleProgress, dotFromRadius, toRadius);
 
 
         canvas.drawCircle(cx, cy, radius, circlePaint);
 
         int fromColor = Theme.getColor(Theme.key_chat_recordedVoiceDot);
         int toColor = messageView.getRecordDotColor();
-        int color = evaluateColor(yProgress, fromColor, toColor);
+        int color = evaluateColor(colorProgress, fromColor, toColor);
         circlePaint.setColor(color);
         canvas.drawCircle(cx, cy, radius, circlePaint);
     }
@@ -197,7 +197,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         float top = slideGetY + enterView.getY();
         canvas.translate(left, top);
         slideText.skipDraw = false;
-        slideText.transitionAlpha = reverse2x(alphaProgress);
+        slideText.transitionAlpha = reverse2x(progress);
         slideText.draw(canvas);
         slideText.skipDraw = true;
         canvas.restoreToCount(saveTranslate);
@@ -221,7 +221,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         canvas.translate(messageX, currentRect.top - offset );
         canvas.translate(waveFormX * backgroundScaleX, waveFormY * backgroundScaleX);
         canvas.scale(1f / backgroundScaleX, 1f /  backgroundScaleX);
-        messageView.getSeekBarWaveform().setOverrideAlpha(alphaProgress);
+        messageView.getSeekBarWaveform().setOverrideAlpha(colorProgress);
         messageView.getSeekBarWaveform().draw(canvas, null);
         messageView.getSeekBarWaveform().setOverrideAlpha(1f);
         canvas.restoreToCount(scaleSave);
@@ -258,7 +258,7 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
 
         timerView.transitionInProgress = true;
 
-        int hideAlpha = (int) (255 * reverse2x(alphaProgress));
+        int hideAlpha = (int) (255 * reverse2x(colorProgress));
         if (hideAlpha > 0) {
             timerPaint.setAlpha(hideAlpha);
             int msSave = canvas.save();

@@ -1,26 +1,26 @@
-package org.telegram.ui.Transitions;
+package org.telegram.ui.Animations.Transitions;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.drawable.AnimationDrawable;
 import android.view.View;
+import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
+import androidx.collection.SparseArrayCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.AnimationType;
+import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -29,11 +29,13 @@ import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
 public abstract class BaseMessageTransition {
 
     float progress;
+
     float yProgress;
-    float scaleProgress;
     float xProgress;
+    float bubbleProgress;
+    float scaleProgress;
     float colorProgress;
-    float alphaProgress;
+    float timeProgress;
 
     float messageX;
     float messageY;
@@ -53,6 +55,27 @@ public abstract class BaseMessageTransition {
     Paint messagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     RLottieDrawable drawable;
+
+    SparseArrayCompat<Interpolator> interpolators = new SparseArrayCompat<>(10);
+
+    protected float interpolate(Parameter parameter, float progress) {
+        int key = parameter.ordinal();
+        Interpolator interpolator = interpolators.get(key);
+        if (interpolator == null) {
+            interpolator = AnimationManager.getInstance().getInterpolator(getAnimationType(), parameter);
+            interpolators.put(key, interpolator);
+        }
+        return interpolator.getInterpolation(progress);
+    }
+
+    public void setProgresses() {
+        xProgress = interpolate(Parameter.X, progress);
+        yProgress = interpolate(Parameter.Y, progress);
+        bubbleProgress = interpolate(Parameter.Bubble, progress);
+        scaleProgress = interpolate(Parameter.Scale, progress);
+        colorProgress = interpolate(Parameter.Color, progress);
+        timeProgress = interpolate(Parameter.TimeAppears, progress);
+    }
 
     public BaseMessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
         this.containerView = containerView;
@@ -74,18 +97,14 @@ public abstract class BaseMessageTransition {
             protected void onDraw(Canvas canvas) {
                 int translateSave = canvas.save();
                 canvas.translate(-getX(), -getY());
-                scaleProgress = progress;
-                yProgress = CubicBezierInterpolator.DEFAULT.getInterpolation(progress);
-                xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(progress);
-                colorProgress = progress;
-                alphaProgress = progress;
 
                 if (messageView.getMessageObject().stableId == messageId) {
                     messageX = messageView.getX() + listView.getX();
                     messageY = messageView.getY() + listView.getY();
+                    setProgresses();
+                    animationDraw(canvas);
+                    canvas.restoreToCount(translateSave);
                 }
-                animationDraw(canvas);
-                canvas.restoreToCount(translateSave);
             }
         };
         view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
@@ -168,7 +187,6 @@ public abstract class BaseMessageTransition {
                 enterView.getTop(),
                 enterView.getRight(),
                 enterView.getBottom());
-
     }
 
 
@@ -187,7 +205,7 @@ public abstract class BaseMessageTransition {
     }
 
     protected void animateBackground(Canvas canvas, float showShadowProgress) {
-        evaluate(currentRect, xProgress, yProgress, startRect, endRect);
+        evaluate(currentRect, bubbleProgress, bubbleProgress, startRect, endRect);
         backgroundScaleX = endRect.width() / currentRect.width();
         backgroundScaleY = endRect.height() / currentRect.height();
 
@@ -200,7 +218,7 @@ public abstract class BaseMessageTransition {
         if (yProgress > showShadowProgress) {
             messageDrawable.draw(canvas);
         }
-        messagePaint.setColor(evaluateColor(yProgress, startColor, endColor));
+        messagePaint.setColor(evaluateColor(colorProgress, startColor, endColor));
         messageDrawable.draw(canvas, messagePaint);
 
 //        messagePaint.setColor(0x50ff00ff);
@@ -217,12 +235,18 @@ public abstract class BaseMessageTransition {
 //                messagePaint
 //        );
 
-        canvas.save();
+
+
+        int timeSave = canvas.save();
         shiftY = (currentRect.height() - endRect.height());
         shiftX = (currentRect.width() - endRect.width());
         canvas.translate(messageX, currentRect.top + shiftY);
-        messageView.drawTime(canvas, 1f * alphaProgress, false);
-        canvas.restore();
+        drawTime(canvas);
+        canvas.restoreToCount(timeSave);
+    }
+
+    protected void drawTime(Canvas canvas) {
+        messageView.drawTime(canvas, 1f * timeProgress, false);
     }
 
     protected final int[] location = new int[2];

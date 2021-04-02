@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
+import android.view.animation.Interpolator;
 
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.AnimationPreferences;
@@ -12,7 +13,7 @@ import org.telegram.ui.Animations.Background.gradient.GradientColorEvaluator;
 import org.telegram.ui.Animations.Background.gradient.GradientPointsEvaluator;
 import org.telegram.ui.Animations.Background.gradient.GradientRenderer;
 import org.telegram.ui.Animations.Background.gradient.Points;
-import org.telegram.ui.Animations.Interpolator;
+import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Animations.InterpolatorData;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 
@@ -77,8 +78,8 @@ public class GradientSurfaceView extends GLTextureView {
 
         @Override
         public void onAnimationEnd(Animator animation) {
-            if (nextInterpolator != null) {
-                animatePosition(nextInterpolator);
+            if (nextParameter != null) {
+                animatePosition(nextParameter);
             }
         }
 
@@ -93,19 +94,19 @@ public class GradientSurfaceView extends GLTextureView {
         }
     };
 
-    private Interpolator nextInterpolator = null;
+    private Parameter nextParameter = null;
 
-    public void requestPositionAnimation(Interpolator interpolator) {
-        if (scheduleAnimation && nextInterpolator != null && positionAnimator != null && positionAnimator.isRunning()) {
-            nextInterpolator = interpolator;
+    public void requestPositionAnimation(Parameter parameter) {
+        if (scheduleAnimation && nextParameter != null && positionAnimator != null && positionAnimator.isRunning()) {
+            nextParameter = parameter;
         } else {
-            animatePosition(interpolator);
+            animatePosition(parameter);
         }
     }
 
     public Animator.AnimatorListener animatorListener;
 
-    private void animatePosition(Interpolator interpolator) {
+    private void animatePosition(Parameter parameter) {
         float[][] start = Points.emptyPoints();
         Points.copyPoints(start, gradientRenderer.points);
         float[][] end = Points.emptyPoints();
@@ -119,13 +120,11 @@ public class GradientSurfaceView extends GLTextureView {
             positionAnimator.cancel();
             positionAnimator = null;
         }
-        long duration = AnimationManager.getInstance().getDuration(animationType, interpolator);
-        InterpolatorData data = AnimationManager.getInstance().getInterpolator(animationType,  interpolator);
-
-        CubicBezierInterpolator bezierInterpolator = new CubicBezierInterpolator(data.progressionTop, data.timeStart, data.progressionBottom, data.timeEnd);
+        long duration = AnimationManager.getInstance().getDuration(animationType, parameter);
+        Interpolator interpolator = AnimationManager.getInstance().getInterpolator(animationType, parameter);
         positionAnimator = ValueAnimator.ofObject(new GradientPointsEvaluator(gradientRenderer.points), start, end);
         positionAnimator.setDuration(duration);
-        positionAnimator.setInterpolator(bezierInterpolator);
+        positionAnimator.setInterpolator(interpolator);
         positionAnimator.addUpdateListener(progressUpdateListener);
         if (animatorListener != null) {
             positionAnimator.addListener(animatorListener);

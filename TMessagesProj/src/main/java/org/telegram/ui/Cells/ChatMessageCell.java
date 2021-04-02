@@ -127,7 +127,7 @@ import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.SecretMediaViewer;
-import org.telegram.ui.Transitions.BaseMessageTransition;
+import org.telegram.ui.Animations.Transitions.BaseMessageTransition;
 
 import java.io.File;
 import java.util.ArrayList;

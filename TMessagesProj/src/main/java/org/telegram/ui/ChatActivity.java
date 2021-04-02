@@ -148,7 +148,7 @@ import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Adapters.StickersAdapter;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
-import org.telegram.ui.Animations.Interpolator;
+import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.BotSwitchCell;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -221,9 +221,9 @@ import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.Transitions.EmojiMessageEnterTransition;
-import org.telegram.ui.Transitions.TextMessageEnterTransition;
-import org.telegram.ui.Transitions.VoiceMessageEnterTransition;
+import org.telegram.ui.Animations.Transitions.EmojiMessageEnterTransition;
+import org.telegram.ui.Animations.Transitions.TextMessageEnterTransition;
+import org.telegram.ui.Animations.Transitions.VoiceMessageEnterTransition;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -5068,7 +5068,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrollToMessageId(returnToMessageId, 0, true, returnToLoadIndex, true, 0);
             } else {
                 if (!chatListView.isFastScrollAnimationRunning()) {
-                    gradientView.requestPositionAnimation(Interpolator.JumpToMsg);
+                    gradientView.requestPositionAnimation(Parameter.JumpToMsg);
                 }
                 scrollToLastMessage();
                 if (!pinnedMessageIds.isEmpty()) {
@@ -10527,7 +10527,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     Runnable updatePinnedProgressRunnable;
 
     public void scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll, int forcePinnedMessageId) {
-        gradientView.requestPositionAnimation(Interpolator.JumpToMsg);
+        gradientView.requestPositionAnimation(Parameter.JumpToMsg);
         if (id == 0 || NotificationCenter.getInstance(currentAccount).isAnimationInProgress() || getParentActivity() == null) {
             if (NotificationCenter.getInstance(currentAccount).isAnimationInProgress()) {
                 nextScrollToMessageId = id;
@@ -15162,7 +15162,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     hasFromMe = true;
 
                     if (gradientView != null) {
-                        gradientView.requestPositionAnimation(Interpolator.SendMsg);
+                        gradientView.requestPositionAnimation(Parameter.SendMsg);
                     }
                 }
 
@@ -17553,7 +17553,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         showGigagroupConvertAlert();
 
         if (gradientView != null && startOpenChatAnimation) {
-            gradientView.requestPositionAnimation(Interpolator.OpenChat);
+            gradientView.requestPositionAnimation(Parameter.OpenChat);
             startOpenChatAnimation = false;
         }
     }
