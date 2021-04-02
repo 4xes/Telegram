@@ -100,7 +100,6 @@ public abstract class MessageTransition {
                 if (messageView.getMessageObject().stableId == messageId) {
                     messageX = messageView.getX() + listView.getX();
                     messageY = messageView.getY() + listView.getY();
-                    setProgresses();
                     if (enterView.isStickersExpanded()) {
                         return;
                     }
@@ -141,6 +140,7 @@ public abstract class MessageTransition {
                 stop();
             } else {
                 progress = (float) valueAnimator.getAnimatedValue();
+                setProgresses();
                 view.invalidate();
             }
         });

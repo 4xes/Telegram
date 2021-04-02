@@ -7646,7 +7646,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             int w = cancelLayout.getWidth() + AndroidUtilities.dp(16);
 
             grayPaint.setColor(Theme.getColor(Theme.key_chat_recordTime));
-            int alpha = (int) (slideToAlpha * (1f - cancelToProgress) * slideProgress * (transitionInProgress? transitionAlpha : 1f));
+            if (transitionInProgress) {
+            }
+            int alpha = (int) ((slideToAlpha * (1f - cancelToProgress) * slideProgress) * (transitionInProgress? transitionAlpha : 1f));
             grayPaint.setAlpha(alpha);
             bluePaint.setAlpha((int) (cancelAlpha * cancelToProgress));
             arrowPaint.setColor(grayPaint.getColor());
@@ -7735,7 +7737,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         @Keep
         public void setCancelToProgress(float cancelToProgress) {
-            this.cancelToProgress = cancelToProgress;
+            if (transitionInProgress) {
+                this.cancelToProgress = cancelToProgress;
+            }
         }
 
         @Keep
@@ -7744,7 +7748,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
 
         public void setSlideX(float v) {
-            slideProgress = v;
+            if (!transitionInProgress) {
+                slideProgress = v;
+            }
         }
     }
 

@@ -14,6 +14,8 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.ActionBar.Theme;
@@ -38,6 +40,7 @@ public class VideoMessageTransition extends BaseRecordMessageEnterTransition{
     public VideoMessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView, InstantCameraView instantCameraView) {
         super(containerView, messageView, chatActivityEnterView, listView);
         this.instantCameraView = instantCameraView;
+
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null) {
             pipRoundVideoView.showTemporary(true);
@@ -72,6 +75,7 @@ public class VideoMessageTransition extends BaseRecordMessageEnterTransition{
                 ObjectAnimator.ofInt(instantCameraView.getPaint(), AnimationProperties.PAINT_ALPHA, 0),
                 ObjectAnimator.ofFloat(instantCameraView.getMuteImageView(), View.ALPHA, 0.0f)
         );
+        animatorSet.setDuration(100);
 
 
         ValueAnimator value = ValueAnimator.ofFloat(0f, 1f);
@@ -81,18 +85,25 @@ public class VideoMessageTransition extends BaseRecordMessageEnterTransition{
                 stop();
             } else {
                 progress = (float) valueAnimator.getAnimatedValue();
+                Log.e("progress","progress " + progress);
+                setProgresses();
                 view.invalidate();
             }
         });
+        value.setDuration(duration);
 
         ObjectAnimator cameraScaleX = ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, scale);
         cameraScaleX.setInterpolator(scaleInterpolator);
+        cameraScaleX.setDuration(duration);
         ObjectAnimator cameraScaleY = ObjectAnimator.ofFloat(cameraContainer, View.SCALE_Y, scale);
         cameraScaleY.setInterpolator(scaleInterpolator);
+        cameraScaleY.setDuration(duration);
         ObjectAnimator cameraY = ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, position[1] - rect.y);
         cameraY.setInterpolator(yInterpolator);
+        cameraY.setDuration(duration);
         ObjectAnimator cameraX = ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_X, position[0] - rect.x);
         cameraX.setInterpolator(xInterpolator);
+        cameraX.setDuration(duration);
 
         allAnimators.playTogether(value, cameraX, cameraY, cameraScaleX, cameraScaleY, animatorSet);
         allAnimators.setDuration(duration);

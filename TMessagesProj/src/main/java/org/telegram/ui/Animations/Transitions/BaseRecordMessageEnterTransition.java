@@ -7,6 +7,8 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.widget.FrameLayout;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -76,13 +78,14 @@ abstract class BaseRecordMessageEnterTransition extends MessageTransition {
         timerGetY = location[1];
     }
 
-
     public void animateSlide(Canvas canvas) {
         int saveTranslate = canvas.save();
         float left = slideGetX + enterView.getX();
         float top = slideGetY + enterView.getY();
         canvas.translate(left, top);
+        Log.e("progress","progress2 " + progress);
         slideText.skipDraw = false;
+        slideText.transitionInProgress = true;
         slideText.transitionAlpha = reverse2x(progress);
         slideText.draw(canvas);
         slideText.skipDraw = true;
