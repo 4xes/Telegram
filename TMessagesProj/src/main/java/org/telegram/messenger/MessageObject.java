@@ -193,8 +193,8 @@ public class MessageObject {
             " . "
     };
 
-    public boolean isSupportAnimation() {
-        if (type == MessageObject.TYPE_ROUND_VIDEO || isVoice() || type == 0 || isAnimatedSticker() || isAnimatedEmoji()) {
+    public boolean isSupportTransitionAnimation() {
+        if (isVoice() || type == 0 || isAnyKindOfSticker() || isAnimatedEmoji()) {
             return true;
         }
         return false;

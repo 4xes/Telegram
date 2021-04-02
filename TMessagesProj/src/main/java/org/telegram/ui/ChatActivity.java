@@ -149,6 +149,7 @@ import org.telegram.ui.Adapters.StickersAdapter;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
 import org.telegram.ui.Animations.Parameter;
+import org.telegram.ui.Animations.Transitions.StickerMessageEnterTransition;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.BotSwitchCell;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -14791,6 +14792,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    private boolean isSupportTransitionSending(MessageObject obj) {
+        return obj.type == MessageObject.TYPE_ROUND_VIDEO || (obj.isSupportTransitionAnimation() && !ChatObject.isChannel(currentChat));
+    }
+
     private void processNewMessages(ArrayList<MessageObject> arr) {
         int currentUserId = getUserConfig().getClientUserId();
         boolean updateChat = false;
@@ -14939,7 +14944,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (currentChat != null && currentChat.megagroup && (action instanceof TLRPC.TL_messageActionChatAddUser || action instanceof TLRPC.TL_messageActionChatDeleteUser)) {
                     reloadMegagroup = true;
                 }
-                if (a == 0 && obj.messageOwner.id < 0 && obj.isSupportAnimation() && chatMode != MODE_SCHEDULED) {
+                if (a == 0 && obj.messageOwner.id < 0 && isSupportTransitionSending(obj) && chatMode != MODE_SCHEDULED) {
                     needAnimateToMessage = obj;
                 }
                 if (obj.isOut() && obj.wasJustSent) {
@@ -15068,7 +15073,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 addToPolls(obj, null);
-                if (a == 0 && obj.messageOwner.id < 0 && obj.isSupportAnimation() && chatMode != MODE_SCHEDULED) {
+                if (a == 0 && obj.messageOwner.id < 0 && isSupportTransitionSending(obj) && chatMode != MODE_SCHEDULED) {
                     animatingMessageObjects.add(obj);
                 }
 
@@ -21953,6 +21958,25 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                         return true;
                                     }
                                 });
+                            }
+                            if (message.isAnyKindOfSticker() && message.emojiAnimatedSticker == null) {
+                                View stickerView = chatActivityEnterView.animateSticker;
+                                if (stickerView != null) {
+                                    chatActivityEnterView.animateSticker = null;
+                                    messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                        @Override
+                                        public boolean onPreDraw() {
+                                            messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
+                                            if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
+                                                StickerMessageEnterTransition transition = new StickerMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView, stickerView);
+                                                transition.start();
+                                            } else {
+                                                chatActivityEnterView.startMessageTransition();
+                                            }
+                                            return true;
+                                        }
+                                    });
+                                }
                             }
                         }
                     }

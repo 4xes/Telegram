@@ -115,6 +115,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -196,6 +197,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         }
     }
+
+
+    public View animateSticker;
 
     private final static int RECORD_STATE_ENTER = 0;
     public final static int RECORD_STATE_SENDING = 1;
@@ -6141,6 +6145,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         emojiView.hideSearchKeyboard();
                     }
                     setStickersExpanded(false, true, false);
+                } else {
+                    animateSticker = view;
                 }
                 ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {

@@ -102,6 +102,9 @@ public abstract class BaseMessageTransition {
                     messageX = messageView.getX() + listView.getX();
                     messageY = messageView.getY() + listView.getY();
                     setProgresses();
+                    if (enterView.isStickersExpanded()) {
+                        return;
+                    }
                     animationDraw(canvas);
                     canvas.restoreToCount(translateSave);
                 }
@@ -191,6 +194,7 @@ public abstract class BaseMessageTransition {
 
 
     RectF editBounds = new RectF();
+    RectF enterViewBounds = new RectF();
     float editPaddingVertical = AndroidUtilities.dp(11);
 
     public void setEditRect() {
@@ -202,6 +206,16 @@ public abstract class BaseMessageTransition {
                 editTextX + enterView.getEditField().getMeasuredWidth(),
                 editTextY + enterView.getEditField().getMeasuredHeight());
 
+    }
+
+    public void setEnterViewRect() {
+        float editTextY = enterView.getY();
+        float editTextX = enterView.getX();
+        enterViewBounds.set(
+                editTextX,
+                editTextY,
+                enterView.getMeasuredHeight(),
+                enterView.getMeasuredWidth());
     }
 
     protected void animateBackground(Canvas canvas, float showShadowProgress) {
