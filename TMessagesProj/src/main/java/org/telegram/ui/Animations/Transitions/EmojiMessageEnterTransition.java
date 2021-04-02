@@ -98,6 +98,11 @@ public class EmojiMessageEnterTransition extends BaseMessageTransition {
         if (drawable instanceof RLottieDrawable) {
             image.setCurrentAlpha(1f);
         }
+
+        int timeSave = canvas.save();
+        canvas.translate(messageX, messageY);
+        drawTime(canvas);
+        canvas.restoreToCount(timeSave);
     }
 
     @Override
