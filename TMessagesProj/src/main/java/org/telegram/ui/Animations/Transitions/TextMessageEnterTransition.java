@@ -10,7 +10,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
 
-public class TextMessageEnterTransition extends BaseMessageTransition {
+public class TextMessageEnterTransition extends MessageTransition {
 
     float editX;
     float editY;

@@ -2,10 +2,8 @@ package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
-import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.Animations.AnimationType;
@@ -14,7 +12,7 @@ import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
-public abstract class BaseStickerMessageEnterTransition extends BaseMessageTransition {
+public abstract class BaseStickerMessageEnterTransition extends MessageTransition {
 
 
     public BaseStickerMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {

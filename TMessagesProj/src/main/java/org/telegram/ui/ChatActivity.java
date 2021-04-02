@@ -56,7 +56,6 @@ import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
 import android.util.LongSparseArray;
-import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -73,7 +72,6 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -149,6 +147,8 @@ import org.telegram.ui.Adapters.StickersAdapter;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
 import org.telegram.ui.Animations.Parameter;
+import org.telegram.ui.Animations.Transitions.MessageTransition;
+import org.telegram.ui.Animations.Transitions.VideoMessageTransition;
 import org.telegram.ui.Animations.Transitions.StickerMessageEnterTransition;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.BotSwitchCell;
@@ -21825,158 +21825,38 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     int index;
                     if ((index = animatingMessageObjects.indexOf(message)) != -1) {
                         animatingMessageObjects.remove(index);
-                        if (message.type == MessageObject.TYPE_ROUND_VIDEO) {
-                            if (instantCameraView.getTextureView() != null) {
-                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                    @Override
-                                    public boolean onPreDraw() {
-
-                                        PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
-                                        if (pipRoundVideoView != null) {
-                                            pipRoundVideoView.showTemporary(true);
-                                        }
-
-                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-                                        ImageReceiver imageReceiver = messageCell.getPhotoImage();
-                                        float w = imageReceiver.getImageWidth();
-                                        org.telegram.ui.Components.Rect rect = instantCameraView.getCameraRect();
-                                        float scale = w / rect.width;
-                                        int[] position = new int[2];
-                                        messageCell.getTransitionParams().ignoreAlpha = true;
-                                        messageCell.setAlpha(0.0f);
-                                        messageCell.setTimeAlpha(0.0f);
-                                        messageCell.getLocationOnScreen(position);
-                                        position[0] += imageReceiver.getImageX() - messageCell.getAnimationOffsetX();
-                                        position[1] += imageReceiver.getImageY() - messageCell.getTranslationY();
-                                        final InstantCameraView.InstantViewCameraContainer cameraContainer = instantCameraView.getCameraContainer();
-                                        cameraContainer.setPivotX(0.0f);
-                                        cameraContainer.setPivotY(0.0f);
-                                        AnimatorSet animatorSet = new AnimatorSet();
-
-                                        cameraContainer.setImageReceiver(imageReceiver);
-
-                                        instantCameraView.cancelBlur();
-
-                                        AnimatorSet allAnimators = new AnimatorSet();
-                                        animatorSet.playTogether(
-                                                ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, scale),
-                                                ObjectAnimator.ofFloat(cameraContainer, View.SCALE_Y, scale),
-                                                ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, position[1] - rect.y),
-                                                ObjectAnimator.ofFloat(instantCameraView.getSwitchButtonView(), View.ALPHA, 0.0f),
-                                                ObjectAnimator.ofInt(instantCameraView.getPaint(), AnimationProperties.PAINT_ALPHA, 0),
-                                                ObjectAnimator.ofFloat(instantCameraView.getMuteImageView(), View.ALPHA, 0.0f)
-                                        );
-                                        animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-                                        ObjectAnimator o = ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_X, position[0] - rect.x);
-                                        o.setInterpolator(CubicBezierInterpolator.DEFAULT);
-
-                                        allAnimators.playTogether(o, animatorSet);
-                                        allAnimators.setStartDelay(120);
-                                        allAnimators.setDuration(180);
-
-                                        allAnimators.addListener(new AnimatorListenerAdapter() {
-                                            @Override
-                                            public void onAnimationEnd(Animator animation) {
-                                                messageCell.setAlpha(1.0f);
-                                                messageCell.getTransitionParams().ignoreAlpha = false;
-                                                Property<ChatMessageCell, Float> ALPHA = new AnimationProperties.FloatProperty<ChatMessageCell>("alpha") {
-                                                    @Override
-                                                    public void setValue(ChatMessageCell object, float value) {
-                                                        object.setTimeAlpha(value);
-                                                    }
-
-                                                    @Override
-                                                    public Float get(ChatMessageCell object) {
-                                                        return object.getTimeAlpha();
-                                                    }
-                                                };
-
-                                                AnimatorSet animatorSet = new AnimatorSet();
-                                                animatorSet.playTogether(
-                                                        ObjectAnimator.ofFloat(cameraContainer, View.ALPHA, 0.0f),
-                                                        ObjectAnimator.ofFloat(messageCell, ALPHA, 1.0f)
-                                                );
-                                                animatorSet.setDuration(100);
-                                                animatorSet.setInterpolator(new DecelerateInterpolator());
-                                                animatorSet.addListener(new AnimatorListenerAdapter() {
-                                                    @Override
-                                                    public void onAnimationEnd(Animator animation) {
-                                                        instantCameraView.hideCamera(true);
-                                                        instantCameraView.setVisibility(View.INVISIBLE);
-                                                    }
-                                                });
-                                                animatorSet.start();
-                                            }
-                                        });
-                                        allAnimators.start();
-                                        return true;
-                                    }
+                        if (message.type == MessageObject.TYPE_ROUND_VIDEO && instantCameraView.getTextureView() != null) {
+                            startTransition(messageCell, () -> {
+                                MessageTransition transition = new VideoMessageTransition(contentView, messageCell, chatActivityEnterView, chatListView, instantCameraView);
+                                transition.start();
+                            });
+                        }
+                        if (message.isVoice() && chatActivityEnterView.canShowVoiceMessageTransition()) {
+                            startTransition(messageCell, () -> {
+                                MessageTransition transition = new VoiceMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                transition.start();
+                            });
+                        }
+                        if (message.type == 0) {
+                            startTransition(messageCell, () -> {
+                                MessageTransition transition = new TextMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                transition.start();
+                            });
+                        }
+                        if (message.isAnimatedEmoji()) {
+                            startTransition(messageCell, () -> {
+                                MessageTransition transition = new EmojiMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                transition.start();
+                            });
+                        }
+                        if (message.isAnyKindOfSticker() && message.emojiAnimatedSticker == null) {
+                            View stickerView = chatActivityEnterView.animateSticker;
+                            if (stickerView != null) {
+                                chatActivityEnterView.animateSticker = null;
+                                startTransition(messageCell, () -> {
+                                    MessageTransition transition = new StickerMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView, stickerView);
+                                    transition.start();
                                 });
-                            }
-                        } else {
-                            if (message.isVoice() && chatActivityEnterView.canShowVoiceMessageTransition()) {
-                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                    @Override
-                                    public boolean onPreDraw() {
-                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-                                        if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
-                                            VoiceMessageEnterTransition transition = new VoiceMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
-                                            transition.start();
-                                        } else {
-                                            chatActivityEnterView.startMessageTransition();
-                                        }
-                                        return true;
-                                    }
-                                });
-                            }
-                            if (message.type == 0) {
-                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                    @Override
-                                    public boolean onPreDraw() {
-                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-                                        if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
-                                            TextMessageEnterTransition transition = new TextMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
-                                            transition.start();
-                                        } else {
-                                            chatActivityEnterView.startMessageTransition();
-                                        }
-                                        return true;
-                                    }
-                                });
-                            }
-                            if (message.isAnimatedEmoji()) {
-                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                    @Override
-                                    public boolean onPreDraw() {
-                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-                                        if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
-                                            EmojiMessageEnterTransition transition = new EmojiMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
-                                            transition.start();
-                                        } else {
-                                            chatActivityEnterView.startMessageTransition();
-                                        }
-                                        return true;
-                                    }
-                                });
-                            }
-                            if (message.isAnyKindOfSticker() && message.emojiAnimatedSticker == null) {
-                                View stickerView = chatActivityEnterView.animateSticker;
-                                if (stickerView != null) {
-                                    chatActivityEnterView.animateSticker = null;
-                                    messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                        @Override
-                                        public boolean onPreDraw() {
-                                            messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-                                            if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
-                                                StickerMessageEnterTransition transition = new StickerMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView, stickerView);
-                                                transition.start();
-                                            } else {
-                                                chatActivityEnterView.startMessageTransition();
-                                            }
-                                            return true;
-                                        }
-                                    });
-                                }
                             }
                         }
                     }
@@ -21998,6 +21878,21 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
             }
+        }
+
+         public void startTransition(ChatMessageCell messageCell, MessageTransition.OnPreDrawCallback callback) {
+            messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
+                    if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
+                        callback.onPreDraw();
+                    } else {
+                        chatActivityEnterView.startMessageTransition();
+                    }
+                    return true;
+                }
+            });
         }
 
         @Override

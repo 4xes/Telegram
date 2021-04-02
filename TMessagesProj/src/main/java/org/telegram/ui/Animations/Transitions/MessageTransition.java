@@ -28,7 +28,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
 
-public abstract class BaseMessageTransition {
+public abstract class MessageTransition {
 
     float progress;
 
@@ -45,9 +45,9 @@ public abstract class BaseMessageTransition {
     float editX;
     float editY;
 
-    private final ValueAnimator animator;
+    protected Animator animator;
+    protected View view;
 
-    final View view;
     final FrameLayout containerView;
     final ChatMessageCell messageView;
     final ChatActivityEnterView enterView;
@@ -55,8 +55,6 @@ public abstract class BaseMessageTransition {
     final int messageId;
 
     Paint messagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-    RLottieDrawable drawable;
 
     SparseArrayCompat<Interpolator> interpolators = new SparseArrayCompat<>(10);
 
@@ -79,7 +77,7 @@ public abstract class BaseMessageTransition {
         timeProgress = interpolate(Parameter.TimeAppears, progress);
     }
 
-    public BaseMessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
+    public MessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
         this.containerView = containerView;
         this.messageView = messageView;
         this.enterView = chatActivityEnterView;
@@ -92,7 +90,6 @@ public abstract class BaseMessageTransition {
         messageId = messageView.getMessageObject().stableId;
         messageView.setEnterTransition(this);
         messageView.setVisibility(View.INVISIBLE);
-
 
         view = new View(containerView.getContext()) {
             @Override
@@ -112,32 +109,10 @@ public abstract class BaseMessageTransition {
                 }
             }
         };
-        view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        //view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         containerView.addView(view);
-
-        animator = ValueAnimator.ofFloat(0f, 1f);
-        animator.addUpdateListener(valueAnimator -> {
-            if (messageView.getMessageObject().stableId != messageId) {
-                stop();
-            } else {
-                progress = (float) valueAnimator.getAnimatedValue();
-                view.invalidate();
-            }
-        });
-
-        long duration = AnimationManager.getInstance().getDuration(getAnimationType(), null);
-
-        animator.setInterpolator(new LinearInterpolator());
-        animator.setDuration(duration);
-        animator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (view.getParent() != null) {
-                    release();
-                }
-            }
-        });
     }
+
 
     public void animationDraw(Canvas canvas) {
 
@@ -159,6 +134,30 @@ public abstract class BaseMessageTransition {
     }
 
     public void start() {
+
+        ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+        animator.addUpdateListener(valueAnimator -> {
+            if (messageView.getMessageObject().stableId != messageId) {
+                stop();
+            } else {
+                progress = (float) valueAnimator.getAnimatedValue();
+                view.invalidate();
+            }
+        });
+
+        long duration = AnimationManager.getInstance().getDuration(getAnimationType(), null);
+
+        animator.setInterpolator(new LinearInterpolator());
+        animator.setDuration(duration);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (view.getParent() != null) {
+                    release();
+                }
+            }
+        });
+        this.animator = animator;
         animator.start();
     }
 
@@ -330,4 +329,8 @@ public abstract class BaseMessageTransition {
     }
 
     protected abstract AnimationType getAnimationType();
+
+    public interface OnPreDrawCallback {
+        void onPreDraw();
+    }
 }

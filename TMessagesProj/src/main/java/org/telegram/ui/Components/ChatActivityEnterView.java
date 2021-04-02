@@ -203,7 +203,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     private final static int RECORD_STATE_ENTER = 0;
     public final static int RECORD_STATE_SENDING = 1;
-    private final static int RECORD_STATE_CANCEL = 2;
+    public final static int RECORD_STATE_CANCEL = 2;
     private final static int RECORD_STATE_PREPARING = 3;
     private final static int RECORD_STATE_CANCEL_BY_TIME = 4;
     private final static int RECORD_STATE_CANCEL_BY_GESTURE = 5;

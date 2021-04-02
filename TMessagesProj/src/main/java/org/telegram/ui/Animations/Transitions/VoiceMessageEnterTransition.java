@@ -16,7 +16,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import static org.telegram.ui.Components.ChatActivityEnterView.RECORD_STATE_SENDING;
 
-public class VoiceMessageEnterTransition extends BaseMessageTransition {
+public class VoiceMessageEnterTransition extends MessageTransition {
 
     float fromRadius;
 
@@ -238,8 +238,8 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
         float toY;
 
         if (messageView.getMessageObject().stableId != messageId) {
-            toX = dotLastToCx;
-            toY = dotLastToCy;
+            toX = timeLastToX;
+            toY = timeLastToY;
         } else {
             toX = messageView.timeAudioX;
             toY = messageY + messageView.getVoiceDurationY();
