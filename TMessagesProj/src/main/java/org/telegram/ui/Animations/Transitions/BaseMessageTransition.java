@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
 import android.view.animation.Interpolator;
@@ -169,7 +171,7 @@ public abstract class BaseMessageTransition {
     float shiftY;
     float shiftX;
 
-    public void setBackgroundRectEnd() {
+    public void setBubbleRectEnd() {
         messageView.updateBackgroundState();
 
 
@@ -218,6 +220,9 @@ public abstract class BaseMessageTransition {
                 enterView.getMeasuredWidth());
     }
 
+    Path path;
+    Rect temp = new Rect();
+
     protected void animateBackground(Canvas canvas, float showShadowProgress) {
         evaluate(currentRect, bubbleProgress, bubbleProgress, startRect, endRect);
         backgroundScaleX = endRect.width() / currentRect.width();
@@ -233,7 +238,11 @@ public abstract class BaseMessageTransition {
             messageDrawable.draw(canvas);
         }
         messagePaint.setColor(evaluateColor(colorProgress, startColor, endColor));
-        messageDrawable.draw(canvas, messagePaint);
+        temp.set((int) currentRect.left, (int) currentRect.top, (int) currentRect.right, (int) currentRect.bottom);
+
+        path = messageDrawable.getPath(temp, messagePaint);
+        canvas.drawPath(path, messagePaint);
+
 
 //        messagePaint.setColor(0x50ff00ff);
 //        canvas.drawRect(
@@ -248,19 +257,17 @@ public abstract class BaseMessageTransition {
 //                backgroundRect,
 //                messagePaint
 //        );
+    }
 
-
-
+    protected void drawTime(Canvas canvas, float x, float y) {
         int timeSave = canvas.save();
-        shiftY = (currentRect.height() - endRect.height());
-        shiftX = (currentRect.width() - endRect.width());
-        canvas.translate(messageX, currentRect.top + shiftY);
-        drawTime(canvas);
+        canvas.translate(x, y);
+        messageView.drawTime(canvas, 1f * timeProgress, false);
         canvas.restoreToCount(timeSave);
     }
 
     protected void drawTime(Canvas canvas) {
-        messageView.drawTime(canvas, 1f * timeProgress, false);
+        drawTime(canvas, messageX, messageY);
     }
 
     protected final int[] location = new int[2];

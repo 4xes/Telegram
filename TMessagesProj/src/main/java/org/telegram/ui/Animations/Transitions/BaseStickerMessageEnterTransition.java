@@ -83,10 +83,7 @@ public abstract class BaseStickerMessageEnterTransition extends BaseMessageTrans
             image.setCurrentAlpha(1f);
         }
 
-        int timeSave = canvas.save();
-        canvas.translate(messageX, messageY);
         drawTime(canvas);
-        canvas.restoreToCount(timeSave);
     }
 
     @Override

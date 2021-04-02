@@ -1,14 +1,11 @@
 package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationType;
-import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -33,7 +30,7 @@ public class TextMessageEnterTransition extends BaseMessageTransition {
         float editTextX = enterView.getX() + editX;
         float editTextY = enterView.getY() + editY + editPaddingVertical;
 
-        setBackgroundRectEnd();
+        setBubbleRectEnd();
         messageView.onLayoutUpdateText();
 
         float textX = messageView.textX - endRect.left;
@@ -46,10 +43,9 @@ public class TextMessageEnterTransition extends BaseMessageTransition {
                 editTextY + endRect.height());
 
         animateBackground(canvas, 0.08f);
-        Theme.dialogs_onlinePaint.setColor(Color.MAGENTA);
-        canvas.drawCircle(editTextX, editTextY, AndroidUtilities.dp(5), Theme.dialogs_onlinePaint);
 
         canvas.save();
+        canvas.clipPath(path);
         float scale = evaluate(scaleProgress, startSize, endSize) / endSize;
         canvas.translate(currentRect.left + textX, currentRect.top + textY);
         canvas.scale(scale, scale);

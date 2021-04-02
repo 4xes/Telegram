@@ -423,16 +423,7 @@ public class Theme {
             draw(canvas, null);
         }
 
-        public void draw(Canvas canvas, Paint paintToUse) {
-            Rect bounds = getBounds();
-            if (paintToUse == null && gradientShader == null) {
-                Drawable background = getBackgroundDrawable();
-                if (background != null) {
-                    background.setBounds(bounds);
-                    background.draw(canvas);
-                    return;
-                }
-            }
+        public Path getPath(Rect bounds, Paint paintToUse) {
             int padding = dp(2);
             int rad;
             int nearRad;
@@ -444,14 +435,6 @@ public class Theme {
                 nearRad = dp(Math.min(5, SharedConfig.bubbleRadius));
             }
             int smallRad = dp(6);
-
-            Paint p = paintToUse == null ? paint : paintToUse;
-
-            if (paintToUse == null && gradientShader != null) {
-                matrix.reset();
-                matrix.postTranslate(0, -topY);
-                gradientShader.setLocalMatrix(matrix);
-            }
 
             int top = Math.max(bounds.top, 0);
             path.reset();
@@ -568,6 +551,29 @@ public class Theme {
                 }
             }
             path.close();
+            return path;
+        }
+
+        public void draw(Canvas canvas, Paint paintToUse) {
+            Rect bounds = getBounds();
+            if (paintToUse == null && gradientShader == null) {
+                Drawable background = getBackgroundDrawable();
+                if (background != null) {
+                    background.setBounds(bounds);
+                    background.draw(canvas);
+                    return;
+                }
+            }
+
+            Paint p = paintToUse == null ? paint : paintToUse;
+
+            if (paintToUse == null && gradientShader != null) {
+                matrix.reset();
+                matrix.postTranslate(0, -topY);
+                gradientShader.setLocalMatrix(matrix);
+            }
+
+            Path path = getPath(bounds, paintToUse);
 
             canvas.drawPath(path, p);
             if (gradientShader != null && isSelected && paintToUse == null) {

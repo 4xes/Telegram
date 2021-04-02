@@ -7024,8 +7024,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawMessageText(canvas, transitionParams.animateOutTextBlocks, false, (1.0f - transitionParams.animateChangeProgress));
                 drawMessageText(canvas, currentMessageObject.textLayoutBlocks, true, transitionParams.animateChangeProgress);
             } else {
-                Theme.dialogs_onlinePaint.setColor(Color.CYAN);
-                canvas.drawCircle(textX, textY, 10, Theme.dialogs_onlinePaint);
+//                Theme.dialogs_onlinePaint.setColor(Color.CYAN);
+//                canvas.drawCircle(textX, textY, 10, Theme.dialogs_onlinePaint);
                 drawMessageText(canvas, currentMessageObject.textLayoutBlocks, true, 1.0f);
             }
 
@@ -10620,6 +10620,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (replyNameLayout != null) {
+            //replay
             float replyStartX = this.replyStartX;
             if (currentMessagesGroup != null && currentMessagesGroup.transitionParams.backgroundChangeBounds) {
                 replyStartX += currentMessagesGroup.transitionParams.offsetLeft;
@@ -10655,7 +10656,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
             if (currentPosition == null || currentPosition.minY == 0 && currentPosition.minX == 0) {
-                canvas.drawRect(replyStartX, replyStartY, replyStartX + AndroidUtilities.dp(2), replyStartY + AndroidUtilities.dp(35), Theme.chat_replyLinePaint);
+                //canvas.drawRect(replyStartX, replyStartY, replyStartX + AndroidUtilities.dp(2), replyStartY + AndroidUtilities.dp(35), Theme.chat_replyLinePaint);
                 if (needReplyImage) {
                     replyImageReceiver.setImageCoords(replyStartX + AndroidUtilities.dp(10), replyStartY, AndroidUtilities.dp(35), AndroidUtilities.dp(35));
                     replyImageReceiver.draw(canvas);

@@ -286,9 +286,10 @@ public class VoiceMessageEnterTransition extends BaseMessageTransition {
     @Override
     public void animationDraw(Canvas canvas) {
         super.animationDraw(canvas);
-        setBackgroundRectEnd();
+        setBubbleRectEnd();
         setStartEnterEnter();
         animateBackground(canvas, 0.3f);
+        drawTime(canvas, messageX, currentRect.top + shiftY);
         animateWave(canvas);
         animateSlide(canvas);
         animateTime(canvas);
