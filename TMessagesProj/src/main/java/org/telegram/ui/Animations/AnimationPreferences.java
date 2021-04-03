@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import androidx.annotation.Nullable;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -117,10 +118,10 @@ public class AnimationPreferences {
 
     public static String key(AnimationType type, @Nullable Parameter parameter) {
         String key;
-        if (type == AnimationType.Background && parameter != null) {
-            key = (type.name() + "_" + parameter.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);;
-        } else {
+        if (parameter == null) {
             key = (type.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
+        } else {
+            key = (type.name() + "_" + parameter.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);;
         }
         return key;
     }
@@ -139,6 +140,57 @@ public class AnimationPreferences {
             builder.append("\n");
         }
         return builder.toString();
+    }
+
+    public boolean setSettingsFromString(String settings) {
+        if (settings == null) {
+            return false;
+        }
+        settings = settings.trim().toLowerCase(Locale.ENGLISH);
+        if (settings.isEmpty()) {
+            resetSettings();
+            return true;
+        }
+        if (settings.length() > 0 ) {
+            resetSettings();
+            String[] params = settings.split("\n");
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length < 2) {
+                    continue;
+                }
+                String key = keyValue[0];
+                String strValue = keyValue[1];
+                if (key.endsWith(prefixProgressionTop) || key.endsWith(prefixProgressionBottom) || key.endsWith(prefixTimeStart) || key.endsWith(prefixTimeEnd)) {
+                    try {
+                        float value = Float.parseFloat(strValue);
+                        sharedPreferences.edit().putFloat(key, value).apply();
+
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (key.endsWith(prefixDuration)) {
+                    try {
+                        long value = Long.parseLong(strValue);
+                        sharedPreferences.edit().putLong(key, value).apply();
+
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (key.endsWith("c1") || key.endsWith("c2") || key.endsWith("c3") || key.endsWith("c4")) {
+                    try {
+                        int value = Integer.parseInt(strValue);
+                        sharedPreferences.edit().putInt(key, value).apply();
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        }
+        return true;
     }
 
     private static final String prefixProgressionTop = "_pt";

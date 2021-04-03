@@ -13,6 +13,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.Property;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -129,6 +130,7 @@ public class AnimationSettingsActivity extends BaseFragment {
         }
     };
 
+
     @Override
     public View createView(Context context) {
         ViewConfiguration configuration = ViewConfiguration.get(context);
@@ -157,50 +159,14 @@ public class AnimationSettingsActivity extends BaseFragment {
                         }
                         break;
                     case share_parameters:
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle("Share settings");
-                        TextInfoPrivacyCell textDetailCell = new TextInfoPrivacyCell (context);
-                        String settings = AnimationManager.getPreferences().toString();
-                        textDetailCell.setText(settings);
-                        builder.setView(textDetailCell);
-                        builder.setNeutralButton("Copy", (dialogInterface, i) -> {
-                            AndroidUtilities.addToClipboard(settings);
-                            dismissCurrentDialog();
-                            Toast.makeText(context, "Settings copied", Toast.LENGTH_SHORT).show();
-                        });
-                        builder.setPositiveButton("Share", (dialogInterface, i) -> {
-                            ShareAlert alert = new ShareAlert(context, null, settings, false, null, false);
-                            alert.setDelegate(new ShareAlert.ShareAlertDelegate() {
-                                @Override
-                                public void didShare() {
-                                    Toast.makeText(context, "Settings shared", Toast.LENGTH_SHORT).show();
-                                    dismissCurrentDialog();
-                                }
-
-                                @Override
-                                public boolean didCopy() {
-                                    return true;
-                                }
-                            });
-                            alert.show();
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
-                            dismissCurrentDialog();
-                        });
-                        AlertDialog dialog = builder.create();
-                        dialog.setDismissDialogByButtons(false);
-                        showDialog(dialog);
+                        shareDialog(context);
                         break;
                     case import_parameters:
-                        Toast.makeText(context, "Settings imported", Toast.LENGTH_SHORT).show();
+                        importDialog(context);
                         break;
                     case restore_parameters:
                         AnimationManager.getInstance().resetSettings();
-                        for (SettingsPage page: settingsPages) {
-                            if (page.listView != null && page.listView.getAdapter() != null) {
-                                page.listView.getAdapter().notifyDataSetChanged();
-                            }
-                        }
+                        onUpdateSettings();
                         Toast.makeText(context, "Settings restored", Toast.LENGTH_SHORT).show();
                         break;
                 }
@@ -711,6 +677,99 @@ public class AnimationSettingsActivity extends BaseFragment {
 
         contentView = (FrameLayout) fragmentView;
         return fragmentView;
+    }
+
+    private void onUpdateSettings() {
+        for (SettingsPage page: settingsPages) {
+            if (page.listView != null && page.listView.getAdapter() != null) {
+                page.listView.getAdapter().notifyDataSetChanged();
+            }
+        }
+    }
+
+    private void shareDialog(Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Share settings");
+        TextInfoPrivacyCell textDetailCell = new TextInfoPrivacyCell (context);
+        String settings = AnimationManager.getPreferences().toString();
+        textDetailCell.setText(settings);
+        builder.setView(textDetailCell);
+        builder.setNeutralButton("Copy", (dialogInterface, i) -> {
+            AndroidUtilities.addToClipboard(settings);
+            dismissCurrentDialog();
+            Toast.makeText(context, "Settings copied", Toast.LENGTH_SHORT).show();
+        });
+        builder.setPositiveButton("Share", (dialogInterface, i) -> {
+            ShareAlert alert = new ShareAlert(context, null, settings, false, null, false);
+            alert.setDelegate(new ShareAlert.ShareAlertDelegate() {
+                @Override
+                public void didShare() {
+                    Toast.makeText(context, "Settings shared", Toast.LENGTH_SHORT).show();
+                    dismissCurrentDialog();
+                }
+
+                @Override
+                public boolean didCopy() {
+                    return true;
+                }
+            });
+            alert.show();
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+            dismissCurrentDialog();
+        });
+        AlertDialog dialog = builder.create();
+        dialog.setDismissDialogByButtons(false);
+        showDialog(dialog);
+    }
+
+    private void importDialog(Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Import settings");
+        final EditTextSettingsCell editTextSettingsCell = new EditTextSettingsCell(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(120) + 1);
+
+                int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(42);
+                getTextView().measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            }
+        };
+        editTextSettingsCell.getTextView().setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        editTextSettingsCell.getTextView().setMaxLines(Integer.MAX_VALUE);
+        editTextSettingsCell.getTextView().setLines(8);
+        editTextSettingsCell.getTextView().setHint("Paste settings here");
+        editTextSettingsCell.getTextView().setSingleLine(false);
+        editTextSettingsCell.getTextView().setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        editTextSettingsCell.setText("", true);
+        builder.setView(editTextSettingsCell);
+        builder.setNeutralButton("Get from clipboard", (dialogInterface, i) -> {
+            String clipboard = AndroidUtilities.getFromClipboard();
+            if (clipboard == null) {
+                editTextSettingsCell.setText("", true);
+            } else {
+
+                editTextSettingsCell.setText(clipboard, true);
+            }
+        });
+        builder.setPositiveButton("Import", (dialogInterface, i) -> {
+            if (editTextSettingsCell.getText().trim().isEmpty()) {
+                Toast.makeText(context, "Nothing to import", Toast.LENGTH_SHORT).show();
+            }
+            if (AnimationManager.getPreferences().setSettingsFromString(editTextSettingsCell.getText())){
+                onUpdateSettings();
+                Toast.makeText(context, "Settings imported", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(context, "Settings error", Toast.LENGTH_SHORT).show();
+            }
+            dismissCurrentDialog();
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+            dismissCurrentDialog();
+        });
+        AlertDialog dialog = builder.create();
+        dialog.setDismissDialogByButtons(false);
+        showDialog(dialog);
     }
 
     private boolean closeActionMode() {

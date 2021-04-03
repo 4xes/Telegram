@@ -14,6 +14,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -48,6 +49,7 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
 
+import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -151,6 +153,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static android.content.ClipDescription.MIMETYPE_TEXT_PLAIN;
 
 public class AndroidUtilities {
 
@@ -2202,6 +2206,20 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    @Nullable
+    public static String getFromClipboard() {
+        try {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null && clipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+                ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+                return item.getText().toString();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 
     public static void addMediaToGallery(String fromPath) {
