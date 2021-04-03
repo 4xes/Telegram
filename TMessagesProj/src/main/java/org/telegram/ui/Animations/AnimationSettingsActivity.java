@@ -6,6 +6,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -32,25 +33,34 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.EditTextSettingsCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SharedMediaSectionCell;
+import org.telegram.ui.Cells.TextDetailCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
+import org.telegram.ui.Components.ShareAlert;
+import org.telegram.ui.DialogsActivity;
 
 import java.util.ArrayList;
 
@@ -140,30 +150,49 @@ public class AnimationSettingsActivity extends BaseFragment {
                 if (getParentActivity() == null) {
                     return;
                 }
-                if (id == -1) {
-                    if (!closeActionMode()) {
-                        finishFragment();
-                    }
-                }
-            }
-        });
-
-        ActionBarMenu menu = actionBar.createMenu();
-        otherItem = menu.addItem(10, R.drawable.ic_ab_other);
-        otherItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
-        otherItem.addSubItem(share_parameters, 0, "Share Parameters");
-        otherItem.addSubItem(import_parameters, 0, "Import Parameters");
-        ActionBarMenuSubItem restore = otherItem.addSubItem(restore_parameters, 0, "Restore to Defaults");
-        restore.setTextColor(0xffff3e3e);;
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
                 switch (id) {
+                    case -1:
+                        if (!closeActionMode()) {
+                            finishFragment();
+                        }
+                        break;
                     case share_parameters:
-                        Toast.makeText(context, "Settings shared", Toast.LENGTH_SHORT).show();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle("Share settings");
+                        TextInfoPrivacyCell textDetailCell = new TextInfoPrivacyCell (context);
+                        String settings = AnimationManager.getPreferences().toString();
+                        textDetailCell.setText(settings);
+                        builder.setView(textDetailCell);
+                        builder.setNeutralButton("Copy", (dialogInterface, i) -> {
+                            AndroidUtilities.addToClipboard(settings);
+                            dismissCurrentDialog();
+                            Toast.makeText(context, "Settings copied", Toast.LENGTH_SHORT).show();
+                        });
+                        builder.setPositiveButton("Share", (dialogInterface, i) -> {
+                            ShareAlert alert = new ShareAlert(context, null, settings, false, null, false);
+                            alert.setDelegate(new ShareAlert.ShareAlertDelegate() {
+                                @Override
+                                public void didShare() {
+                                    Toast.makeText(context, "Settings shared", Toast.LENGTH_SHORT).show();
+                                    dismissCurrentDialog();
+                                }
+
+                                @Override
+                                public boolean didCopy() {
+                                    return true;
+                                }
+                            });
+                            alert.show();
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialogInterface, i) -> {
+                            dismissCurrentDialog();
+                        });
+                        AlertDialog dialog = builder.create();
+                        dialog.setDismissDialogByButtons(false);
+                        showDialog(dialog);
                         break;
                     case import_parameters:
-                        Toast.makeText(context, "Settings copied", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Settings imported", Toast.LENGTH_SHORT).show();
                         break;
                     case restore_parameters:
                         AnimationManager.getInstance().resetSettings();
@@ -177,6 +206,14 @@ public class AnimationSettingsActivity extends BaseFragment {
                 }
             }
         });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        otherItem = menu.addItem(10, R.drawable.ic_ab_other);
+        otherItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+        otherItem.addSubItem(share_parameters, 0, "Share Parameters");
+        otherItem.addSubItem(import_parameters, 0, "Import Parameters");
+        ActionBarMenuSubItem restore = otherItem.addSubItem(restore_parameters, 0, "Restore to Defaults");
+        restore.setTextColor(0xffff3e3e);
 
         if (scrollSlidingTextTabStrip != null) {
             initialTab = scrollSlidingTextTabStrip.getCurrentTabId();

@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.Nullable;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 
 public class AnimationPreferences {
@@ -121,6 +123,22 @@ public class AnimationPreferences {
             key = (type.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
         }
         return key;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for(Map.Entry<String, ?> entry: sharedPreferences.getAll().entrySet()) {
+            String key = entry.getKey();
+            if (key.equals(keyBackgroundIndexes)) {
+                continue;
+            }
+            builder.append(key);
+            builder.append("=");
+            builder.append(entry.getValue().toString());
+            builder.append("\n");
+        }
+        return builder.toString();
     }
 
     private static final String prefixProgressionTop = "_pt";
