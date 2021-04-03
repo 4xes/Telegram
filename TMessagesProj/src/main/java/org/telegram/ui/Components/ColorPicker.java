@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ColorPicker extends FrameLayout {
-
     private final ColorPickerDelegate delegate;
 
     private Paint colorWheelPaint;
@@ -96,6 +95,8 @@ public class ColorPicker extends FrameLayout {
     private static final int item_share = 2;
     private static final int item_delete = 3;
 
+    LinearLayout colorEditTextsContainer;
+
     public ColorPicker(Context context, boolean hasMenu, ColorPickerDelegate colorPickerDelegate) {
         super(context);
 
@@ -112,9 +113,9 @@ public class ColorPicker extends FrameLayout {
         linePaint = new Paint();
         linePaint.setColor(0x12000000);
 
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-        addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 54, Gravity.LEFT | Gravity.TOP, 22, 0, 22, 0));
+        colorEditTextsContainer = new LinearLayout(context);
+        colorEditTextsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        addView(colorEditTextsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 54, Gravity.LEFT | Gravity.TOP, 22, 0, 22, 0));
         for (int a = 0; a < 4; a++) {
             final int num = a;
             if (a == 0 || a == 2) {
@@ -151,7 +152,7 @@ public class ColorPicker extends FrameLayout {
                 colorEditText[a].setText("#");
                 colorEditText[a].setEnabled(false);
                 colorEditText[a].setFocusable(false);
-                linearLayout.addView(colorEditText[a], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, a == 2 ? 39 : 0, 0, 0, 0));
+                colorEditTextsContainer.addView(colorEditText[a], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, a == 2 ? 39 : 0, 0, 0, 0));
             } else {
                 colorEditText[a] = new EditTextBoldCursor(context) {
                     @Override
@@ -185,7 +186,7 @@ public class ColorPicker extends FrameLayout {
                 colorEditText[a].setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)});
                 colorEditText[a].setPadding(0, AndroidUtilities.dp(5), 0, AndroidUtilities.dp(18));
                 colorEditText[a].setHint("8BC6ED");
-                linearLayout.addView(colorEditText[a], LayoutHelper.createLinear(71, LayoutHelper.MATCH_PARENT));
+                colorEditTextsContainer.addView(colorEditText[a], LayoutHelper.createLinear(71, LayoutHelper.MATCH_PARENT));
                 colorEditText[a].addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
@@ -410,9 +411,10 @@ public class ColorPicker extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawBitmap(colorWheelBitmap, 0, AndroidUtilities.dp(54), null);
-        int y = AndroidUtilities.dp(54) + colorWheelBitmap.getHeight();
-        canvas.drawRect(0, AndroidUtilities.dp(54), getMeasuredWidth(), AndroidUtilities.dp(54) + 1, linePaint);
+        int editPadding = colorEditTextsContainer.getMeasuredHeight();
+        canvas.drawBitmap(colorWheelBitmap, 0, editPadding, null);
+        int y = editPadding + colorWheelBitmap.getHeight();
+        canvas.drawRect(0, editPadding, getMeasuredWidth(), editPadding + 1, linePaint);
         canvas.drawRect(0, y - 1, getMeasuredWidth(), y, linePaint);
 
         hsvTemp[0] = colorHSV[0];
@@ -420,7 +422,7 @@ public class ColorPicker extends FrameLayout {
         hsvTemp[2] = 1f;
 
         int colorPointX = (int) (colorHSV[0] * getMeasuredWidth() / 360);
-        int colorPointY = (int) (AndroidUtilities.dp(54) + (colorWheelBitmap.getHeight() * (1.0f - colorHSV[1])));
+        int colorPointY = (int) (editPadding + (colorWheelBitmap.getHeight() * (1.0f - colorHSV[1])));
         if (!circlePressed) {
             int minD = AndroidUtilities.dp(16);
             float progress = CubicBezierInterpolator.EASE_OUT.getInterpolation(pressedMoveProgress);
@@ -429,10 +431,10 @@ public class ColorPicker extends FrameLayout {
             } else if (colorPointX > getMeasuredWidth() - minD) {
                 colorPointX -= progress * (colorPointX - (getMeasuredWidth() - minD));
             }
-            if (colorPointY < AndroidUtilities.dp(54) + minD) {
-                colorPointY += progress * (AndroidUtilities.dp(54) + minD - colorPointY);
-            } else if (colorPointY > AndroidUtilities.dp(54) + colorWheelBitmap.getHeight() - minD) {
-                colorPointY -= progress * (colorPointY - (AndroidUtilities.dp(54) + colorWheelBitmap.getHeight() - minD));
+            if (colorPointY < editPadding + minD) {
+                colorPointY += progress * (editPadding + minD - colorPointY);
+            } else if (colorPointY > editPadding + colorWheelBitmap.getHeight() - minD) {
+                colorPointY -= progress * (colorPointY - (editPadding + colorWheelBitmap.getHeight() - minD));
             }
         }
         drawPointerArrow(canvas, colorPointX, colorPointY, Color.HSVToColor(hsvTemp), false);
@@ -506,8 +508,11 @@ public class ColorPicker extends FrameLayout {
         return bitmap;
     }
 
+
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        int editPadding = colorEditTextsContainer.getMeasuredHeight();
         int action = event.getAction();
         switch (action) {
             case MotionEvent.ACTION_DOWN:
@@ -515,7 +520,7 @@ public class ColorPicker extends FrameLayout {
                 int x = (int) event.getX();
                 int y = (int) event.getY();
 
-                if (circlePressed || !colorPressed && y >= AndroidUtilities.dp(54) && y <= AndroidUtilities.dp(54) + colorWheelBitmap.getHeight()) {
+                if (circlePressed || !colorPressed && y >= editPadding && y <= editPadding + colorWheelBitmap.getHeight()) {
                     if (!circlePressed) {
                         getParent().requestDisallowInterceptTouchEvent(true);
                     }
@@ -524,11 +529,11 @@ public class ColorPicker extends FrameLayout {
                     lastUpdateTime = SystemClock.elapsedRealtime();
 
                     x = Math.max(0, Math.min(x, colorWheelBitmap.getWidth()));
-                    y = Math.max(AndroidUtilities.dp(54), Math.min(y, AndroidUtilities.dp(54) + colorWheelBitmap.getHeight()));
+                    y = Math.max(editPadding, Math.min(y, editPadding + colorWheelBitmap.getHeight()));
 
                     float oldBrightnessPos = minHsvBrightness == maxHsvBrightness ? 0.5f : (getBrightness() - minHsvBrightness) / (maxHsvBrightness - minHsvBrightness);
                     colorHSV[0] = x * 360f / colorWheelBitmap.getWidth();
-                    colorHSV[1] = 1.0f - (1.0f / colorWheelBitmap.getHeight() * (y - AndroidUtilities.dp(54)));
+                    colorHSV[1] = 1.0f - (1.0f / colorWheelBitmap.getHeight() * (y - editPadding));
                     updateHsvMinMaxBrightness();
                     colorHSV[2] = minHsvBrightness * (1 - oldBrightnessPos) + maxHsvBrightness * oldBrightnessPos;
                     colorGradient = null;
@@ -618,6 +623,10 @@ public class ColorPicker extends FrameLayout {
         animatorSet.playTogether(animators);
         animatorSet.setDuration(180);
         animatorSet.start();
+    }
+
+    public void setHasEdits(boolean value) {
+        colorEditTextsContainer.setVisibility(value ? VISIBLE : GONE);
     }
 
     public void setType(int resetType, boolean hasChanges, boolean twoColors, boolean hasSecondColor, boolean myMessages, int angle, boolean animated) {

@@ -6,9 +6,10 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -34,10 +35,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -49,19 +47,21 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Animations.Cells.GradientSurfaceCell;
 import org.telegram.ui.Cells.EditTextSettingsCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SharedMediaSectionCell;
-import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AnimationProperties;
+import org.telegram.ui.Components.ColorPicker;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
+import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.ShareAlert;
-import org.telegram.ui.DialogsActivity;
 
 import java.util.ArrayList;
 
@@ -90,6 +90,7 @@ public class AnimationSettingsActivity extends BaseFragment {
     }
 
     private AnimationPageAdapter[] adapters;
+    private AnimationPageAdapter backgroundAdapter;
 
     private final SettingsPage[] settingsPages = new SettingsPage[2];
 
@@ -108,6 +109,16 @@ public class AnimationSettingsActivity extends BaseFragment {
     private final static int share_parameters = 1;
     private final static int import_parameters = 2;
     private final static int restore_parameters = 3;
+
+    private FrameLayout pickerLayout;
+    public ColorPicker colorPicker;
+    public int lastIndexColor;
+    public int lastPickedColor;
+
+    private float currentIntensity = 0.5f;
+    private float previousIntensity;
+
+    private AnimatorSet pickerViewAnimation;
 
     private static final Interpolator interpolator = t -> {
         --t;
@@ -130,6 +141,31 @@ public class AnimationSettingsActivity extends BaseFragment {
         }
     };
 
+    public void showColorPicker(boolean show) {
+        colorPicker.setColor(lastPickedColor, 0);
+        pickerViewAnimation = new AnimatorSet();
+        ArrayList<Animator> animators = new ArrayList<>();
+        if (show) {
+            pickerLayout.setVisibility(View.VISIBLE);
+            animators.add(ObjectAnimator.ofFloat(pickerLayout, View.TRANSLATION_Y, 0));
+        } else {
+            pickerLayout.setVisibility(View.VISIBLE);
+            animators.add(ObjectAnimator.ofFloat(pickerLayout, View.TRANSLATION_Y, pickerLayout.getMeasuredHeight()));
+        }
+        pickerViewAnimation.playTogether(animators);
+        pickerViewAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                pickerViewAnimation = null;
+                if (!show) {
+                    pickerLayout.setVisibility(View.GONE);
+                }
+            }
+        });
+        pickerViewAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+        pickerViewAnimation.setDuration(200);
+        pickerViewAnimation.start();
+    }
 
     @Override
     public View createView(Context context) {
@@ -167,6 +203,7 @@ public class AnimationSettingsActivity extends BaseFragment {
                     case restore_parameters:
                         AnimationManager.getInstance().resetSettings();
                         onUpdateSettings();
+                        colorPicker.setColor(AnimationManager.getPreferences().getColor(lastIndexColor), 0);
                         Toast.makeText(context, "Settings restored", Toast.LENGTH_SHORT).show();
                         break;
                 }
@@ -195,6 +232,9 @@ public class AnimationSettingsActivity extends BaseFragment {
         adapters = new AnimationPageAdapter[types.length];
         for (int i = 0; i < types.length; i++) {
             adapters[i] = new AnimationPageAdapter(context, types[i], this);
+            if (types[i] == AnimationType.Background) {
+                backgroundAdapter = adapters[i];
+            }
         }
 
         scrollSlidingTextTabStrip.setDelegate(new ScrollSlidingTextTabStrip.ScrollSlidingTabStripDelegate() {
@@ -229,6 +269,7 @@ public class AnimationSettingsActivity extends BaseFragment {
                 }
             }
         });
+
 
         FrameLayout frameLayout;
         fragmentView = frameLayout = new FrameLayout(context) {
@@ -384,6 +425,8 @@ public class AnimationSettingsActivity extends BaseFragment {
                 }
                 return false;
             }
+
+
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
@@ -674,6 +717,116 @@ public class AnimationSettingsActivity extends BaseFragment {
                 }
             }
         };
+
+        Rect paddings = new Rect();
+        Drawable sheetDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
+        sheetDrawable.getPadding(paddings);
+        sheetDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.MULTIPLY));
+
+        pickerLayout = new FrameLayout(context) {
+            @Override
+            public void onDraw(Canvas canvas) {
+                sheetDrawable.setBounds(colorPicker.getLeft() - paddings.left, 0, colorPicker.getRight() + paddings.right, getMeasuredHeight());
+                sheetDrawable.draw(canvas);
+            }
+        };
+        pickerLayout.setVisibility(View.INVISIBLE);
+        pickerLayout.setWillNotDraw(false);
+        FrameLayout.LayoutParams layoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 288, Gravity.LEFT | Gravity.BOTTOM);
+        layoutParams.height += paddings.top;
+        pickerLayout.setPadding(0, paddings.top, 0, 0);
+        frameLayout.addView(pickerLayout, layoutParams);
+
+        FrameLayout patternsButtonsContainer = new FrameLayout(context) {
+            @Override
+            public void onDraw(Canvas canvas) {
+                int bottom = Theme.chat_composeShadowDrawable.getIntrinsicHeight();
+                Theme.chat_composeShadowDrawable.setBounds(0, 0, getMeasuredWidth(), bottom);
+                Theme.chat_composeShadowDrawable.draw(canvas);
+                canvas.drawRect(0, bottom, getMeasuredWidth(), getMeasuredHeight(), Theme.chat_composeBackgroundPaint);
+            }
+        };
+        patternsButtonsContainer.setWillNotDraw(false);
+        patternsButtonsContainer.setPadding(0, AndroidUtilities.dp(3), 0, 0);
+        patternsButtonsContainer.setClickable(true);
+
+        colorPicker = new ColorPicker(context, false, new ColorPicker.ColorPickerDelegate() {
+            @Override
+            public void setColor(int color, int num, boolean applyNow) {
+                lastPickedColor = color;
+                int index = backgroundAdapter.currentPickerIndex;
+                if (index >= 0 && index < 4) {
+                    backgroundAdapter.setColor(index, color);
+                }
+            }
+
+            @Override
+            public void openThemeCreate(boolean share) {
+
+            }
+
+            @Override
+            public void deleteTheme() {
+
+            }
+
+            @Override
+            public void rotateColors() {
+
+            }
+
+            @Override
+            public int getDefaultColor(int num) {
+
+                return 0;
+            }
+
+            @Override
+            public boolean hasChanges() {
+                return false;
+            }
+        });
+        pickerLayout.addView(colorPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
+        pickerLayout.addView(patternsButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.BOTTOM));
+
+        TextView patternsCancelButton = new TextView(context);
+        patternsCancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        patternsCancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        patternsCancelButton.setTextColor(Theme.getColor(Theme.key_chat_fieldOverlayText));
+        patternsCancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
+        patternsCancelButton.setGravity(Gravity.CENTER);
+        patternsCancelButton.setPadding(AndroidUtilities.dp(21), 0, AndroidUtilities.dp(21), 0);
+        patternsCancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 0));
+        patternsCancelButton.setOnClickListener(v -> {
+            if (pickerViewAnimation != null) {
+                return;
+            }
+            showColorPicker(false);
+            backgroundAdapter.restoreColors();
+        }
+        );
+        patternsButtonsContainer.addView(patternsCancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+
+        TextView patternsSaveButton = new TextView(context);
+        patternsSaveButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        patternsSaveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        patternsSaveButton.setTextColor(Theme.getColor(Theme.key_chat_fieldOverlayText));
+        patternsSaveButton.setText(LocaleController.getString("ApplyTheme", R.string.ApplyTheme).toUpperCase());
+        patternsSaveButton.setGravity(Gravity.CENTER);
+        patternsSaveButton.setPadding(AndroidUtilities.dp(21), 0, AndroidUtilities.dp(21), 0);
+        patternsSaveButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 0));
+        patternsSaveButton.setOnClickListener(v -> {
+            if (pickerViewAnimation != null) {
+                return;
+            }
+            backgroundAdapter.applyColors();
+            showColorPicker(false);
+        });
+        patternsButtonsContainer.addView(patternsSaveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP));
+
+
+        colorPicker.setType(0, false, false, false, false, 0, false);
+        colorPicker.setHasEdits(false);
 
         contentView = (FrameLayout) fragmentView;
         return fragmentView;

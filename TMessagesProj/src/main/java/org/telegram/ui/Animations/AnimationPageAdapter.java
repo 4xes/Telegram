@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -28,24 +29,69 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     private final Context context;
     public final AnimationType type;
     private final AnimationSettingsActivity activity;
-
     private final ArrayList<Model> models;
+    int colorIndex;
+    int backgroundIndex;
+
+    public int currentPickerIndex = -1;
+
+    public void restoreColors() {
+        currentPickerIndex = -1;
+        pickerColors = AnimationManager.getPreferences().getColors();
+        for (int i = 0; i < 4; i++) {
+            notifyItemChanged(colorIndex + i);
+        }
+        notifyItemChanged(backgroundIndex);
+    }
+
+    public void applyColors() {
+        for (int i = 0; i < 4; i++) {
+            AnimationManager.getPreferences().putColors(pickerColors);
+            restoreColors();
+        }
+    }
+
+    public GradientSurfaceCell surfaceView;
+    private int[] pickerColors;
+
+    SparseArrayCompat<ColorSettingsCell> colorCells = new SparseArrayCompat<>(4);
+
+    public void setColor(int index, int color) {
+        ColorSettingsCell cell = colorCells.get(index);
+        this.pickerColors[index] = color;
+        if (cell != null) {
+            cell.setColor(color);
+        }
+        if (surfaceView != null) {
+            surfaceView.setColors(pickerColors, false);
+        }
+    }
+
+    @Override
+    public void notifyDataSetChanged() {
+        pickerColors = AnimationManager.getPreferences().getColors();
+        super.notifyDataSetChanged();
+    }
 
     public AnimationPageAdapter(Context context, AnimationType type, AnimationSettingsActivity activity) {
         this.context = context;
         this.type = type;
         this.activity = activity;
 
+        this.pickerColors = AnimationManager.getInstance().getColors();
+
         models = new ArrayList<>();
         if (type == AnimationType.Background) {
             models.add(new Model(header_cell, "Background Preview"));
             models.add(new Model(empty_cell, null));
+            backgroundIndex = models.size();
             models.add(new Model(background_cell, "Background Preview"));
             models.add(new Model(action_cell, "Open Full Screen"));
 
             models.add(new Model(section_cell, null));
 
             models.add(new Model(header_cell, "Colors"));
+            colorIndex = models.size();
             models.add(new Model(color_cell, 0));
             models.add(new Model(color_cell, 1));
             models.add(new Model(color_cell, 2));
@@ -135,7 +181,7 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
         int position = holder.getAdapterPosition();
         int type = getItemViewType(position);
-        if (type == duration_cell || type == action_cell) {
+        if (type == duration_cell || type == action_cell || type == color_cell) {
             return true;
         }
         return false;
@@ -143,7 +189,24 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
 
     @Override
     public void onItemClick(View view, int position) {
-        if (view instanceof TextSettingsCell) {
+        if (view instanceof ColorSettingsCell) {
+            int index = position - colorIndex;
+            ColorSettingsCell colorCell = (ColorSettingsCell) view;
+            int color = colorCell.getColor();
+            activity.lastIndexColor = index;
+            activity.lastPickedColor = color;
+            activity.showColorPicker(true);
+            colorCell.setSelect(true);
+            currentPickerIndex = index;
+            for (int i = 0; i < 4; i++) {
+                if (currentPickerIndex != i) {
+                    ColorSettingsCell cell = colorCells.get(i);
+                    if (cell != null) {
+                        cell.setSelect(false);
+                    }
+                }
+            }
+        } else if (view instanceof TextSettingsCell) {
             Object item = getItem(position);
             Parameter durationParameter;
             if (item instanceof Parameter) {
@@ -178,6 +241,14 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         int type = holder.getItemViewType();
         switch (type) {
+            case background_cell:
+                surfaceView = (GradientSurfaceCell) holder.itemView;
+                if (currentPickerIndex == -1) {
+                    surfaceView.restoreColors(true);
+                } else {
+                    surfaceView.setColors(pickerColors, false);
+                }
+                break;
             case duration_cell:
             case interpolator_cell:
                 Parameter parameter = getItem(position);
@@ -219,10 +290,16 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                 break;
             case color_cell:
                 Integer index = getItem(position);
-                int color = AnimationManager.getPreferences().getColor(index);
                 ColorSettingsCell colorCell = (ColorSettingsCell) holder.itemView;
-                colorCell.setTextAndValue("Color " + index, "test", false);
-                colorCell.setColor(color);
+                int color = pickerColors[index];
+                colorCell.setTextAndColor("Color " + index, color, true);
+                if (index == currentPickerIndex) {
+                    colorCell.setSelect(true);
+                } else {
+                    colorCell.setSelect(false);
+                }
+                colorCells.put(index, colorCell);
+                colorCell.setColor(pickerColors[index]);
                 colorCell.setWillNotDraw(false);
                 break;
         }

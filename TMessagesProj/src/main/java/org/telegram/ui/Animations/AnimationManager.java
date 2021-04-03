@@ -34,6 +34,10 @@ public class AnimationManager {
         return localInstance;
     }
 
+    public int[] getColors() {
+        return preferences.getColors();
+    }
+
     public InterpolatorData getInterpolatorData(AnimationType animationType, Parameter parameter) {
         return preferences.getInterpolatorData(animationType, parameter);
     }

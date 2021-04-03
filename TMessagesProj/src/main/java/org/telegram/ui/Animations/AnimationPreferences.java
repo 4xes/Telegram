@@ -1,5 +1,6 @@
 package org.telegram.ui.Animations;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -90,10 +91,28 @@ public class AnimationPreferences {
         return sharedPreferences.getInt(keyBackgroundColor + i, colorsDefault[i]);
     }
 
+    public int[] getColors() {
+        int[] colors = new int[4];
+        for (int i = 0; i < colors.length; i++) {
+            colors[i] = getColor(i);
+        }
+        return colors;
+    }
+
+    @SuppressLint("ApplySharedPref")
     public void putColor(int i, int color) {
         sharedPreferences.edit()
                 .putInt(keyBackgroundColor + i, color)
-                .apply();
+                .commit();
+    }
+    @SuppressLint("ApplySharedPref")
+    public void putColors(int[] colors) {
+        sharedPreferences.edit()
+                .putInt(keyBackgroundColor + 0, colors[0])
+                .putInt(keyBackgroundColor + 1, colors[1])
+                .putInt(keyBackgroundColor + 2, colors[2])
+                .putInt(keyBackgroundColor + 3, colors[3])
+                .commit();
     }
 
     public long getDuration(String key) {
@@ -179,7 +198,7 @@ public class AnimationPreferences {
                         e.printStackTrace();
                     }
                 }
-                if (key.endsWith("c1") || key.endsWith("c2") || key.endsWith("c3") || key.endsWith("c4")) {
+                if (key.endsWith("c0") || key.endsWith("c1") || key.endsWith("c2") || key.endsWith("c3")) {
                     try {
                         int value = Integer.parseInt(strValue);
                         sharedPreferences.edit().putInt(key, value).apply();

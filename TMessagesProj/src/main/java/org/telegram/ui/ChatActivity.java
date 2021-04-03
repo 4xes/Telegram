@@ -3052,7 +3052,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             contentView.setOccupyStatusBar(false);
         }
 
-        gradientView = new GradientSurfaceView(context, AnimationManager.getPreferences(), true);
+        gradientView = new GradientSurfaceView(context, true);
         contentView.addView(gradientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         emptyViewContainer = new FrameLayout(context);

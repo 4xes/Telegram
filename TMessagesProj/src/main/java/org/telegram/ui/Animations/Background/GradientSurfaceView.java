@@ -26,12 +26,11 @@ public class GradientSurfaceView extends GLTextureView {
 
     boolean scheduleAnimation = false;
     private boolean needSaveIndexes;
-    private AnimationPreferences preferences;
+    AnimationPreferences preferences = AnimationManager.getPreferences();
 
-    public GradientSurfaceView(Context context, AnimationPreferences preferences, boolean needSaveIndexes) {
+    public GradientSurfaceView(Context context, boolean needSaveIndexes) {
         super(context);
         indexes = preferences.getBackgroundIndexes();
-        this.preferences = preferences;
         this.needSaveIndexes = needSaveIndexes;
         init();
     }
@@ -45,12 +44,7 @@ public class GradientSurfaceView extends GLTextureView {
     public void init() {
         setEGLContextClientVersion(2);
         gradientRenderer = new GradientRenderer(getContext());
-        gradientRenderer.setColors(new int[]{
-                0xfffff6bf,
-                0xff76a076,
-                0xfff6e477,
-                0xff316b4d
-        });
+        gradientRenderer.setColors(preferences.getColors());
         Points.fillPoints(indexes, gradientRenderer.points);
         setRenderer(gradientRenderer);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -135,12 +129,36 @@ public class GradientSurfaceView extends GLTextureView {
         positionAnimator.start();
     }
 
+    public void restoreColors(boolean animate) {
+        int[] colors = preferences.getColors();
+        setColors(colors, animate);
+    }
+
+    public void setColor(int index, int color) {
+        if (index >= 0 && index <= 4) {
+            getColors()[index] = color;
+            requestRender();
+        }
+    }
+
+    public int[] getColors() {
+        return gradientRenderer.colors;
+    }
+
     public void setColors(int[] colors, boolean animate) {
         if (colorAnimator != null) {
             colorAnimator.cancel();
             colorAnimator = null;
         }
-        if (animate) {
+
+        boolean needAnimate = false;
+        for (int i = 0; i < 4; i++) {
+            if (gradientRenderer.colors[i] != colors[i]) {
+                needAnimate = true;
+            }
+        }
+
+        if (needAnimate && animate) {
             int[] start = new int[4];
             int[] end = new int[4];
             for (int i = 0; i < 4; i++) {
@@ -150,10 +168,10 @@ public class GradientSurfaceView extends GLTextureView {
             colorAnimator = ValueAnimator.ofObject(new GradientColorEvaluator(gradientRenderer.colors), start, end);
             colorAnimator.setDuration(1000L);
             colorAnimator.addUpdateListener(colorUpdateListener);
-            colorAnimator.addListener(animatorListener);
             colorAnimator.start();
         } else {
             gradientRenderer.setColors(colors);
+            requestRender();
         }
     }
 
