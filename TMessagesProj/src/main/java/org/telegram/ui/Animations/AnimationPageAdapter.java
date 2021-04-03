@@ -191,7 +191,7 @@ public class AnimationPageAdapter extends RecyclerListView.SelectionAdapter impl
                     InterpolatorCell view = (InterpolatorCell) holder.itemView;
                     view.setDuration(duration);
                     InterpolatorData data = AnimationManager.getInstance().getInterpolatorData(this.type, parameter);
-                    String key = AnimationManager.key(this.type, parameter);
+                    String key = AnimationPreferences.key(this.type, parameter);
                     view.setInterpolationData(key, data);
                 }
                 break;

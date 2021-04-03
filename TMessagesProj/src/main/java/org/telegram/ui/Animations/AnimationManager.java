@@ -35,7 +35,7 @@ public class AnimationManager {
     }
 
     public InterpolatorData getInterpolatorData(AnimationType animationType, Parameter parameter) {
-        return preferences.getInterpolator(key(animationType, parameter));
+        return preferences.getInterpolatorData(animationType, parameter);
     }
 
     public AnimationCubicBezierInterpolator getInterpolator(AnimationType animationType, Parameter parameter) {
@@ -45,30 +45,14 @@ public class AnimationManager {
     }
 
     public long getDuration(AnimationType animationType, @Nullable Parameter parameter) {
-        String key;
-        if (animationType == AnimationType.Background) {
-            key = key(animationType, parameter);
-        } else {
-            key = key(animationType, null);
-        }
-        return preferences.getDuration(key);
+        return preferences.getDuration(animationType, parameter);
     }
 
     public void setDuration(AnimationType animationType, @Nullable Parameter parameter, long duration) {
-        String key;
-        if (animationType == AnimationType.Background) {
-            key = key(animationType, parameter);
-        } else {
-            key = key(animationType, null);
-        }
-        preferences.putDuration(key, duration);
+        preferences.putDuration(animationType, parameter, duration);
     }
 
-    public static String key(AnimationType type, Parameter parameter) {
-        if (parameter != null) {
-            return (type.name() + "_" + parameter.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
-        } else {
-            return (type.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
-        }
+    public void resetSettings() {
+        preferences.resetSettings();
     }
 }

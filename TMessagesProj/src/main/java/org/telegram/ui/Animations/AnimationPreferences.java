@@ -3,6 +3,10 @@ package org.telegram.ui.Animations;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.annotation.Nullable;
+
+import java.util.Locale;
+
 
 public class AnimationPreferences {
     final SharedPreferences sharedPreferences;
@@ -11,16 +15,24 @@ public class AnimationPreferences {
         this.sharedPreferences = context.getSharedPreferences("animation", Context.MODE_PRIVATE);
     }
 
-    public void putInterpolator(String key,
-                     float progressionTop,
-                     float progressionBottom,
-                     float timeStart,
-                     float timeEnd) {
-        sharedPreferences.edit()
-                .putFloat(key + prefixProgressionTop, progressionTop)
-                .putFloat(key + prefixProgressionBottom, progressionBottom)
-                .putFloat(key + prefixTimeStart, timeStart)
-                .putFloat(key + prefixTimeEnd, timeEnd).apply();
+    public void putProgressionTop(AnimationType animationType, Parameter parameter, float value) {
+        String key = key(animationType, parameter);
+        putProgressionTop(key, value);
+    }
+
+    public void putProgressionBottom(AnimationType animationType, Parameter parameter, float value) {
+        String key = key(animationType, parameter);
+        putProgressionBottom(key, value);
+    }
+
+    public void putTimeStart(AnimationType animationType, Parameter parameter, float value) {
+        String key = key(animationType, parameter);
+        putTimeStart(key, value);
+    }
+
+    public void putTimeEnd(AnimationType animationType, Parameter parameter, float value) {
+        String key = key(animationType, parameter);
+        putTimeEnd(key, value);
     }
 
     public void putProgressionTop(String key, float value) {
@@ -43,11 +55,12 @@ public class AnimationPreferences {
                 .putFloat(key + prefixTimeEnd, value).apply();
     }
 
-    public InterpolatorData getInterpolator(String key) {
-        float progressionTop = sharedPreferences.getFloat(key + prefixProgressionTop, InterpolatorData.DEFAULT_PROGRESSION_TOP);
-        float progressionBottom = sharedPreferences.getFloat(key + prefixProgressionBottom, InterpolatorData.DEFAULT_PROGRESSION_BOTTOM);
-        float timeStart = sharedPreferences.getFloat(key + prefixTimeStart, InterpolatorData.DEFAULT_TIME_START);
-        float timeEnd = sharedPreferences.getFloat(key + prefixTimeEnd, InterpolatorData.DEFAULT_TIME_END);
+    public InterpolatorData getInterpolatorData(AnimationType animationType, Parameter parameter) {
+        String key = key(animationType, parameter);
+        float progressionTop = sharedPreferences.getFloat(key + prefixProgressionTop, parameter.defaultProgressionTop(animationType));
+        float progressionBottom = sharedPreferences.getFloat(key + prefixProgressionBottom, parameter.defaultProgressionBottom(animationType));
+        float timeStart = sharedPreferences.getFloat(key + prefixTimeStart, parameter.defaultTimeStart(animationType));
+        float timeEnd = sharedPreferences.getFloat(key + prefixTimeEnd, parameter.defaultTimeEnd(animationType));
         return new InterpolatorData(
                 progressionTop,
                 progressionBottom,
@@ -80,14 +93,34 @@ public class AnimationPreferences {
                 .apply();
     }
 
-    public void putDuration(String key,
-                     long duration) {
+    public long getDuration(String key) {
+        return sharedPreferences.getLong(key + prefixDuration, 500L);
+    }
+
+    public void resetSettings() {
+        sharedPreferences.edit().clear().apply();
+    }
+
+    public long getDuration(AnimationType animationType, @Nullable Parameter parameter) {
+        String key = key(animationType, parameter);
+        long defaultDuration = animationType.defaultDuration(parameter);
+        return sharedPreferences.getLong(key + prefixDuration, defaultDuration);
+    }
+
+    public void putDuration(AnimationType animationType, @Nullable Parameter parameter, long duration) {
+        String key = key(animationType, parameter);
         sharedPreferences.edit()
                 .putLong(key + prefixDuration, duration).apply();
     }
 
-    public long getDuration(String key) {
-        return sharedPreferences.getLong(key + prefixDuration, 500L);
+    public static String key(AnimationType type, @Nullable Parameter parameter) {
+        String key;
+        if (type == AnimationType.Background && parameter != null) {
+            key = (type.name() + "_" + parameter.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);;
+        } else {
+            key = (type.name()).replace(" ", "").toLowerCase(Locale.ENGLISH);
+        }
+        return key;
     }
 
     private static final String prefixProgressionTop = "_pt";

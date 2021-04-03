@@ -25,6 +25,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -153,7 +154,29 @@ public class AnimationSettingsActivity extends BaseFragment {
         otherItem.addSubItem(share_parameters, 0, "Share Parameters");
         otherItem.addSubItem(import_parameters, 0, "Import Parameters");
         ActionBarMenuSubItem restore = otherItem.addSubItem(restore_parameters, 0, "Restore to Defaults");
-        restore.setTextColor(0xffff3e3e);
+        restore.setTextColor(0xffff3e3e);;
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                switch (id) {
+                    case share_parameters:
+                        Toast.makeText(context, "Settings shared", Toast.LENGTH_SHORT).show();
+                        break;
+                    case import_parameters:
+                        Toast.makeText(context, "Settings copied", Toast.LENGTH_SHORT).show();
+                        break;
+                    case restore_parameters:
+                        AnimationManager.getInstance().resetSettings();
+                        for (SettingsPage page: settingsPages) {
+                            if (page.listView != null && page.listView.getAdapter() != null) {
+                                page.listView.getAdapter().notifyDataSetChanged();
+                            }
+                        }
+                        Toast.makeText(context, "Settings restored", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        });
 
         if (scrollSlidingTextTabStrip != null) {
             initialTab = scrollSlidingTextTabStrip.getCurrentTabId();
