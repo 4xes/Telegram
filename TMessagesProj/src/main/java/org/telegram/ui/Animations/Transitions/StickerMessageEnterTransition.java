@@ -1,14 +1,16 @@
 package org.telegram.ui.Animations.Transitions;
 
+import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.view.View;
 import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
 
-public class StickerMessageEnterTransition extends BaseStickerMessageEnterTransition {
+public class StickerMessageEnterTransition extends BaseImageMessageEnterTransition {
 
     final float stickerCellX;
     final float stickerCellY;
@@ -28,7 +30,8 @@ public class StickerMessageEnterTransition extends BaseStickerMessageEnterTransi
 
     private final RectF stickerCellRect = new RectF();
 
-    public void setStartSticker() {
+    @Override
+    public void setStartImage() {
         setEnterViewRect();
 
         float stickerLeft = enterViewBounds.left + stickerCellX;
@@ -46,5 +49,16 @@ public class StickerMessageEnterTransition extends BaseStickerMessageEnterTransi
                 stickerCellRect.centerX() + inset,
                 stickerCellRect.centerY() + inset
         );
+    }
+
+    @Override
+    public void animationDraw(Canvas canvas) {
+        super.animationDraw(canvas);
+        drawTime(canvas);
+    }
+
+    @Override
+    protected AnimationType getAnimationType() {
+        return AnimationType.Sticker;
     }
 }

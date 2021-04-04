@@ -6979,7 +6979,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
-    private void drawContent(Canvas canvas) {
+    public void drawContent(Canvas canvas) {
         if (needNewVisiblePart && currentMessageObject.type == 0) {
             getLocalVisibleRect(scrollRect);
             setVisiblePart(scrollRect.top, scrollRect.bottom - scrollRect.top, parentHeight, parentViewTopOffset);
@@ -7036,8 +7036,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawMessageText(canvas, transitionParams.animateOutTextBlocks, false, (1.0f - transitionParams.animateChangeProgress));
                 drawMessageText(canvas, currentMessageObject.textLayoutBlocks, true, transitionParams.animateChangeProgress);
             } else {
-//                Theme.dialogs_onlinePaint.setColor(Color.CYAN);
-//                canvas.drawCircle(textX, textY, 10, Theme.dialogs_onlinePaint);
                 drawMessageText(canvas, currentMessageObject.textLayoutBlocks, true, 1.0f);
             }
 
@@ -7976,6 +7974,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     delegate.getTextSelectionHelper().draw(currentMessageObject, block, canvas);
                 }
                 try {
+                    if (transitionParams.isTransition) {
+                        canvas.scale(transitionParams.textScale, transitionParams.textScale);
+                    }
                     block.textLayout.draw(canvas);
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -9837,9 +9838,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         canvas.restore();
                     }
                 } else {
-                    currentSelectedBackgroundAlpha = 0;
-                    currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
-                    currentBackgroundDrawable.draw(canvas);
+                    if (!(transitionParams.isTransition && transitionParams.ignoreBackground)) {
+                        currentSelectedBackgroundAlpha = 0;
+                        currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
+                        currentBackgroundDrawable.draw(canvas);
+                    }
                 }
             }
             if (currentBackgroundShadowDrawable != null && currentPosition == null) {
@@ -11160,8 +11163,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void drawTimeInternal(Canvas canvas, float alpha, boolean fromParent, float timeX, StaticLayout timeLayout, float timeWidth, boolean drawSelectionBackground) {
-        if ((!drawTime || groupPhotoInvisible) && shouldDrawTimeOnMedia() || timeLayout == null || (currentMessageObject.deleted && currentPosition != null) || currentMessageObject.type == 16) {
+        if (!transitionParams.drawTime && (!drawTime || groupPhotoInvisible) && shouldDrawTimeOnMedia() || timeLayout == null || (currentMessageObject.deleted && currentPosition != null) || currentMessageObject.type == 16) {
             return;
+        }
+        canvas.save();
+        if (transitionParams.isTransition) {
+            canvas.translate(transitionParams.deltaTimeX, transitionParams.deltaTimeY);
         }
         if (currentMessageObject.type == MessageObject.TYPE_ROUND_VIDEO) {
             Theme.chat_timePaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
@@ -11363,6 +11370,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 canvas.translate(drawTimeX = timeTitleTimeX + additionalX, drawTimeY = layoutHeight - AndroidUtilities.dp(pinnedBottom || pinnedTop ? 7.5f : 6.5f) - timeLayout.getHeight() + timeYOffset);
                 timeLayout.draw(canvas);
             }
+            canvas.restore();
             canvas.restore();
         }
 
@@ -13534,6 +13542,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public class TransitionParams {
+        public boolean isTransition = false;
+        public float textScale = 1f;
+        public boolean drawTime = true;
+        public float deltaTimeX = 0f;
+        public float deltaTimeY = 0f;
+        public boolean ignoreBackground = false;
 
         public float lastDrawingImageX, lastDrawingImageY, lastDrawingImageW, lastDrawingImageH;
         public float lastDrawingCaptionX, lastDrawingCaptionY;
@@ -13598,6 +13612,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         public boolean wasDraw;
         public boolean animateBackgroundBoundsInner;
+        public boolean drawBackground;
         public boolean ignoreAlpha;
         public boolean drawPinnedBottomBackground;
         public float changePinnedBottomProgress = 1f;

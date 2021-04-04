@@ -58,12 +58,6 @@ public enum AnimationType {
                 Parameter.Y,
                 Parameter.Scale,
                 Parameter.TimeAppears
-    }),
-    Album("Album", new Parameter[] {
-        Parameter.X,
-                Parameter.Y,
-                Parameter.Scale,
-                Parameter.TimeAppears
     });
 
     final String title;

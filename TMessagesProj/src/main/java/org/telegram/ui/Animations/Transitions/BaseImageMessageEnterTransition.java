@@ -6,16 +6,15 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
-public abstract class BaseStickerMessageEnterTransition extends MessageTransition {
+public abstract class BaseImageMessageEnterTransition extends MessageTransition {
 
 
-    public BaseStickerMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {
+    public BaseImageMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {
         super(containerView, messageView, enterView, listView);
         location(enterView, enterView.getEditField());
         ImageLoader.getInstance().loadImageForImageReceiver(messageView.getPhotoImage());
@@ -24,7 +23,9 @@ public abstract class BaseStickerMessageEnterTransition extends MessageTransitio
     boolean restarted = false;
     boolean stopped = false;
 
-    abstract void setStartSticker();
+    abstract void setStartImage();
+
+    boolean positionByCenter = false;
 
     @Override
     public void animationDraw(Canvas canvas) {
@@ -51,7 +52,7 @@ public abstract class BaseStickerMessageEnterTransition extends MessageTransitio
         float tempWidth = image.getImageWidth();
         float tempHeight = image.getImageHeight();
 
-        setStartSticker();
+        setStartImage();
 
         endRect.set(
                 messageX + tempX,
@@ -60,16 +61,28 @@ public abstract class BaseStickerMessageEnterTransition extends MessageTransitio
                 messageY + tempY + tempHeight
         );
 
-        float centerX = evaluate(xProgress, startRect.centerX(), endRect.centerX());
-        float centerY = evaluate(yProgress, startRect.centerY(), endRect.centerY());
-        float currentWidthEmoji = evaluate(scaleProgress, startRect.width(), endRect.width());
-        float currentHeightEmoji = evaluate(scaleProgress, startRect.height(), endRect.height());
+        float currentWidth = evaluate(scaleProgress, startRect.width(), endRect.width());
+        float currentHeight = evaluate(scaleProgress, startRect.height(), endRect.height());
 
-        currentRect.set(
-                centerX - currentWidthEmoji / 2f,
-                centerY - currentHeightEmoji / 2f,
-                centerX + currentWidthEmoji / 2f,
-                centerY + currentHeightEmoji / 2f);
+        if (positionByCenter) {
+            float centerX = evaluate(xProgress, startRect.centerX(), endRect.centerX());
+            float centerY = evaluate(yProgress, startRect.centerY(), endRect.centerY());
+
+            currentRect.set(
+                    centerX - currentWidth / 2f,
+                    centerY - currentHeight / 2f,
+                    centerX + currentWidth / 2f,
+                    centerY + currentHeight / 2f);
+        } else {
+            float leftX = evaluate(xProgress, startRect.left, endRect.left);
+            float topY = evaluate(yProgress, startRect.top, endRect.top);
+
+            currentRect.set(
+                    leftX,
+                    topY,
+                    leftX + currentWidth,
+                    topY + currentHeight);
+        }
 
         image.setImageCoords(currentRect);
         image.setCurrentAlpha(1f);
@@ -80,13 +93,6 @@ public abstract class BaseStickerMessageEnterTransition extends MessageTransitio
         if (drawable instanceof RLottieDrawable) {
             image.setCurrentAlpha(1f);
         }
-
-        drawTime(canvas);
-    }
-
-    @Override
-    protected AnimationType getAnimationType() {
-        return AnimationType.Sticker;
     }
 
     @Override

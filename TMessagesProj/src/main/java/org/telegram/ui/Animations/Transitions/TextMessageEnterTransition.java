@@ -1,10 +1,15 @@
 package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.text.TextPaint;
+import android.util.Log;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
@@ -17,18 +22,21 @@ public class TextMessageEnterTransition extends MessageTransition {
 
     float startSize = AndroidUtilities.dp(18);
     float endSize = AndroidUtilities.dp(SharedConfig.fontSize);
+    
+    float enterHeight;
 
     public TextMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {
         super(containerView, messageView, enterView, listView);
         location(enterView, enterView.getEditField());
         editX = location[0];
         editY = location[1];
+        enterHeight = enterView.getMeasuredHeight();
     }
 
     @Override
     public void animationDraw(Canvas canvas) {
         float editTextX = enterView.getX() + editX;
-        float editTextY = enterView.getY() + editY + editPaddingVertical;
+        float editTextY = enterView.getY() + enterView.getMeasuredHeight() - enterHeight + editY + editPaddingVertical;
 
         setBubbleRectEnd();
         messageView.onLayoutUpdateText();
@@ -46,13 +54,33 @@ public class TextMessageEnterTransition extends MessageTransition {
 
         canvas.save();
         canvas.clipPath(path);
-        float scale = evaluate(scaleProgress, startSize, endSize) / endSize;
-        canvas.translate(currentRect.left + textX, currentRect.top + textY);
-        canvas.scale(scale, scale);
-        messageView.textX = 0;
-        messageView.textY = 0;
-        messageView.drawMessageText(canvas,  messageView.getMessageObject().textLayoutBlocks, true, 1.0f);
+        float textScale = evaluate(scaleProgress, startSize, endSize) / endSize;
+        float offsetXDraw = endRect.left - currentRect.left;
+        float offsetYDraw = endRect.top - currentRect.top;
+        float deltaTimeX = currentRect.width() - endRect.width();
+        float deltaTimeY = currentRect.height() - endRect.height();
+        canvas.translate(messageX - offsetXDraw, messageY - offsetYDraw);
+        messageView.getTransitionParams().animateDrawingTimeAlpha = true;
+        messageView.getTransitionParams().animateChangeProgress = 0f;
+        messageView.getTransitionParams().isTransition = true;
+        messageView.getTransitionParams().textScale = textScale;
+        messageView.getTransitionParams().ignoreBackground = true;
+        messageView.draw(canvas);
+        messageView.getTransitionParams().ignoreBackground = false;
+        messageView.getTransitionParams().deltaTimeX = (int) deltaTimeX;
+        messageView.getTransitionParams().deltaTimeY = (int) deltaTimeY;
+        messageView.getTransitionParams().animateChangeProgress = timeProgress;
+        messageView.drawTime(canvas, 1f, false);
+        messageView.getTransitionParams().animateDrawingTimeAlpha = false;
+        messageView.getTransitionParams().isTransition = false;
         canvas.restore();
+    }
+
+    @Override
+    public void release() {
+        super.release();
+        messageView.getTransitionParams().ignoreBackground = false;
+        messageView.getTransitionParams().isTransition = false;
     }
 
     @Override

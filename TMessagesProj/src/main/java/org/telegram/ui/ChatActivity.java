@@ -148,6 +148,7 @@ import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.Background.GradientSurfaceView;
 import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Animations.Transitions.MessageTransition;
+import org.telegram.ui.Animations.Transitions.PhotoMessageEnterTransition;
 import org.telegram.ui.Animations.Transitions.VideoMessageTransition;
 import org.telegram.ui.Animations.Transitions.StickerMessageEnterTransition;
 import org.telegram.ui.Cells.BotHelpCell;

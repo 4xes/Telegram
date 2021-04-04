@@ -3845,6 +3845,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     private void sendMessageInternal(boolean notify, int scheduleDate) {
+        if (delayedTextMessageClear != null) {
+            return;
+        }
         if (slowModeTimer == Integer.MAX_VALUE && !isInScheduleMode()) {
             if (delegate != null) {
                 delegate.scrollToSendingMessage();
@@ -3897,7 +3900,15 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         }
         if (processSendingText(message, notify, scheduleDate)) {
-            messageEditText.setText("");
+            if (delayedTextMessageClear == null) {
+                delayedTextMessageClear = () -> {
+                    if (messageEditText != null) {
+                        messageEditText.setText("");
+                    }
+                    delayedTextMessageClear = null;
+                };
+                messageEditText.postDelayed(delayedTextMessageClear, 300L);
+            }
             lastTypingTimeSend = 0;
             if (delegate != null) {
                 delegate.onMessageSend(message, notify, scheduleDate);
@@ -3908,6 +3919,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         }
     }
+
+    public Runnable delayedTextMessageClear;
 
     public void doneEditingMessage() {
         if (editingMessageObject == null) {

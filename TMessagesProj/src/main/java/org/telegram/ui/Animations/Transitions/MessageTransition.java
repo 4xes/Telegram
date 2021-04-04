@@ -23,7 +23,6 @@ import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Animations.Parameter;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
-import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import static org.telegram.ui.ActionBar.Theme.key_chat_outBubble;
