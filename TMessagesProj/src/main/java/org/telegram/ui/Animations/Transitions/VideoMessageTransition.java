@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.AnimationType;
@@ -37,8 +38,8 @@ public class VideoMessageTransition extends BaseRecordMessageEnterTransition{
 
     Point durationInMessagePoint = new Point();
 
-    public VideoMessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView, InstantCameraView instantCameraView) {
-        super(containerView, messageView, chatActivityEnterView, listView);
+    public VideoMessageTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView, InstantCameraView instantCameraView) {
+        super(actionBar, containerView, messageView, chatActivityEnterView, listView);
         this.instantCameraView = instantCameraView;
 
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();

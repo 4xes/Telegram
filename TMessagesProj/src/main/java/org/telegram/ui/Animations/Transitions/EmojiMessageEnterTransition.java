@@ -4,8 +4,10 @@ import android.graphics.Canvas;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -14,8 +16,8 @@ public class EmojiMessageEnterTransition extends BaseImageMessageEnterTransition
     final static float emojiTextSize = AndroidUtilities.dp(20);
     final static float emojiSize = emojiTextSize * 1.2f;
 
-    public EmojiMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {
-        super(containerView, messageView, enterView, listView);
+    public EmojiMessageEnterTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView, ChatActivity chatActivity) {
+        super(actionBar, containerView, messageView, enterView, listView, chatActivity);
         location(enterView, enterView.getEditField());
     }
 
@@ -36,6 +38,7 @@ public class EmojiMessageEnterTransition extends BaseImageMessageEnterTransition
     @Override
     public void animationDraw(Canvas canvas) {
         super.animationDraw(canvas);
+        drawReplySticker(canvas);
         drawTime(canvas);
     }
 

@@ -115,6 +115,8 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationManager;
+import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
@@ -217,6 +219,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private int lineCount = 1;
     private AdjustPanLayoutHelper adjustPanLayoutHelper;
     private Runnable showTopViewRunnable;
+//    private Runnable hideTopViewRunnable;
+    private boolean longAnimationHideTopView;
+    private AnimationType animationType;
     private Runnable setTextFieldRunnable;
     public boolean preventInput;
     private NumberTextView captionLimitView;
@@ -2550,6 +2555,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             sendButtonInverseDrawable = context.getResources().getDrawable(R.drawable.ic_send).mutate();
             inactinveSendButtonDrawable = context.getResources().getDrawable(R.drawable.ic_send).mutate();
         }
+        //animate sendbutton
         sendButton = new View(context) {
 
             private int drawableColor;
@@ -3336,7 +3342,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         }
                     }
                 });
-                currentTopViewAnimation.setDuration(220);
+                long duration = longAnimationHideTopView? 300 : 220;
+                if (longAnimationHideTopView && animationType != null) {
+                    duration = AnimationManager.getInstance().getDuration(animationType, null) / 2L;
+                }
+                currentTopViewAnimation.setDuration(duration);
                 currentTopViewAnimation.setStartDelay(50);
                 currentTopViewAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 currentTopViewAnimation.start();
@@ -3900,15 +3910,17 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
         }
         if (processSendingText(message, notify, scheduleDate)) {
-            if (delayedTextMessageClear == null) {
-                delayedTextMessageClear = () -> {
-                    if (messageEditText != null) {
-                        messageEditText.setText("");
-                    }
-                    delayedTextMessageClear = null;
-                };
-                messageEditText.postDelayed(delayedTextMessageClear, 300L);
+            if (replyingMessageObject != null) {
+                longAnimationHideTopView = true;
             }
+            sendButton.setEnabled(false);
+            AndroidUtilities.runOnUIThread(delayedTextMessageClear = () -> {
+                if (messageEditText != null) {
+                    messageEditText.setText("");
+                    sendButton.setEnabled(true);
+                }
+                delayedTextMessageClear = null;
+            }, 300);
             lastTypingTimeSend = 0;
             if (delegate != null) {
                 delegate.onMessageSend(message, notify, scheduleDate);
@@ -6160,6 +6172,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     setStickersExpanded(false, true, false);
                 } else {
                     animateSticker = view;
+                    if (replyingMessageObject != null) {
+                        longAnimationHideTopView = true;
+                    }
+//                    AndroidUtilities.runOnUIThread(hideTopViewRunnable = () -> {
+//                        hideTopViewRunnable = null;
+//                        hideTopView(true);
+//                    }, 300);
                 }
                 ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {

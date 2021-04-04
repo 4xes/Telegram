@@ -194,7 +194,7 @@ public class MessageObject {
     };
 
     public boolean isSupportTransitionAnimation() {
-        if (isVoice() || type == 0 || isAnyKindOfSticker() || isAnimatedEmoji()) {
+        if (isVoice() || type == 0 || isAnyKindOfSticker() || isAnimatedEmoji() || type == TYPE_PHOTO || type == TYPE_VIDEO) {
             return true;
         }
         return false;

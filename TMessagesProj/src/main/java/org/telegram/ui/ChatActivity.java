@@ -261,7 +261,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private View progressView2;
     private FrameLayout bottomOverlay;
     protected ChatActivityEnterView chatActivityEnterView;
-    private ChatActivityEnterTopView chatActivityEnterTopView;
+    public ChatActivityEnterTopView chatActivityEnterTopView;
     private int chatActivityEnterViewAnimateFromTop;
     private boolean chatActivityEnterViewAnimateBeforeSending;
     private View timeItem2;
@@ -307,11 +307,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private FrameLayout mentiondownButton;
     private SimpleTextView mentiondownButtonCounter;
     private ImageView mentiondownButtonImage;
-    private BackupImageView replyImageView;
-    private SimpleTextView replyNameTextView;
-    private SimpleTextView replyObjectTextView;
-    private ImageView replyIconImageView;
-    private ImageView replyCloseImageView;
+    public BackupImageView replyImageView;
+    public SimpleTextView replyNameTextView;
+    public SimpleTextView replyObjectTextView;
+    public ImageView replyIconImageView;
+    public ImageView replyCloseImageView;
     private MentionsAdapter mentionsAdapter;
     private FrameLayout mentionContainer;
     private RecyclerListView mentionListView;
@@ -2365,6 +2365,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             @Override
             protected void onAttachedToWindow() {
                 super.onAttachedToWindow();
+                gradientView.restoreColors(true);
                 adjustPanLayoutHelper.onAttach();
                 chatActivityEnterView.setAdjustPanLayoutHelper(adjustPanLayoutHelper);
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
@@ -3509,6 +3510,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         break;
                     } else if (child instanceof ChatMessageCell) {
+
+                        //draw background
                         ChatMessageCell cell = (ChatMessageCell) child;
                         MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
                         if (group != null && group == lastDrawnGroup) {
@@ -3703,6 +3706,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 int clipBottom = 0;
                 boolean skipDraw = child == scrimView;
                 ChatMessageCell cell;
+                // draw child
                 float cilpTop = chatListViewPaddingTop - chatListViewPaddingVisibleOffset - AndroidUtilities.dp(4);
 
                 if (child.getY() > getMeasuredHeight() || child.getY() + child.getMeasuredHeight() < cilpTop) {
@@ -15074,7 +15078,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 addToPolls(obj, null);
-                if (a == 0 && obj.messageOwner.id < 0 && isSupportTransitionSending(obj) && chatMode != MODE_SCHEDULED) {
+                if (obj.messageOwner.id < 0 && isSupportTransitionSending(obj) && chatMode != MODE_SCHEDULED) {
                     animatingMessageObjects.add(obj);
                 }
 
@@ -21828,25 +21832,25 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         animatingMessageObjects.remove(index);
                         if (message.type == MessageObject.TYPE_ROUND_VIDEO && instantCameraView.getTextureView() != null) {
                             startTransition(messageCell, () -> {
-                                MessageTransition transition = new VideoMessageTransition(contentView, messageCell, chatActivityEnterView, chatListView, instantCameraView);
+                                MessageTransition transition = new VideoMessageTransition(actionBar,contentView, messageCell, chatActivityEnterView, chatListView, instantCameraView);
                                 transition.start();
                             });
                         }
                         if (message.isVoice() && chatActivityEnterView.canShowVoiceMessageTransition()) {
                             startTransition(messageCell, () -> {
-                                MessageTransition transition = new VoiceMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                MessageTransition transition = new VoiceMessageEnterTransition(actionBar,contentView, messageCell, chatActivityEnterView, chatListView);
                                 transition.start();
                             });
                         }
                         if (message.type == 0) {
                             startTransition(messageCell, () -> {
-                                MessageTransition transition = new TextMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                MessageTransition transition = new TextMessageEnterTransition(actionBar, contentView, messageCell, chatActivityEnterView, chatListView);
                                 transition.start();
                             });
                         }
                         if (message.isAnimatedEmoji()) {
                             startTransition(messageCell, () -> {
-                                MessageTransition transition = new EmojiMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
+                                MessageTransition transition = new EmojiMessageEnterTransition(actionBar,contentView, messageCell, chatActivityEnterView, chatListView, ChatActivity.this);
                                 transition.start();
                             });
                         }
@@ -21855,10 +21859,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (stickerView != null) {
                                 chatActivityEnterView.animateSticker = null;
                                 startTransition(messageCell, () -> {
-                                    MessageTransition transition = new StickerMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView, stickerView);
+                                    MessageTransition transition = new StickerMessageEnterTransition(actionBar, contentView, messageCell, chatActivityEnterView, chatListView, stickerView, ChatActivity.this);
                                     transition.start();
                                 });
                             }
+                        }
+                        if (message.type == MessageObject.TYPE_PHOTO) {
+                            startTransition(messageCell, () -> {
+                                MessageTransition transition = new PhotoMessageEnterTransition(actionBar,contentView, messageCell, chatActivityEnterView, chatListView , null, ChatActivity.this);
+                                transition.start();
+                            });
                         }
                     }
                     if (!animatingDocuments.isEmpty() && animatingDocuments.containsKey(message.getDocument())) {

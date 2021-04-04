@@ -10,6 +10,7 @@ import android.widget.FrameLayout;
 import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
@@ -43,8 +44,8 @@ abstract class BaseRecordMessageEnterTransition extends MessageTransition {
     final StaticLayout msLayout;
     float measureSeconds;
 
-    public BaseRecordMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
-        super(containerView, messageView, chatActivityEnterView, listView);
+    public BaseRecordMessageEnterTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
+        super(actionBar, containerView, messageView, chatActivityEnterView, listView);
         recordDot = chatActivityEnterView.getRecordDot();
         recordDot.skipDraw = true;
         dotFromRadius = recordDot.drawingDotRadius;

@@ -8,6 +8,7 @@ import android.text.TextPaint;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -47,8 +48,8 @@ public class VoiceMessageEnterTransition extends MessageTransition {
     final StaticLayout msLayout;
     float measureSeconds;
 
-    public VoiceMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
-        super(containerView, messageView, chatActivityEnterView, listView);
+    public VoiceMessageEnterTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
+        super(actionBar, containerView, messageView, chatActivityEnterView, listView);
 
         recordCircle = chatActivityEnterView.getRecordCircle();
         chatActivityEnterView.startMessageTransition();

@@ -17,6 +17,7 @@ import androidx.collection.SparseArrayCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationManager;
 import org.telegram.ui.Animations.AnimationType;
@@ -51,6 +52,7 @@ public abstract class MessageTransition {
     final ChatMessageCell messageView;
     final ChatActivityEnterView enterView;
     final RecyclerListView listView;
+    final ActionBar actionBar;
     final int messageId;
 
     Paint messagePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -76,7 +78,8 @@ public abstract class MessageTransition {
         timeProgress = interpolate(Parameter.TimeAppears, progress);
     }
 
-    public MessageTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
+    public MessageTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
+        this.actionBar = actionBar;
         this.containerView = containerView;
         this.messageView = messageView;
         this.enterView = chatActivityEnterView;
@@ -95,7 +98,7 @@ public abstract class MessageTransition {
             protected void onDraw(Canvas canvas) {
                 int translateSave = canvas.save();
                 canvas.translate(-getX(), -getY());
-
+                canvas.clipRect(0, actionBar.getY() + actionBar.getMeasuredHeight(), containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
                 if (messageView.getMessageObject().stableId == messageId) {
                     messageX = messageView.getX() + listView.getX();
                     messageY = messageView.getY() + listView.getY();
@@ -103,8 +106,8 @@ public abstract class MessageTransition {
                         return;
                     }
                     animationDraw(canvas);
-                    canvas.restoreToCount(translateSave);
                 }
+                canvas.restoreToCount(translateSave);
             }
         };
         //view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
@@ -323,7 +326,7 @@ public abstract class MessageTransition {
         return startValue + fraction * (endValue - startValue);
     }
 
-    protected int evaluateColor(float fraction, int startValue, int endValue) {
+    public int evaluateColor(float fraction, int startValue, int endValue) {
         return ColorUtils.blendARGB(startValue, endValue, fraction);
     }
 

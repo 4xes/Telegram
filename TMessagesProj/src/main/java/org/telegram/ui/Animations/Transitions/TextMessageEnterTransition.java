@@ -1,15 +1,11 @@
 package org.telegram.ui.Animations.Transitions;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.text.TextPaint;
-import android.util.Log;
-import android.view.View;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
@@ -25,8 +21,8 @@ public class TextMessageEnterTransition extends MessageTransition {
     
     float enterHeight;
 
-    public TextMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {
-        super(containerView, messageView, enterView, listView);
+    public TextMessageEnterTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView) {
+        super(actionBar, containerView, messageView, enterView, listView);
         location(enterView, enterView.getEditField());
         editX = location[0];
         editY = location[1];
@@ -62,8 +58,9 @@ public class TextMessageEnterTransition extends MessageTransition {
         canvas.translate(messageX - offsetXDraw, messageY - offsetYDraw);
         messageView.getTransitionParams().animateDrawingTimeAlpha = true;
         messageView.getTransitionParams().animateChangeProgress = 0f;
-        messageView.getTransitionParams().isTransition = true;
+        messageView.getTransitionParams().myTransition = true;
         messageView.getTransitionParams().textScale = textScale;
+        messageView.getTransitionParams().myReplyProgress = colorProgress;
         messageView.getTransitionParams().ignoreBackground = true;
         messageView.draw(canvas);
         messageView.getTransitionParams().ignoreBackground = false;
@@ -72,7 +69,7 @@ public class TextMessageEnterTransition extends MessageTransition {
         messageView.getTransitionParams().animateChangeProgress = timeProgress;
         messageView.drawTime(canvas, 1f, false);
         messageView.getTransitionParams().animateDrawingTimeAlpha = false;
-        messageView.getTransitionParams().isTransition = false;
+        messageView.getTransitionParams().myTransition = false;
         canvas.restore();
     }
 
@@ -80,7 +77,7 @@ public class TextMessageEnterTransition extends MessageTransition {
     public void release() {
         super.release();
         messageView.getTransitionParams().ignoreBackground = false;
-        messageView.getTransitionParams().isTransition = false;
+        messageView.getTransitionParams().myTransition = false;
     }
 
     @Override

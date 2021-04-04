@@ -4,9 +4,13 @@ import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.view.View;
 import android.widget.FrameLayout;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationType;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -17,13 +21,14 @@ public class StickerMessageEnterTransition extends BaseImageMessageEnterTransiti
     final float stickerCellHeight;
     final float stickerCellWidth;
 
-    public StickerMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView, View stickerView) {
-        super(containerView, messageView, enterView, listView);
+    public StickerMessageEnterTransition(ActionBar actionBar, FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView enterView, RecyclerListView listView, View stickerView, ChatActivity chatActivity) {
+        super(actionBar, containerView, messageView, enterView, listView ,chatActivity);
+        stickerCellWidth = stickerView.getMeasuredWidth();
+        stickerCellHeight = stickerView.getMeasuredHeight();
+
         location(enterView, stickerView);
         stickerCellX = location[0];
         stickerCellY = location[1];
-        stickerCellWidth = stickerView.getMeasuredWidth();
-        stickerCellHeight = stickerView.getMeasuredHeight();
     }
 
     final static float stickerSize = AndroidUtilities.dp(66);
@@ -49,11 +54,14 @@ public class StickerMessageEnterTransition extends BaseImageMessageEnterTransiti
                 stickerCellRect.centerX() + inset,
                 stickerCellRect.centerY() + inset
         );
+
     }
+
 
     @Override
     public void animationDraw(Canvas canvas) {
         super.animationDraw(canvas);
+        drawReplySticker(canvas);
         drawTime(canvas);
     }
 
