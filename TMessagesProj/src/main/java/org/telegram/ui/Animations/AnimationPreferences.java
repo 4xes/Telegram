@@ -180,10 +180,17 @@ public class AnimationPreferences {
                 }
                 String key = keyValue[0];
                 String strValue = keyValue[1];
+                if (key.equals(keyBackgroundIndexes)) {
+                    continue;
+                }
                 if (key.endsWith(prefixProgressionTop) || key.endsWith(prefixProgressionBottom) || key.endsWith(prefixTimeStart) || key.endsWith(prefixTimeEnd)) {
                     try {
                         float value = Float.parseFloat(strValue);
-                        sharedPreferences.edit().putFloat(key, value).apply();
+                        if (value < 0f && value > 1f) {
+                            sharedPreferences.edit().remove(key).apply();
+                        } else {
+                            sharedPreferences.edit().putFloat(key, value).apply();
+                        }
 
                     } catch (NumberFormatException e) {
                         e.printStackTrace();
@@ -193,7 +200,11 @@ public class AnimationPreferences {
                     try {
                         long value = Long.parseLong(strValue);
                         sharedPreferences.edit().putLong(key, value).apply();
-
+                        if (value < 0) {
+                            sharedPreferences.edit().remove(key).apply();
+                        } else {
+                            sharedPreferences.edit().putLong(key, value).apply();
+                        }
                     } catch (NumberFormatException e) {
                         e.printStackTrace();
                     }
