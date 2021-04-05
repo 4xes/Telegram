@@ -1,3 +1,6 @@
+# Telegram Android Animation Contest 2021 Round 2
+Apk for testing [app.apk](https://github.com/4xes/Telegram/raw/animation/apk/app.apk)
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
