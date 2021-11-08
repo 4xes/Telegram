@@ -390,6 +390,12 @@
     <string name="MegaPrivateInfo">Private groups can only be joined if you were invited or have an invite link.</string>
     <string name="ChannelLinkTitle">Permanent link</string>
     <string name="ChannelInviteLinkTitle">Invite Link</string>
+    <string name="NoForwardsTitle">Saving content</string>
+    <string name="NoForwards">Restrict saving content</string>
+    <string name="GroupNoForwardsHelp">Participants won\’t be able to forward messages from this group or save media files.</string>
+    <string name="ChannelNoForwardsHelp">Participants won\’t be able to forward messages from this channel or save media files.</string>
+    <string name="GroupNoForwardsInfo">Forwards from this group are restricted.</string>
+    <string name="ChannelNoForwardsInfo">Forwards from this channel are restricted.</string>
     <string name="GroupAddMembers">Add Members</string>
     <string name="ChannelAddSubscribers">Add Subscribers</string>
     <string name="LeaveChannel">Leave Channel</string>
@@ -589,8 +595,10 @@
     <string name="GroupSettingsTitle">Group Settings</string>
     <string name="ChannelSettingsTitle">Channel Settings</string>
     <string name="TypePrivate">Private</string>
+    <string name="TypePrivateRestricted">Private restricted</string>
     <string name="TypePublic">Public</string>
     <string name="TypePrivateGroup">Private</string>
+    <string name="TypePrivateRestrictedGroup">Private restricted</string>
     <string name="TypePublicGroup">Public</string>
     <string name="TypeLocationGroup">Link</string>
     <string name="TypeLocationGroupEdit">Tap to add a permanent link</string>
@@ -778,6 +786,8 @@
     <string name="EventLogToggledInvitesOff">un1 disabled group invites</string>
     <string name="EventLogToggledSignaturesOn">un1 enabled signatures</string>
     <string name="EventLogToggledSignaturesOff">un1 disabled signatures</string>
+    <string name="EventLogToggledNoForwardOn">un1 enabled restricted content</string>
+    <string name="EventLogToggledNoForwardOff">un1 disabled restricted content</string>
     <string name="EventLogRestrictedUntil">changed permissions for %1$s\n\nDuration: %2$s</string>
     <string name="EventLogDefaultPermissions">changed default permissions</string>
     <string name="EventLogRestrictedSendStickers">Send stickers &amp; GIFs</string>
