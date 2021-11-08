@@ -20006,11 +20006,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     updateDeleteItemRunnable.run();
                     cell.setSubtextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText6));
                 }
-                //copy
                 if (option == 2) {
                     menuCopyItem = cell;
                 }
-                //forward
                 if (option == 3) {
                     menuForwardItem = cell;
                 }
