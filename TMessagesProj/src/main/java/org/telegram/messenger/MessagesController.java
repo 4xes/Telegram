@@ -2922,6 +2922,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     oldChat.broadcast = chat.broadcast;
                     oldChat.verified = chat.verified;
                     oldChat.megagroup = chat.megagroup;
+                    oldChat.noforwards = chat.noforwards;
                     oldChat.call_not_empty = chat.call_not_empty;
                     oldChat.call_active = chat.call_active;
                     if (chat.default_banned_rights != null) {
@@ -2997,6 +2998,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 chat.photo = oldChat.photo;
                 chat.broadcast = oldChat.broadcast;
                 chat.verified = oldChat.verified;
+                chat.noforwards = oldChat.noforwards;
                 chat.megagroup = oldChat.megagroup;
 
                 if (oldChat.default_banned_rights != null) {
@@ -9102,7 +9104,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
 
-    public void toogleChannelInvitesHistory(long chatId, boolean enabled) {
+    public void toggleChannelInvitesHistory(long chatId, boolean enabled) {
         TLRPC.TL_channels_togglePreHistoryHidden req = new TLRPC.TL_channels_togglePreHistoryHidden();
         req.channel = getInputChannel(chatId);
         req.enabled = enabled;
@@ -9125,6 +9127,18 @@ public class MessagesController extends BaseController implements NotificationCe
                     getMessagesStorage().updateChatInfo(info, false);
                     getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, false);
                 });
+            }
+        }, ConnectionsManager.RequestFlagInvokeAfter);
+    }
+
+    public void toggleNoForwards(long chatId, boolean enabled) {
+        TLRPC.TL_messages_toggleNoForwards req = new TLRPC.TL_messages_toggleNoForwards();
+        req.peer = getInputPeer(-chatId);
+        req.enabled = enabled;
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (response != null) {
+                processUpdates((TLRPC.Updates) response, false);
+                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_CHAT));
             }
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }

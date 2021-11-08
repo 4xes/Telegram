@@ -1014,6 +1014,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
                 setAvatar();
             }
+            if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
+                updateFields(true);
+            }
         }
     }
 
@@ -1144,7 +1147,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         if (info != null) {
             if (ChatObject.isChannel(currentChat) && info.hidden_prehistory != historyHidden) {
                 info.hidden_prehistory = historyHidden;
-                getMessagesController().toogleChannelInvitesHistory(chatId, historyHidden);
+                getMessagesController().toggleChannelInvitesHistory(chatId, historyHidden);
             }
         }
 
@@ -1343,10 +1346,27 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 typeCell.setTextAndValue(LocaleController.getString("TypeLocationGroup", R.string.TypeLocationGroup), link, historyCell != null && historyCell.getVisibility() == View.VISIBLE || linkedCell != null && linkedCell.getVisibility() == View.VISIBLE);
             } else {
                 String type;
+                boolean isNoForwards = currentChat.noforwards;
                 if (isChannel) {
-                    type = isPrivate ? LocaleController.getString("TypePrivate", R.string.TypePrivate) : LocaleController.getString("TypePublic", R.string.TypePublic);
+                    if (isPrivate) {
+                        if (isNoForwards) {
+                            type = LocaleController.getString("TypePrivateRestricted", R.string.TypePrivateRestricted);
+                        } else {
+                            type = LocaleController.getString("TypePrivate", R.string.TypePrivate);
+                        }
+                    } else {
+                        type = LocaleController.getString("TypePublic", R.string.TypePublic);
+                    }
                 } else {
-                    type = isPrivate ? LocaleController.getString("TypePrivateGroup", R.string.TypePrivateGroup) : LocaleController.getString("TypePublicGroup", R.string.TypePublicGroup);
+                    if (isPrivate) {
+                        if (isNoForwards) {
+                            type = LocaleController.getString("TypePrivateRestrictedGroup", R.string.TypePrivateRestrictedGroup);
+                        } else {
+                            type = LocaleController.getString("TypePrivateGroup", R.string.TypePrivateGroup);
+                        }
+                    } else {
+                        type = LocaleController.getString("TypePublicGroup", R.string.TypePublicGroup);
+                    }
                 }
                 if (isChannel) {
                     typeCell.setTextAndValue(LocaleController.getString("ChannelType", R.string.ChannelType), type, historyCell != null && historyCell.getVisibility() == View.VISIBLE || linkedCell != null && linkedCell.getVisibility() == View.VISIBLE);
