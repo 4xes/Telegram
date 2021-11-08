@@ -501,7 +501,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         imageView.setForUserOrChat(chat, avatarDrawable);
         builder.setPositiveButton(LocaleController.getString("DiscussionLinkGroup", R.string.DiscussionLinkGroup), (dialogInterface, i) -> {
             if (chatFull.hidden_prehistory) {
-                getMessagesController().toogleChannelInvitesHistory(chat.id, false);
+                getMessagesController().toggleChannelInvitesHistory(chat.id, false);
             }
             linkChat(chat, null);
         });
@@ -516,7 +516,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         if (!ChatObject.isChannel(chat)) {
             getMessagesController().convertToMegaGroup(getParentActivity(), chat.id, this, param -> {
                 if (param != 0) {
-                    getMessagesController().toogleChannelInvitesHistory(param, false);
+                    getMessagesController().toggleChannelInvitesHistory(param, false);
                     linkChat(getMessagesController().getChat(param), createFragment);
                 }
             });
