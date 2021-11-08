@@ -3497,23 +3497,29 @@ public class AndroidUtilities {
     }
 
     public static void setFlagSecure(BaseFragment parentFragment, boolean set) {
-        if (parentFragment == null || parentFragment.getParentActivity() == null) {
-            return;
-        }
-        if (set) {
-            try {
-                parentFragment.getParentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
-                flagSecureFragment = new WeakReference<>(parentFragment);
-            } catch (Exception ignore) {
+        try {
+            if (Build.VERSION.SDK_INT >= 23 && (SharedConfig.passcodeHash.length() == 0 || SharedConfig.allowScreenCapture)) {
+                if (parentFragment == null || parentFragment.getParentActivity() == null) {
+                    return;
+                }
+                if (set) {
+                    try {
+                        parentFragment.getParentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+                        flagSecureFragment = new WeakReference<>(parentFragment);
+                    } catch (Exception ignore) {
 
-            }
-        } else if (flagSecureFragment != null && flagSecureFragment.get() == parentFragment) {
-            try {
-                parentFragment.getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-            } catch (Exception ignore) {
+                    }
+                } else if (flagSecureFragment != null && flagSecureFragment.get() == parentFragment) {
+                    try {
+                        parentFragment.getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                    } catch (Exception ignore) {
 
+                    }
+                    flagSecureFragment = null;
+                }
             }
-            flagSecureFragment = null;
+        } catch (Throwable e) {
+            FileLog.e(e);
         }
     }
 
