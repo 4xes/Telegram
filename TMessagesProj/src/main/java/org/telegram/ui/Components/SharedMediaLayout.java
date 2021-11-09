@@ -1,7 +1,6 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.MediaDataController.MEDIA_PHOTOVIDEO;
-import static org.telegram.messenger.MediaDataController.getMediaType;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -55,8 +54,6 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -1116,6 +1113,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingDidReset);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingDidStart);
+        profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
 
         for (int a = 0; a < 10; a++) {
             //cellCache.add(new SharedPhotoVideoCell(context));
@@ -1429,9 +1427,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             forwardItem.setIcon(R.drawable.msg_forward);
             forwardItem.setContentDescription(LocaleController.getString("Forward", R.string.Forward));
             forwardItem.setDuplicateParentStateEnabled(false);
+            updateNoForwards();
             actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
             actionModeViews.add(forwardItem);
-            forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
+            forwardItem.setOnClickListener(v -> {
+                if (isNoForwards()) {
+                    if (profileActivity instanceof ProfileActivity) {
+                        ((ProfileActivity) profileActivity).showNoForwardsHint(v);
+                    }
+                } else {
+                    onActionBarItemClick(forward);
+                }
+            });
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -2803,6 +2810,23 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         return searchItem;
     }
 
+    public boolean isNoForwards() {
+        TLRPC.Chat currentChat = delegate.getCurrentChat();
+        if (currentChat != null) {
+            TLRPC.Chat chat = profileActivity.getMessagesController().getChat(currentChat.id);
+            if (chat != null) {
+                currentChat = chat;
+            }
+        }
+        return ChatObject.isNoForwards(currentChat);
+    }
+
+    public void updateNoForwards() {
+        if (forwardItem != null) {
+            forwardItem.animate().alpha(!isNoForwards() ? 1.0f : 0.5f).setDuration(100).start();
+        }
+    }
+
     public boolean isSearchItemVisible() {
         if (mediaPages[0].selectedType == 7) {
             return delegate.canSearchMembers();
@@ -2853,6 +2877,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingDidReset);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingDidStart);
+        profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
     private void checkCurrentTabValid() {
@@ -3480,7 +3505,12 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.mediaDidLoad) {
+        if (id == NotificationCenter.updateInterfaces) {
+            int mask = (Integer) args[0];
+            if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
+                updateNoForwards();
+            }
+        } else if (id == NotificationCenter.mediaDidLoad) {
             long uid = (Long) args[0];
             int guid = (Integer) args[3];
             int requestIndex = (Integer) args[7];

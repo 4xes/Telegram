@@ -148,6 +148,7 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FragmentContextView;
+import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.IdenticonDrawable;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
@@ -158,6 +159,7 @@ import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.SharedMediaLayout;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.TimerDrawable;
 import org.telegram.ui.Components.UndoView;
@@ -204,6 +206,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private StickerEmptyView emptyView;
     private boolean sharedMediaLayoutAttached;
     private SharedMediaLayout.SharedMediaPreloader sharedMediaPreloader;
+    private HintView noForwardsHintView;
 
     private RLottieDrawable cameraDrawable;
 
@@ -985,6 +988,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type, int[] consumed) {
             if (target == listView && sharedMediaLayoutAttached) {
                 RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                hideHints();
                 int top = sharedMediaLayout.getTop();
                 if (top == 0) {
                     consumed[1] = dyUnconsumed;
@@ -3374,6 +3378,27 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         });
         avatarsViewPager.setPinchToZoomHelper(pinchToZoomHelper);
         return fragmentView;
+    }
+
+    public void showNoForwardsHint(View view) {
+        if (getParentActivity() == null || fragmentView == null) {
+            return;
+        }
+        if (noForwardsHintView == null) {
+            noForwardsHintView = new HintView(getParentActivity(), 9, false, null);
+            noForwardsHintView.setAlpha(0.0f);
+            noForwardsHintView.setVisibility(View.INVISIBLE);
+            boolean isChannel = ChatObject.isChannel(currentChat);
+            noForwardsHintView.setText(isChannel ? LocaleController.getString("ChannelNoForwardsHint", R.string.ChannelNoForwardsHint) : LocaleController.getString("GroupNoForwardsHint", R.string.GroupNoForwardsHint));
+            ((FrameLayout) fragmentView).addView(noForwardsHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+        }
+        noForwardsHintView.showForView(view, true);
+    }
+
+    public void hideHints() {
+        if (noForwardsHintView != null) {
+            noForwardsHintView.hide();
+        }
     }
 
     public long getDialogId() {
@@ -6210,6 +6235,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (sharedMediaLayout != null) {
             sharedMediaLayout.getSearchItem().requestLayout();
         }
+
     }
 
     @Override
