@@ -394,8 +394,10 @@
     <string name="NoForwards">Restrict saving content</string>
     <string name="GroupNoForwardsHelp">Participants won\’t be able to forward messages from this group or save media files.</string>
     <string name="ChannelNoForwardsHelp">Participants won\’t be able to forward messages from this channel or save media files.</string>
-    <string name="GroupNoForwardsInfo">Forwards from this group are restricted.</string>
-    <string name="ChannelNoForwardsInfo">Forwards from this channel are restricted.</string>
+    <string name="GroupNoForwardsInfo">Forwards from this group\nare restricted.</string>
+    <string name="ChannelNoForwardsInfo">Forwards from this channel\nare restricted.</string>
+    <string name="GroupNoForwardsHint">Forwards from this group are restricted</string>
+    <string name="ChannelNoForwardsHint">Forwards from this channel are restricted</string>
     <string name="GroupAddMembers">Add Members</string>
     <string name="ChannelAddSubscribers">Add Subscribers</string>
     <string name="LeaveChannel">Leave Channel</string>

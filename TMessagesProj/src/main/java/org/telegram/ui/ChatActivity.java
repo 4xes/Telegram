@@ -654,8 +654,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int scrimPopupX, scrimPopupY;
     private ActionBarMenuSubItem[] scrimPopupWindowItems;
     private ActionBarMenuSubItem menuDeleteItem;
-    private ActionBarMenuSubItem menuCopyItem;
-    private ActionBarMenuSubItem menuForwardItem;
     private FrameLayout noForwardsLayoutInfo;
 
     private Runnable updateDeleteItemRunnable = new Runnable() {
@@ -15785,17 +15783,24 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         addToSelectedMessages(null, true);
     }
 
-    private void updateMenuForwardAndCopyCell() {
+    private void updatePopupNoForwardItems() {
         int visibility = isNoForwards() ? View.GONE : View.VISIBLE;
-        if (menuCopyItem != null) {
-            menuCopyItem.setVisibility(visibility);
-        }
-        if (menuForwardItem != null) {
-            menuForwardItem.setVisibility(visibility);
+
+        if (scrimPopupWindowItems != null) {
+            //noinspection ForLoopReplaceableByForEach
+            for (int i = 0; i < scrimPopupWindowItems.length; i++) {
+                Object tag = scrimPopupWindowItems[i].getTag(R.id.option_id);
+                if (tag instanceof Integer) {
+                    int id = (Integer) tag;
+                    if (id == 11 || id == 10 || id == 7 || id == 6 || id == 4 || id == 2 || id == 3) {
+                        scrimPopupWindowItems[i].setVisibility(visibility);
+                    }
+                }
+            }
         }
     }
 
-    private void updateMenuNoForwardInfo() {
+    private void updatePopupNoForwardInfo() {
         if (noForwardsLayoutInfo != null) {
             int visibility = isNoForwards() ? View.VISIBLE : View.GONE;
             noForwardsLayoutInfo.setVisibility(visibility);
@@ -15804,8 +15809,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void updateNoForwards() {
         // update popup
-        updateMenuForwardAndCopyCell();
-        updateMenuNoForwardInfo();
+        updatePopupNoForwardItems();
+        updatePopupNoForwardInfo();
         // update forward in bottom and appbar
         updateSelectedMessages();
         // secure screenshots
@@ -19998,8 +20003,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrimPopupWindow.dismiss();
                 scrimPopupWindow = null;
                 menuDeleteItem = null;
-                menuCopyItem = null;
-                menuForwardItem = null;
                 scrimPopupWindowItems = null;
                 return;
             }
@@ -20054,18 +20057,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     updateDeleteItemRunnable.run();
                     cell.setSubtextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText6));
                 }
-                if (option == 2) {
-                    menuCopyItem = cell;
-                }
-                if (option == 3) {
-                    menuForwardItem = cell;
-                }
-
-                updateMenuForwardAndCopyCell();
 
                 scrimPopupWindowItems[a] = cell;
                 popupLayout.addView(cell);
                 final int i = a;
+                cell.setTag(R.id.option_id, options.get(i));
                 cell.setOnClickListener(v1 -> {
                     if (selectedObject == null || i >= options.size()) {
                         return;
@@ -20079,6 +20075,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 });
             }
+            updatePopupNoForwardItems();
 
             LinearLayout scrimPopupContainerLayout = new LinearLayout(contentView.getContext()) {
                 @Override
@@ -20302,7 +20299,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 noForwardsLayoutInfo.setBackground(shadowDrawable2);
                 LinearLayout.LayoutParams layoutParams = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
                 noForwardsLayoutInfo.setLayoutParams(layoutParams);
-                updateMenuNoForwardInfo();
+                updatePopupNoForwardInfo();
                 scrimPopupContainerLayout.addView(noForwardsLayoutInfo);
             }
 
@@ -20315,8 +20312,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     scrimPopupWindow = null;
                     menuDeleteItem = null;
-                    menuCopyItem = null;
-                    menuForwardItem = null;
                     scrimPopupWindowItems = null;
                     noForwardsLayoutInfo = null;
                     if (scrimAnimatorSet != null) {
