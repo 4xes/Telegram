@@ -655,6 +655,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private ActionBarMenuSubItem menuDeleteItem;
     private ActionBarMenuSubItem menuCopyItem;
     private ActionBarMenuSubItem menuForwardItem;
+    private FrameLayout noForwardsLayoutInfo;
 
     private Runnable updateDeleteItemRunnable = new Runnable() {
         @Override
@@ -15746,18 +15747,26 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void updateMenuForwardAndCopyCell() {
-        int visible = isNoForwards() ? View.GONE : View.VISIBLE;
+        int visibility = isNoForwards() ? View.GONE : View.VISIBLE;
         if (menuCopyItem != null) {
-            menuCopyItem.setVisibility(visible);
+            menuCopyItem.setVisibility(visibility);
         }
         if (menuForwardItem != null) {
-            menuForwardItem.setVisibility(visible);
+            menuForwardItem.setVisibility(visibility);
+        }
+    }
+
+    private void updateMenuNoForwardInfo() {
+        if (noForwardsLayoutInfo != null) {
+            int visibility = isNoForwards() ? View.VISIBLE : View.GONE;
+            noForwardsLayoutInfo.setVisibility(visibility);
         }
     }
 
     private void updateNoForwards() {
         // update popup
         updateMenuForwardAndCopyCell();
+        updateMenuNoForwardInfo();
         // update forward in bottom and appbar
         updateSelectedMessages();
         // secure screenshots
@@ -20236,7 +20245,27 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 });
                 scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 60));
             }
-            scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, showMessageSeen ? -8 : 0, 0, 0));
+
+            boolean addForwardsHint = currentChat != null;
+            scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, showMessageSeen ? -8 : 0, 0, addForwardsHint ? -8 : 0));
+
+            if (addForwardsHint) {
+                Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
+                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+                noForwardsLayoutInfo = new FrameLayout(contentView.getContext());
+                ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), true, true, themeDelegate);
+                cell.setMinimumWidth(AndroidUtilities.dp(200));
+                cell.setItemHeight(56);
+                cell.setText(LocaleController.getString("GroupNoForwardsInfo", R.string.GroupNoForwardsInfo));
+                cell.setMultiline();
+                noForwardsLayoutInfo.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                noForwardsLayoutInfo.setBackground(shadowDrawable2);
+                LinearLayout.LayoutParams layoutParams = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
+                noForwardsLayoutInfo.setLayoutParams(layoutParams);
+                updateMenuNoForwardInfo();
+                scrimPopupContainerLayout.addView(noForwardsLayoutInfo);
+            }
+
             scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
                 @Override
                 public void dismiss() {
@@ -20249,6 +20278,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     menuCopyItem = null;
                     menuForwardItem = null;
                     scrimPopupWindowItems = null;
+                    noForwardsLayoutInfo = null;
                     if (scrimAnimatorSet != null) {
                         scrimAnimatorSet.cancel();
                         scrimAnimatorSet = null;
