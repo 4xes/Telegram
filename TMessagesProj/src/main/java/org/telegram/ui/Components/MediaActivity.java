@@ -15,10 +15,9 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -33,7 +32,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
@@ -49,6 +47,24 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     SharedMediaLayout sharedMediaLayout;
     AudioPlayerAlert.ClippingTextViewSwitcher mediaCounterTextView;
 
+    private HintView noForwardsHintView;
+
+    public void showNoForwardsHint(View view) {
+        if (getParentActivity() == null || fragmentView == null) {
+            return;
+        }
+        if (noForwardsHintView == null) {
+            noForwardsHintView = new HintView(getParentActivity(), 9, false, null);
+            noForwardsHintView.setAlpha(0.0f);
+            noForwardsHintView.setVisibility(View.INVISIBLE);
+            TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            boolean isChannel = ChatObject.isChannel(currentChat);
+            noForwardsHintView.setText(isChannel ? LocaleController.getString("ChannelNoForwardsHint", R.string.ChannelNoForwardsHint) : LocaleController.getString("GroupNoForwardsHint", R.string.GroupNoForwardsHint));
+            ((FrameLayout) fragmentView).addView(noForwardsHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+        }
+        noForwardsHintView.showForView(view, true);
+    }
+
     public MediaActivity(Bundle args, SharedMediaLayout.SharedMediaPreloader sharedMediaPreloader) {
         super(args);
         this.sharedMediaPreloader = sharedMediaPreloader;
@@ -62,6 +78,20 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             this.sharedMediaPreloader.addDelegate(this);
         }
         return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        if (sharedMediaLayout != null) {
+            sharedMediaLayout.onDestroy();
+        }
+        if (sharedMediaPreloader != null) {
+            sharedMediaPreloader.onDestroy(this);
+        }
+        if (sharedMediaPreloader != null) {
+            sharedMediaPreloader.removeDelegate(this);
+        }
     }
 
     @Override
@@ -176,7 +206,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
             @Override
             public TLRPC.Chat getCurrentChat() {
-                return null;
+                return MessagesController.getInstance(currentAccount).getChat(-dialogId);
             }
 
             @Override

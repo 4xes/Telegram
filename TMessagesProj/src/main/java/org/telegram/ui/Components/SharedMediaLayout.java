@@ -1432,8 +1432,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             actionModeViews.add(forwardItem);
             forwardItem.setOnClickListener(v -> {
                 if (isNoForwards()) {
+                    //move to delegate
                     if (profileActivity instanceof ProfileActivity) {
                         ((ProfileActivity) profileActivity).showNoForwardsHint(v);
+                    } else if (profileActivity instanceof MediaActivity) {
+                        ((MediaActivity) profileActivity).showNoForwardsHint(v);
                     }
                 } else {
                     onActionBarItemClick(forward);
