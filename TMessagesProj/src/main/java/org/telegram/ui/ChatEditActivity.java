@@ -1463,6 +1463,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             if (info == null || !ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_INVITE) || (!isPrivate && currentChat.creator)) {
                 inviteLinksCell.setVisibility(View.GONE);
             } else {
+                inviteLinksCell.setVisibility(View.VISIBLE);
                 if (info.invitesCount > 0) {
                     inviteLinksCell.setTextAndValueAndIcon(LocaleController.getString("InviteLinks", R.string.InviteLinks), Integer.toString(info.invitesCount), R.drawable.actions_link, true);
                 } else {
