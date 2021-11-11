@@ -58,6 +58,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DownloadController;
@@ -178,6 +179,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private final static int menu_speed_normal = 2;
     private final static int menu_speed_fast = 3;
     private final static int menu_speed_veryfast = 4;
+    private final static int menu_msg_forward = 5;
+    private final static int menu_msg_share = 6;
+    private final static int menu_msg_download = 7;
+    private final static int menu_msg_show_in_chat = 8;
 
     private final Runnable forwardSeek = new Runnable() {
         @Override
@@ -238,6 +243,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         parentActivity = (LaunchActivity) context;
 
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
+
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
@@ -1040,14 +1047,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(18)));
         }
         bottomView.addView(optionsButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
-        optionsButton.addSubItem(1, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
-        optionsButton.addSubItem(2, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
-        optionsButton.addSubItem(5, R.drawable.msg_download, LocaleController.getString("SaveToMusic", R.string.SaveToMusic));
-        optionsButton.addSubItem(4, R.drawable.msg_message, LocaleController.getString("ShowInChat", R.string.ShowInChat));
+        optionsButton.addSubItem(menu_msg_forward, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
+        optionsButton.addSubItem(menu_msg_share, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
+        optionsButton.addSubItem(menu_msg_download, R.drawable.msg_download, LocaleController.getString("SaveToMusic", R.string.SaveToMusic));
+        optionsButton.addSubItem(menu_msg_show_in_chat, R.drawable.msg_message, LocaleController.getString("ShowInChat", R.string.ShowInChat));
         optionsButton.setShowedFromBottom(true);
         optionsButton.setOnClickListener(v -> optionsButton.toggleSubMenu());
         optionsButton.setDelegate(this::onSubItemClick);
         optionsButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+        updateNoForwards();
 
         emptyView = new LinearLayout(context);
         emptyView.setOrientation(LinearLayout.VERTICAL);
@@ -1517,10 +1525,39 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     }
 
+    private void updateNoForwards() {
+        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+        boolean isNoForwards = false;
+        if (messageObject != null && !MediaController.getInstance().currentPlaylistIsGlobalSearch()) {
+            long did = messageObject.getDialogId();
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+            if (chat != null) {
+                isNoForwards = ChatObject.isNoForwards(chat);
+            }
+        }
+        if (optionsButton != null) {
+            if (isNoForwards) {
+                optionsButton.setAdditionalYOffset(-AndroidUtilities.dp(12));
+                optionsButton.hideSubItem(menu_msg_forward);
+                optionsButton.hideSubItem(menu_msg_share);
+                optionsButton.hideSubItem(menu_msg_download);
+            } else {
+                optionsButton.setAdditionalYOffset(-AndroidUtilities.dp(157));
+                optionsButton.showSubItem(menu_msg_forward);
+                optionsButton.showSubItem(menu_msg_share);
+                optionsButton.showSubItem(menu_msg_download);
+            }
+            if (optionsButton.isSubMenuShowing()) {
+                optionsButton.forceUpdatePopupPosition();
+            }
+        }
+    }
+
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
             updateTitle(id == NotificationCenter.messagePlayingDidReset && (Boolean) args[1]);
+            updateNoForwards();
             if (id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.messagePlayingPlayStateChanged) {
                 int count = listView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -1615,6 +1652,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     seekBarView.setBufferedProgress(bufferedProgress);
                 }
             }
+        } else if (id == NotificationCenter.updateInterfaces) {
+            int mask = (Integer) args[0];
+            if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
+                updateNoForwards();
+            }
         }
     }
 
@@ -1672,6 +1714,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     @Override
     public void dismiss() {
         super.dismiss();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
