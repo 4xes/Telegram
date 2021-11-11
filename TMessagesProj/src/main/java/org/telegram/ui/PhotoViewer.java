@@ -3065,6 +3065,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         boolean isVisible = !isNoForwards();
         shareButton.setVisibility(isVisible? View.VISIBLE : View.GONE);
         if (menuItem != null) {
+            if (sharedMediaType == MediaDataController.MEDIA_GIF) {
+                menuItem.setVisibility(isVisible? View.VISIBLE : View.GONE);
+                if (!isVisible && menuItem.isSubMenuShowing()) {
+                    menuItem.closeSubMenu();
+                }
+            }
             for (Integer id: noForwardsItems) {
                 updateSubMenuNoForwards(menuItem, id, isNoForwards(), restoreMenuSubItemVisible.get(id));
             }
