@@ -179,10 +179,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private final static int menu_speed_normal = 2;
     private final static int menu_speed_fast = 3;
     private final static int menu_speed_veryfast = 4;
-    private final static int menu_msg_forward = 5;
-    private final static int menu_msg_share = 6;
-    private final static int menu_msg_download = 7;
-    private final static int menu_msg_show_in_chat = 8;
+    private final static int menu_msg_forward = 1;
+    private final static int menu_msg_share = 2;
+    private final static int menu_msg_download = 5;
+    private final static int menu_msg_show_in_chat = 4;
 
     private final Runnable forwardSeek = new Runnable() {
         @Override
@@ -1343,7 +1343,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (messageObject == null || parentActivity == null) {
             return;
         }
-        if (id == 1) {
+        if (id == menu_msg_forward) {
             if (UserConfig.selectedAccount != currentAccount) {
                 parentActivity.switchToAccount(currentAccount, true);
             }
@@ -1385,7 +1385,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             });
             parentActivity.presentFragment(fragment);
             dismiss();
-        } else if (id == 2) {
+        } else if (id == menu_msg_share) {
             try {
                 File f = null;
                 boolean isVideo = false;
@@ -1425,7 +1425,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             } catch (Exception e) {
                 FileLog.e(e);
             }
-        } else if (id == 4) {
+        } else if (id == menu_msg_show_in_chat) {
             if (UserConfig.selectedAccount != currentAccount) {
                 parentActivity.switchToAccount(currentAccount, true);
             }
@@ -1448,7 +1448,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
             parentActivity.presentFragment(new ChatActivity(args), false, false);
             dismiss();
-        } else if (id == 5) {
+        } else if (id == menu_msg_download) {
             if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && parentActivity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 parentActivity.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                 return;
