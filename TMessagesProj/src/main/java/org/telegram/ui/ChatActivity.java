@@ -15816,7 +15816,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         updateSelectedMessages();
         // secure screenshots
         AndroidUtilities.setFlagSecure(this, ChatObject.isNoForwards(currentChat));
+        //todo in future
+        //updateForwardingForReplyingMessage();
     }
+
+//    private void updateForwardingForReplyingMessage() {
+//        //reset forwarding
+//        if (replyingMessageObject != null) {
+//            long did = replyingMessageObject.getDialogId();
+//            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+//            if (ChatObject.isNoForwards(chat)) {
+//                showFieldPanel(false, null, null, null, foundWebPage, true, 0, true, true);
+//            }
+//        }
+//    }
 
     private void checkSecretMessageForLocation(MessageObject messageObject) {
         if (messageObject.type != 4 || locationAlertShown || SharedConfig.isSecretMapPreviewSet()) {
