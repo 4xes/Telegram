@@ -4391,12 +4391,17 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            if (reason != 2 && reason != 3) {
+            if (reason != 2 && reason != 3 && reason != 7) {
                 builder.setNegativeButton(LocaleController.getString("MoreInfo", R.string.MoreInfo), (dialogInterface, i) -> {
                     if (!mainFragmentsStack.isEmpty()) {
                         MessagesController.getInstance(account).openByUserName("spambot", mainFragmentsStack.get(mainFragmentsStack.size() - 1), 1);
                     }
                 });
+            }
+            if (reason == 7) {
+                boolean isChannel = (Boolean) args[1];
+                builder.setMessage(isChannel ? LocaleController.getString("ChannelNoForwardingAlert", R.string.ChannelNoForwardingAlert) : LocaleController.getString("GroupNoForwardingAlert", R.string.GroupNoForwardingAlert));
+                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
             }
             if (reason == 5) {
                 builder.setMessage(LocaleController.getString("NobodyLikesSpam3", R.string.NobodyLikesSpam3));

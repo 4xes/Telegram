@@ -1014,6 +1014,8 @@
     <string name="NobodyLikesSpam1">Sorry, you can only send messages to mutual contacts at the moment.</string>
     <string name="NobodyLikesSpam2">Sorry, you can only add mutual contacts to groups at the moment.</string>
     <string name="NobodyLikesSpam3">Sorry, you are currently restricted from posting to public groups.</string>
+    <string name="GroupNoForwardingAlert">Sorry, you can\'t forward messages from restricted group</string>
+    <string name="ChannelNoForwardingAlert">Sorry, you can\'t forward messages from restricted channel</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
     <string name="ShareComment">Write a comment...</string>

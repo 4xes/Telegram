@@ -228,6 +228,15 @@ public class AlertsCreator {
                 case "PEER_FLOOD":
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 0);
                     break;
+                case "CHAT_FORWARDS_RESTRICTED":
+                    boolean isChannel = false;
+                    if (request instanceof TLRPC.TL_messages_forwardMessages) {
+                        long did = DialogObject.getPeerDialogId(((TLRPC.TL_messages_forwardMessages) request).from_peer);
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                        isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
+                    }
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 7, isChannel);
+                    break;
                 case "USER_BANNED_IN_CHANNEL":
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 5);
                     break;
