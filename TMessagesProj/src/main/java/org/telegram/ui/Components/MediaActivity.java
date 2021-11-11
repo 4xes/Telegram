@@ -58,7 +58,7 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             noForwardsHintView.setAlpha(0.0f);
             noForwardsHintView.setVisibility(View.INVISIBLE);
             TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-            boolean isChannel = ChatObject.isChannel(currentChat);
+            boolean isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
             noForwardsHintView.setText(isChannel ? LocaleController.getString("ChannelNoForwardsHint", R.string.ChannelNoForwardsHint) : LocaleController.getString("GroupNoForwardsHint", R.string.GroupNoForwardsHint));
             ((FrameLayout) fragmentView).addView(noForwardsHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
         }

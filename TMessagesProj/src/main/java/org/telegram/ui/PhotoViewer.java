@@ -3014,12 +3014,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private boolean isNoForwards() {
-        if (currentMessageObject != null) {
-            long dialogId = currentMessageObject.getDialogId();
-            if (DialogObject.isChatDialog(dialogId)) {
-                TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                return ChatObject.isNoForwards(currentChat);
-            }
+        long dialogId = currentDialogId;
+        if (DialogObject.isChatDialog(dialogId)) {
+            TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            return ChatObject.isNoForwards(currentChat);
         }
         return false;
     }
