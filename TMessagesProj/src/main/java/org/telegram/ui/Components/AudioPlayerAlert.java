@@ -1531,6 +1531,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (messageObject != null && !MediaController.getInstance().currentPlaylistIsGlobalSearch()) {
             long did = messageObject.getDialogId();
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+            if (chat != null && chat.migrated_to != null) {
+                TLRPC.Chat migratedChat = MessagesController.getInstance(currentAccount).getChat(chat.migrated_to.channel_id);
+                if (migratedChat != null) {
+                    chat = migratedChat;
+                }
+            }
             if (chat != null) {
                 isNoForwards = ChatObject.isNoForwards(chat);
             }
