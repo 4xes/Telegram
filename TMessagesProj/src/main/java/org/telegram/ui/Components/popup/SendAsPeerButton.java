@@ -8,6 +8,10 @@
 
 package org.telegram.ui.Components.popup;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -30,6 +34,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 
+import java.util.ArrayList;
+
 @SuppressLint("ViewConstructor")
 public class SendAsPeerButton extends View {
     private long currentDialog;
@@ -40,23 +46,26 @@ public class SendAsPeerButton extends View {
     private final ImageReceiver imageReceiver;
     private final AvatarDrawable avatarDrawable;
     private float progress;
-    private boolean deleting;
+    private boolean isClose;
     private long lastUpdateTime;
     private final int[] colors = new int[8];
     private static final int closeColor = 0xff50A7EA;
-
-    private final int buttonSize = AndroidUtilities.dp(48);
-    private final int avatarSize = AndroidUtilities.dp(32);
+    final int maxEmojiOffset = AndroidUtilities.dp(48);
 
     public SendAsPeerButton(Context context) {
         super(context);
 
+        setAlpha(0f);
+        setScaleX(0f);
+        setScaleY(0f);
+
+        int buttonSize = AndroidUtilities.dp(48);
+        int avatarSize = AndroidUtilities.dp(32);
         int offset = (buttonSize - avatarSize) / 2;
         closeDrawable = getResources().getDrawable(R.drawable.ic_send_as_peer);
         closeDrawable.setBounds(offset, offset, offset + avatarSize, offset + avatarSize);
 
         avatarDrawable = new AvatarDrawable();
-
 
         imageReceiver = new ImageReceiver();
         imageReceiver.setRoundRadius(avatarSize / 2);
@@ -66,13 +75,12 @@ public class SendAsPeerButton extends View {
         updateColors();
     }
 
-    public void setDialog(long uid) {
+    private void setDialog(long uid) {
         ImageLocation imageLocation;
         Object imageParent;
 
         if (DialogObject.isUserDialog(uid)) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
-            avatarDrawable.setInfo(user);
             avatarDrawable.setInfo(user);
 
             imageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL);
@@ -107,24 +115,83 @@ public class SendAsPeerButton extends View {
         backPaint.setColor(back);
     }
 
-    public boolean isDeleting() {
-        return deleting;
+    public boolean isClose() {
+        return isClose;
     }
 
-    public void startDeleteAnimation() {
-        if (deleting) {
+    public boolean isAvatar() {
+        return !isClose;
+    }
+
+    private AnimatorSet currentAnimation;
+    private final ArrayList<Animator> animators = new ArrayList<>();
+
+    public void setCurrentDialog(long currentDialog, boolean animate) {
+        boolean isShow = currentDialog != 0;
+        if (currentDialog != 0) {
+            setDialog(currentDialog);
+        }
+        if (currentAnimation != null) {
+            currentAnimation.cancel();
+            currentAnimation = null;
+        }
+        if (animate) {
+            currentAnimation = new AnimatorSet();
+            setEnabled(false);
+            currentAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animator) {
+                    currentAnimation = null;
+                    setEnabled(isShow);
+                }
+            });
+
+            currentAnimation.setDuration(200);
+            animators.clear();
+            animators.add(ObjectAnimator.ofFloat(this, View.SCALE_X,  isShow ? 1.0f: 0.0f));
+            animators.add(ObjectAnimator.ofFloat(this, View.SCALE_Y, isShow ? 1.0f: 0f));
+            ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(this, View.ALPHA, isShow ? 1.0f: 0f);
+            alphaAnimator.addUpdateListener(animation -> {
+                updateLayout();
+            });
+            animators.add(alphaAnimator);
+            currentAnimation.playTogether(animators);
+            currentAnimation.start();
+        } else {
+            setAlpha(isShow ? 1.0f: 0.0f);
+            setScaleX(isShow ? 1.0f: 0.0f);
+            setScaleY(isShow ? 1.0f: 0.0f);
+            setEnabled(isShow);
+            if (!isShow) {
+                isClose = false;
+                progress = 0f;
+                invalidate();
+            }
+        }
+    }
+
+    public int getPeerWidth() {
+        return (int) (maxEmojiOffset * getAlpha());
+    }
+
+    public void updateLayout() {
+        this.setLayoutParams(getLayoutParams());
+    }
+
+    public void startCloseAnimation() {
+        if (isClose) {
             return;
         }
-        deleting = true;
+        isClose = true;
         lastUpdateTime = System.currentTimeMillis();
         invalidate();
     }
 
-    public void cancelDeleteAnimation() {
-        if (!deleting) {
+    public void cancelAvatarAnimation() {
+        if (!isClose) {
             return;
         }
-        deleting = false;
+        isClose = false;
         lastUpdateTime = System.currentTimeMillis();
         invalidate();
     }
@@ -138,13 +205,13 @@ public class SendAsPeerButton extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         float ft = 400.0f;
-        if (deleting && progress != 1.0f || !deleting && progress != 0.0f) {
+        if (isClose && progress != 1.0f || !isClose && progress != 0.0f) {
             long newTime = System.currentTimeMillis();
             long dt = newTime - lastUpdateTime;
             if (dt < 0 || dt > 17) {
                 dt = 17;
             }
-            if (deleting) {
+            if (isClose) {
                 progress += dt / ft;
                 if (progress >= 1.0f) {
                     progress = 1.0f;

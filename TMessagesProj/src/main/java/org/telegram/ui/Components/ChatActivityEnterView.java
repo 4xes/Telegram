@@ -125,6 +125,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.popup.SendAsPeerButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
 import org.telegram.ui.LaunchActivity;
@@ -210,6 +211,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         default boolean hasForwardingMessages() {
             return false;
+        }
+
+        default void onSendAsPeerPressed(boolean isShowing) {
+
         }
     }
 
@@ -324,6 +329,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private ActionBarPopupWindow sendPopupWindow;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout sendPopupLayout;
     private ImageView cancelBotButton;
+    private SendAsPeerButton sendAsPeerView;
     private ImageView[] emojiButton = new ImageView[2];
     @SuppressWarnings("FieldCanBeLocal")
     private ImageView emojiButton1;
@@ -358,6 +364,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private LinearLayout attachLayout;
     private ImageView attachButton;
     private ImageView botButton;
+    private FrameLayout frameLayout;
     private FrameLayout textFieldContainer;
     private FrameLayout sendButtonContainer;
     private FrameLayout doneButtonContainer;
@@ -1690,7 +1697,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         textFieldContainer.setPadding(0, AndroidUtilities.dp(1), 0, 0);
         addView(textFieldContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 1, 0, 0));
 
-        FrameLayout frameLayout = new FrameLayout(context) {
+        frameLayout = new FrameLayout(context) {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
@@ -1725,6 +1732,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         };
         frameLayout.setClipChildren(false);
         textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 48, 0));
+
+        sendAsPeerView = new SendAsPeerButton(context);
+        sendAsPeerView.setOnClickListener((v) -> {
+            if (sendAsPeerView.isAvatar()) {
+                delegate.onSendAsPeerPressed(true);
+                sendAsPeerView.startCloseAnimation();
+            } else {
+                delegate.onSendAsPeerPressed(false);
+                sendAsPeerView.cancelAvatarAnimation();
+            }
+        });
+        frameLayout.addView(sendAsPeerView, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 3, 0, 0, 0));
 
         for (int a = 0; a < 2; a++) {
             emojiButton[a] = new ImageView(context) {
@@ -3781,6 +3800,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         updateScheduleButton(false);
         checkRoundVideo();
         updateFieldHint(false);
+    }
+
+    public void setSendAsPeers(TLRPC.ChatFull chatInfo, boolean animate) {
+        if (chatInfo.default_send_as != null) {
+            sendAsPeerView.setCurrentDialog(DialogObject.getPeerDialogId(chatInfo.default_send_as), animate);
+        } else {
+            sendAsPeerView.setCurrentDialog(0, animate);
+        }
     }
 
     public void setChatInfo(TLRPC.ChatFull chatInfo) {
@@ -8400,17 +8427,19 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        final int sendAsPeerWidth = sendAsPeerView.getPeerWidth();
         if (botCommandsMenuButton != null && botCommandsMenuButton.getTag() != null) {
             botCommandsMenuButton.measure(widthMeasureSpec, heightMeasureSpec);
+
             for (int i = 0; i < emojiButton.length; i++) {
-                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(10) + botCommandsMenuButton.getMeasuredWidth();
+                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(10) + botCommandsMenuButton.getMeasuredWidth() + sendAsPeerWidth;
             }
-            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(57) + botCommandsMenuButton.getMeasuredWidth();
+            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(57) + botCommandsMenuButton.getMeasuredWidth() + sendAsPeerWidth;
         } else {
             for (int i = 0; i < emojiButton.length; i++) {
-                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(3);
+                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(3) + sendAsPeerWidth;
             }
-            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(50);
+            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(50) + sendAsPeerWidth;
         }
         if (botCommandsMenuContainer != null) {
             int padding;

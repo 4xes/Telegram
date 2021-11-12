@@ -7107,10 +7107,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             public boolean hasForwardingMessages() {
                 return forwardingMessages != null && !forwardingMessages.messages.isEmpty();
             }
+
+            @Override
+            public void onSendAsPeerPressed(boolean isShowing) {
+
+            }
         });
         chatActivityEnterView.setDialogId(dialog_id, currentAccount);
         if (chatInfo != null) {
             chatActivityEnterView.setChatInfo(chatInfo);
+            chatActivityEnterView.setSendAsPeers(chatInfo, false);
         }
         chatActivityEnterView.setId(id_chat_compose_panel);
         chatActivityEnterView.setBotsCount(botsCount, hasBotsCommands, false);
@@ -14597,6 +14603,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 if (chatActivityEnterView != null) {
                     chatActivityEnterView.setChatInfo(chatInfo);
+                    chatActivityEnterView.setSendAsPeers(chatInfo, true);
                 }
                 if (mentionsAdapter != null) {
                     mentionsAdapter.setChatInfo(chatInfo);
