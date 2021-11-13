@@ -494,11 +494,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                         } else {
                             int[] result = new int[1];
                             String shortNumber = LocaleController.formatShortNumber(info.participants_count, result);
-                            if (chat.megagroup) {
-                                newSubtitle = LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber);
-                            } else {
-                                newSubtitle = LocaleController.formatPluralString("Subscribers", result[0]).replace(String.format("%d", result[0]), shortNumber);
-                            }
+                            newSubtitle = LocaleController.formatPluralString("Subscribers", result[0]).replace(String.format("%d", result[0]), shortNumber);
                         }
                     } else {
                         if (chat.megagroup) {

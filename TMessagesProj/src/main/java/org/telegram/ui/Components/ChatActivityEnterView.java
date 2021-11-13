@@ -126,6 +126,7 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.popup.SendAsPeerButton;
+import org.telegram.ui.Components.popup.SendAsPeerView;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
 import org.telegram.ui.LaunchActivity;
@@ -213,7 +214,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             return false;
         }
 
-        default void onSendAsPeerPressed(boolean isShowing) {
+        default void onSendAsPeerPressed(View view, @Nullable SendAsPeerView.SendAsPeerData sendAsPeerData) {
 
         }
     }
@@ -1736,11 +1737,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         sendAsPeerView = new SendAsPeerButton(context);
         sendAsPeerView.setOnClickListener((v) -> {
             if (sendAsPeerView.isAvatar()) {
-                delegate.onSendAsPeerPressed(true);
-                sendAsPeerView.startCloseAnimation();
+                sendAsPeerView.onPeersLoaded(sendAsPeerData -> delegate.onSendAsPeerPressed(v, sendAsPeerData));
+                sendAsPeerView.toCloseAnimation(true);
             } else {
-                delegate.onSendAsPeerPressed(false);
-                sendAsPeerView.cancelAvatarAnimation();
+                delegate.onSendAsPeerPressed(v,null);
+                sendAsPeerView.toAvatarAnimation(true);
             }
         });
         frameLayout.addView(sendAsPeerView, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 3, 0, 0, 0));
@@ -3015,6 +3016,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         checkChannelRights();
     }
 
+    public SendAsPeerButton getSendAsPeerView() {
+        return sendAsPeerView;
+    }
+
     private void checkBotMenu() {
         if (botCommandsMenuButton != null) {
             botCommandsMenuButton.setExpanded(TextUtils.isEmpty(messageEditText.getText()) && !(keyboardVisible || waitingForKeyboardOpen || isPopupShowing()), true);
@@ -3802,12 +3807,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         updateFieldHint(false);
     }
 
-    public void setSendAsPeers(TLRPC.ChatFull chatInfo, boolean animate) {
-        if (chatInfo.default_send_as != null) {
-            sendAsPeerView.setCurrentDialog(DialogObject.getPeerDialogId(chatInfo.default_send_as), animate);
-        } else {
-            sendAsPeerView.setCurrentDialog(0, animate);
-        }
+    public void setSendAsPeers(TLRPC.ChatFull chatInfo, TLRPC.Chat chat, boolean animate) {
+        sendAsPeerView.setChatInfo(chat, chatInfo, animate);
     }
 
     public void setChatInfo(TLRPC.ChatFull chatInfo) {

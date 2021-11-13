@@ -25,20 +25,26 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @SuppressLint("ViewConstructor")
 public class SendAsPeerButton extends View {
-    private long currentDialog;
+    private TLRPC.Peer currentPeer;
     private final int currentAccount = UserConfig.selectedAccount;
     private static final Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Drawable closeDrawable;
@@ -75,7 +81,7 @@ public class SendAsPeerButton extends View {
         updateColors();
     }
 
-    private void setDialog(long uid) {
+    private void setDialogId(long uid) {
         ImageLocation imageLocation;
         Object imageParent;
 
@@ -93,10 +99,6 @@ public class SendAsPeerButton extends View {
         }
         imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
         updateColors();
-    }
-
-    public long getCurrentDialog() {
-        return currentDialog;
     }
 
     public void updateColors() {
@@ -123,14 +125,53 @@ public class SendAsPeerButton extends View {
         return !isClose;
     }
 
+    public void onPeersLoaded(OnPeersOpenListener listener) {
+        if (requestToken != 0) {
+            prefetchCallback = () -> {
+                listener.onLoaded(getData());
+            };
+        } else {
+            if (inputPeer != null) {
+                SendAsPeerView.SendAsPeerData data = getData();
+                if (data != null) {
+                    listener.onLoaded(data);
+                } else {
+                    prefetchCallback = () -> {
+                        listener.onLoaded(getData());
+                    };
+                    prefetchSendAsPeer(inputPeer);
+                }
+            }
+        }
+    }
+
+    private SendAsPeerView.SendAsPeerData getData() {
+        if (currentPeer != null && inputPeer != null && objects != null && peersMap != null) {
+            return new SendAsPeerView.SendAsPeerData(
+                    currentPeer,
+                    inputPeer,
+                    objects,
+                    peersMap
+            );
+        }
+        return null;
+    }
+
     private AnimatorSet currentAnimation;
     private final ArrayList<Animator> animators = new ArrayList<>();
 
-    public void setCurrentDialog(long currentDialog, boolean animate) {
-        boolean isShow = currentDialog != 0;
-        if (currentDialog != 0) {
-            setDialog(currentDialog);
+    private TLRPC.InputPeer inputPeer;
+
+    public void setChatInfo(TLRPC.Chat chat, TLRPC.ChatFull chatInfo, boolean animate) {
+        if (chatInfo.default_send_as != null) {
+            this.currentPeer = chatInfo.default_send_as;
+            setCurrentPeer(this.currentPeer);
+            this.inputPeer = MessagesController.getInputPeer(chat);
+            prefetchSendAsPeer(inputPeer);
+        } else {
+            this.currentPeer = null;
         }
+        boolean isShow = this.currentPeer != null;
         if (currentAnimation != null) {
             currentAnimation.cancel();
             currentAnimation = null;
@@ -170,6 +211,65 @@ public class SendAsPeerButton extends View {
         }
     }
 
+    private int requestToken;
+    private Map<Long, TLRPC.Peer> peersMap = new HashMap<>(10);
+    private List<TLObject> objects = new ArrayList<>();
+
+    Runnable prefetchCallback;
+
+    public void prefetchSendAsPeer(TLRPC.InputPeer inputPeer) {
+        if (requestToken != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(requestToken, false);
+            requestToken = 0;
+        }
+        TLRPC.TL_channels_getSendAs req = new TLRPC.TL_channels_getSendAs();
+        req.peer = inputPeer;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            FileLog.e("getSendAs request completed");
+            if (error == null) {
+                TLRPC.TL_channels_sendAsPeers data = (TLRPC.TL_channels_sendAsPeers) response;
+                Map<Long, TLRPC.Peer> peersMap = new HashMap<>(10);
+                List<TLObject> objects = new ArrayList<>();
+
+                HashMap<Long, TLObject> objectsMap = new HashMap<>(10);
+                for (TLRPC.Chat chat: data.chats) {
+                    objectsMap.put(-chat.id, chat);
+                }
+                for (TLRPC.User user: data.users) {
+                    objectsMap.put(user.id, user);
+                }
+                for(TLRPC.Peer peer: data.peers) {
+                    long did = DialogObject.getPeerDialogId(peer);
+                    peersMap.put(DialogObject.getPeerDialogId(peer), peer);
+                    TLObject object = objectsMap.get(did);
+                    if (object != null) {
+                        objects.add(object);
+                    } else {
+                        FileLog.e(did + "did not found in chats or users");
+                    }
+                }
+                this.peersMap = peersMap;
+                this.objects = objects;
+                if (prefetchCallback != null) {
+                    prefetchCallback.run();
+                    prefetchCallback = null;
+                }
+            } else {
+                prefetchCallback = null;
+                toAvatarAnimation(true);
+            }
+        }));
+    }
+
+    public void setCurrentPeer(TLRPC.Peer currentPeer) {
+        this.currentPeer = currentPeer;
+        setDialogId(DialogObject.getPeerDialogId(currentPeer));
+    }
+
+    public TLRPC.Peer getCurrentPeer() {
+        return currentPeer;
+    }
+
     public int getPeerWidth() {
         return (int) (maxEmojiOffset * getAlpha());
     }
@@ -178,7 +278,11 @@ public class SendAsPeerButton extends View {
         this.setLayoutParams(getLayoutParams());
     }
 
-    public void startCloseAnimation() {
+    public void toCloseAnimation(boolean animation) {
+        if (!animation) {
+            isClose = true;
+            progress = 1.0f;
+        }
         if (isClose) {
             return;
         }
@@ -187,7 +291,11 @@ public class SendAsPeerButton extends View {
         invalidate();
     }
 
-    public void cancelAvatarAnimation() {
+    public void toAvatarAnimation(boolean animation) {
+        if (!animation) {
+            isClose = false;
+            progress = 0.0f;
+        }
         if (!isClose) {
             return;
         }
@@ -246,5 +354,9 @@ public class SendAsPeerButton extends View {
             closeDrawable.draw(canvas);
             canvas.restore();
         }
+    }
+
+    public interface OnPeersOpenListener {
+        void onLoaded(SendAsPeerView.SendAsPeerData sendAsPeerData);
     }
 }

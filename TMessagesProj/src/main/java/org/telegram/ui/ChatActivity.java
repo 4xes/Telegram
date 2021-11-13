@@ -233,6 +233,7 @@ import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
+import org.telegram.ui.Components.popup.SendAsPeerView;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Delegates.ChatActivityMemberRequestsDelegate;
 
@@ -7109,14 +7110,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             @Override
-            public void onSendAsPeerPressed(boolean isShowing) {
-
+            public void onSendAsPeerPressed(View view, SendAsPeerView.SendAsPeerData sendAsPeerData) {
+                createSendAsPeersMenu(view, 200, 200, sendAsPeerData);
             }
         });
         chatActivityEnterView.setDialogId(dialog_id, currentAccount);
         if (chatInfo != null) {
             chatActivityEnterView.setChatInfo(chatInfo);
-            chatActivityEnterView.setSendAsPeers(chatInfo, false);
+            chatActivityEnterView.setSendAsPeers(chatInfo, currentChat, false);
         }
         chatActivityEnterView.setId(id_chat_compose_panel);
         chatActivityEnterView.setBotsCount(botsCount, hasBotsCommands, false);
@@ -14603,7 +14604,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 if (chatActivityEnterView != null) {
                     chatActivityEnterView.setChatInfo(chatInfo);
-                    chatActivityEnterView.setSendAsPeers(chatInfo, true);
+                    chatActivityEnterView.setSendAsPeers(chatInfo, currentChat, true);
                 }
                 if (mentionsAdapter != null) {
                     mentionsAdapter.setChatInfo(chatInfo);
@@ -19001,6 +19002,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void onPause() {
         super.onPause();
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.getSendAsPeerView().toAvatarAnimation(false);
+        }
         if (scrimPopupWindow != null) {
             scrimPopupWindow.setPauseNotifications(false);
             scrimPopupWindow.dismiss();
@@ -20516,6 +20520,221 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         updateVisibleRows();
         if (chatActivityEnterView != null) {
             chatActivityEnterView.hideBotCommands();
+        }
+    }
+
+    private void createSendAsPeersMenu(View v, float x, float y, SendAsPeerView.SendAsPeerData sendAsPeerData) {
+        if (actionBar.isActionModeShowed() || reportType >= 0 || getParentActivity() == null) {
+            return;
+        }
+
+        selectedObject = null;
+        selectedObjectGroup = null;
+        forwardingMessage = null;
+        forwardingMessageGroup = null;
+        selectedObjectToEditCaption = null;
+        for (int a = 1; a >= 0; a--) {
+            selectedMessagesCanCopyIds[a].clear();
+            selectedMessagesCanStarIds[a].clear();
+            selectedMessagesIds[a].clear();
+        }
+        hideActionMode();
+        updatePinnedMessageView(true);
+
+        if (scrimPopupWindow != null) {
+            scrimPopupWindow.dismiss();
+            scrimPopupWindow = null;
+            menuDeleteItem = null;
+            scrimPopupWindowItems = null;
+            return;
+        }
+
+        if (sendAsPeerData == null) {
+            return;
+        }
+
+        Rect rect = new Rect();
+        Rect backgroundPaddings = new Rect();
+
+        LinearLayout scrimPopupContainerLayout = new LinearLayout(contentView.getContext()) {
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                    scrimPopupWindow.dismiss();
+                }
+                return super.dispatchKeyEvent(event);
+            }
+        };
+        scrimPopupContainerLayout.setOnTouchListener(new View.OnTouchListener() {
+
+            private int[] pos = new int[2];
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                        View contentView = scrimPopupWindow.getContentView();
+                        contentView.getLocationInWindow(pos);
+                        rect.set(pos[0], pos[1], pos[0] + contentView.getMeasuredWidth(), pos[1] + contentView.getMeasuredHeight());
+                        if (!rect.contains((int) event.getX(), (int) event.getY())) {
+                            scrimPopupWindow.dismiss();
+                        }
+                    }
+                } else if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                        scrimPopupWindow.dismiss();
+                    }
+                }
+                return false;
+            }
+        });
+        scrimPopupContainerLayout.setOrientation(LinearLayout.VERTICAL);
+
+        SendAsPeerView sendAsPeerView = new SendAsPeerView(contentView.getContext(), sendAsPeerData, themeDelegate, peer -> {
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.getSendAsPeerView().setCurrentPeer(peer);
+                chatActivityEnterView.getSendAsPeerView().toAvatarAnimation(true);
+            }
+            if (scrimPopupWindow != null) {
+                scrimPopupWindow.dismiss();
+            }
+        });
+        Drawable shadowDrawable = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
+        shadowDrawable.getPadding(backgroundPaddings);
+        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+        FrameLayout messageSeenLayout = new FrameLayout(contentView.getContext());
+        messageSeenLayout.addView(sendAsPeerView);
+        messageSeenLayout.setBackground(shadowDrawable);
+        scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+            @Override
+            public void dismiss() {
+                super.dismiss();
+                if (scrimPopupWindow != this) {
+                    return;
+                }
+                scrimPopupWindow = null;
+                menuDeleteItem = null;
+                scrimPopupWindowItems = null;
+                noForwardsLayoutInfo = null;
+                if (scrimAnimatorSet != null) {
+                    scrimAnimatorSet.cancel();
+                    scrimAnimatorSet = null;
+                }
+                if (scrimView instanceof ChatMessageCell) {
+                    ChatMessageCell cell = (ChatMessageCell) scrimView;
+                    cell.setInvalidatesParent(false);
+                }
+                chatLayoutManager.setCanScrollVertically(true);
+                scrimAnimatorSet = new AnimatorSet();
+                ArrayList<Animator> animators = new ArrayList<>();
+                animators.add(ObjectAnimator.ofInt(scrimPaint, AnimationProperties.PAINT_ALPHA, 0));
+                if (pagedownButton.getTag() != null) {
+                    animators.add(ObjectAnimator.ofFloat(pagedownButton, View.ALPHA, 1.0f));
+                }
+                if (mentiondownButton.getTag() != null) {
+                    animators.add(ObjectAnimator.ofFloat(mentiondownButton, View.ALPHA, 1.0f));
+                }
+                scrimAnimatorSet.playTogether(animators);
+                scrimAnimatorSet.setDuration(220);
+                scrimAnimatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        scrimView = null;
+                        contentView.invalidate();
+                        chatListView.invalidate();
+                    }
+                });
+                scrimAnimatorSet.start();
+                if (chatActivityEnterView != null) {
+                    chatActivityEnterView.getEditField().setAllowDrawCursor(true);
+                    chatActivityEnterView.getSendAsPeerView().toAvatarAnimation(true);
+                }
+                if (mesageSeenUsersPopupWindow != null) {
+                    mesageSeenUsersPopupWindow.dismiss();
+                }
+            }
+        };
+
+        scrimPopupWindow.setPauseNotifications(true);
+        scrimPopupWindow.setDismissAnimationDuration(220);
+        scrimPopupWindow.setOutsideTouchable(true);
+        scrimPopupWindow.setClippingEnabled(true);
+        scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+        scrimPopupWindow.setFocusable(true);
+        scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+        scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+        scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+        scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
+
+        sendAsPeerView.getLayoutParams().width = scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(16);
+        int popupX = v.getLeft() + (int) x - scrimPopupContainerLayout.getMeasuredWidth() + backgroundPaddings.left - AndroidUtilities.dp(28);
+        if (popupX < AndroidUtilities.dp(6)) {
+            popupX = AndroidUtilities.dp(6);
+        } else if (popupX > chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - scrimPopupContainerLayout.getMeasuredWidth()) {
+            popupX = chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - scrimPopupContainerLayout.getMeasuredWidth();
+        }
+        if (AndroidUtilities.isTablet()) {
+            int[] location = new int[2];
+            fragmentView.getLocationInWindow(location);
+            popupX += location[0];
+        }
+        int totalHeight = contentView.getHeight();
+        int height = scrimPopupContainerLayout.getMeasuredHeight();
+        int keyboardHeight = contentView.measureKeyboardHeight();
+        if (keyboardHeight > AndroidUtilities.dp(20)) {
+            totalHeight += keyboardHeight;
+        }
+        int popupY;
+        if (height < totalHeight) {
+            popupY = (int) (chatListView.getY() + v.getTop() + y);
+            if (height - backgroundPaddings.top - backgroundPaddings.bottom > AndroidUtilities.dp(240)) {
+                popupY += AndroidUtilities.dp(240) - height;
+            }
+            if (popupY < chatListView.getY() + AndroidUtilities.dp(24)) {
+                popupY = (int) (chatListView.getY() + AndroidUtilities.dp(24));
+            } else if (popupY > totalHeight - height - AndroidUtilities.dp(8)) {
+                popupY = totalHeight - height - AndroidUtilities.dp(8);
+            }
+        } else {
+            popupY = inBubbleMode ? 0 : AndroidUtilities.statusBarHeight;
+        }
+        scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, scrimPopupX = popupX, scrimPopupY = popupY);
+        chatListView.stopScroll();
+        chatLayoutManager.setCanScrollVertically(false);
+        scrimView = v;
+        if (scrimView instanceof ChatMessageCell) {
+            ChatMessageCell cell = (ChatMessageCell) scrimView;
+            cell.setInvalidatesParent(true);
+            restartSticker(cell);
+        }
+        contentView.invalidate();
+        chatListView.invalidate();
+        if (scrimAnimatorSet != null) {
+            scrimAnimatorSet.cancel();
+        }
+        scrimAnimatorSet = new AnimatorSet();
+        ArrayList<Animator> animators = new ArrayList<>();
+        animators.add(ObjectAnimator.ofInt(scrimPaint, AnimationProperties.PAINT_ALPHA, 0, 50));
+        if (pagedownButton.getTag() != null) {
+            animators.add(ObjectAnimator.ofFloat(pagedownButton, View.ALPHA, 0));
+        }
+        if (mentiondownButton.getTag() != null) {
+            animators.add(ObjectAnimator.ofFloat(mentiondownButton, View.ALPHA, 0));
+        }
+        scrimAnimatorSet.playTogether(animators);
+        scrimAnimatorSet.setDuration(150);
+        scrimAnimatorSet.start();
+        hideHints(false);
+        if (topUndoView != null) {
+            topUndoView.hide(true, 1);
+        }
+        if (undoView != null) {
+            undoView.hide(true, 1);
+        }
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.getEditField().setAllowDrawCursor(false);
         }
     }
 

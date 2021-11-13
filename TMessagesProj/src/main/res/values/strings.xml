@@ -398,6 +398,8 @@
     <string name="ChannelNoForwardsInfo">Forwards from this channel\nare restricted.</string>
     <string name="GroupNoForwardsHint">Forwards from this group are restricted</string>
     <string name="ChannelNoForwardsHint">Forwards from this channel are restricted</string>
+    <string name="SendAsPeerTitle">Send message as…</string>
+    <string name="SendAsPeerPersonalTitle">personal account</string>
     <string name="GroupAddMembers">Add Members</string>
     <string name="ChannelAddSubscribers">Add Subscribers</string>
     <string name="LeaveChannel">Leave Channel</string>
