@@ -20592,7 +20592,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         SendAsPeerView sendAsPeerView = new SendAsPeerView(contentView.getContext(), sendAsPeerData, themeDelegate, peer -> {
             if (chatActivityEnterView != null) {
-                chatActivityEnterView.getSendAsPeerView().setCurrentPeer(peer);
+                if (currentChat != null && chatInfo != null) {
+                    chatActivityEnterView.getSendAsPeerView().setAndSaveCurrentPeer(currentChat.id, peer, chatInfo);
+                }
                 chatActivityEnterView.getSendAsPeerView().toAvatarAnimation(true);
             }
             if (scrimPopupWindow != null) {

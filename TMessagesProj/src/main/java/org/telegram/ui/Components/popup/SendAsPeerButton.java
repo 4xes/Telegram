@@ -163,11 +163,15 @@ public class SendAsPeerButton extends View {
     private TLRPC.InputPeer inputPeer;
 
     public void setChatInfo(TLRPC.Chat chat, TLRPC.ChatFull chatInfo, boolean animate) {
-        if (chatInfo.default_send_as != null) {
-            this.currentPeer = chatInfo.default_send_as;
-            setCurrentPeer(this.currentPeer);
-            this.inputPeer = MessagesController.getInputPeer(chat);
-            prefetchSendAsPeer(inputPeer);
+        if (chatInfo.default_send_as != null && chat != null) {
+            if (chat.megagroup && (chat.has_geo || chat.has_link || chat.username != null)) {
+                this.currentPeer = chatInfo.default_send_as;
+                setCurrentPeer(this.currentPeer);
+                this.inputPeer = MessagesController.getInputPeer(chat);
+                prefetchSendAsPeer(inputPeer);
+            } else {
+                this.currentPeer = null;
+            }
         } else {
             this.currentPeer = null;
         }
@@ -261,7 +265,12 @@ public class SendAsPeerButton extends View {
         }));
     }
 
-    public void setCurrentPeer(TLRPC.Peer currentPeer) {
+    public void setAndSaveCurrentPeer(long chatId, TLRPC.Peer currentPeer, TLRPC.ChatFull info) {
+        MessagesController.getInstance(currentAccount).updateChatDefaultSendAs(chatId, currentPeer, info);
+        setCurrentPeer(currentPeer);
+    }
+
+    private void setCurrentPeer(TLRPC.Peer currentPeer) {
         this.currentPeer = currentPeer;
         setDialogId(DialogObject.getPeerDialogId(currentPeer));
     }
