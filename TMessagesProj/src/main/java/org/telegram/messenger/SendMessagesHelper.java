@@ -3089,6 +3089,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             caption = "";
         }
 
+        TLRPC.InputPeer sendAsPeer = null;
         String originalPath = null;
         if (params != null && params.containsKey("originalPath")) {
             originalPath = params.get("originalPath");
@@ -3120,8 +3121,15 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         } else if (sendToPeer instanceof TLRPC.TL_inputPeerChannel) {
             TLRPC.Chat chat = getMessagesController().getChat(sendToPeer.channel_id);
             isChannel = chat != null && !chat.megagroup;
+
+            TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chat.id);
+            if (chatFull != null && chatFull.default_send_as != null) {
+                if (chat != null && chat.megagroup && (chat.has_geo || chat.has_link || chat.username != null)) {
+                    sendAsPeer = getMessagesController().getInputPeer(chatFull.default_send_as);
+                }
+            }
+
             if (isChannel && chat.has_link) {
-                TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chat.id);
                 if (chatFull != null) {
                     linkedToGroup = chatFull.linked_chat_id;
                 }
@@ -3635,7 +3643,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     reqSend.message = message;
                     reqSend.clear_draft = retryMessageObject == null;
                     reqSend.silent = newMsg.silent;
+                    reqSend.send_as = sendAsPeer;
                     reqSend.peer = sendToPeer;
+                    if (sendAsPeer != null) {
+                        reqSend.send_as = sendAsPeer;
+                    }
                     reqSend.random_id = newMsg.random_id;
                     if (newMsg.reply_to != null && newMsg.reply_to.reply_to_msg_id != 0) {
                         reqSend.flags |= 1;
@@ -3986,6 +3998,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             inputSingleMedia.flags |= 1;
                         }
                         request.multi_media.add(inputSingleMedia);
+                        request.send_as = sendAsPeer;
                         reqSend = request;
                     } else {
                         TLRPC.TL_messages_sendMedia request = new TLRPC.TL_messages_sendMedia();
@@ -4010,6 +4023,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (delayedMessage != null) {
                             delayedMessage.sendRequest = request;
                         }
+                        request.send_as = sendAsPeer;
                         reqSend = request;
                     }
                     if (groupId != 0) {

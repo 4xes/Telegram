@@ -21,7 +21,6 @@ import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
@@ -6039,6 +6038,17 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    public static boolean isSendAs(TLRPC.Chat chat, TLRPC.ChatFull info) {
+        if (info.default_send_as != null && chat != null) {
+            if (chat.megagroup && (chat.has_geo || chat.has_link || chat.username != null)) {
+                if (DialogObject.isChatDialog(DialogObject.getPeerDialogId(info.default_send_as))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean sendTyping(long dialogId, int threadMsgId, int action, int classGuid) {
         return sendTyping(dialogId, threadMsgId, action, null, classGuid);
     }
@@ -6048,6 +6058,9 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (dialogId < 0) {
             if (ChatObject.shouldSendAnonymously(getChat(-dialogId))) {
+                return false;
+            }
+            if (isSendAs(getChat(-dialogId), getChatFull(-dialogId))) {
                 return false;
             }
         } else {
@@ -9136,11 +9149,21 @@ public class MessagesController extends BaseController implements NotificationCe
         req.peer = getInputPeer(-chatId);
         req.send_as = getInputPeer(sendAs);
         getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response instanceof TLRPC.TL_boolTrue && info != null) {
+            if (response instanceof TLRPC.TL_boolTrue) {
                 AndroidUtilities.runOnUIThread(() -> {
-                    info.default_send_as = sendAs;
-                    getMessagesStorage().updateChatInfo(info, false);
-                    getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, false);
+                    TLRPC.ChatFull chatInfo = getChatFull(chatId);
+                    if (info != null) {
+                        info.default_send_as = sendAs;
+                    }
+                    if (chatInfo != null) {
+                        chatInfo.default_send_as = sendAs;
+                    } else {
+                        chatInfo = info;
+                    }
+                    if (chatInfo != null) {
+                        getMessagesStorage().updateChatInfo(chatInfo, false);
+                        getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, chatInfo, 0, false, false);
+                    }
                 });
             }
         }, ConnectionsManager.RequestFlagInvokeAfter);
