@@ -46,6 +46,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.JoinCallAlert;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.popup.SendAsPeerButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
@@ -59,6 +60,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -9140,7 +9142,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
 
-    public void updateChatDefaultSendAs(long chatId, TLRPC.Peer sendAs, TLRPC.ChatFull info) {
+    public void setSendAs(long chatId, TLRPC.Peer sendAs, TLRPC.ChatFull info) {
         TLRPC.TL_messages_saveDefaultSendAs req = new TLRPC.TL_messages_saveDefaultSendAs();
         req.peer = getInputPeer(-chatId);
         req.send_as = getInputPeer(sendAs);
@@ -9163,6 +9165,43 @@ public class MessagesController extends BaseController implements NotificationCe
                 });
             }
         }, ConnectionsManager.RequestFlagInvokeAfter);
+    }
+
+    public int getSendAs(TLRPC.InputPeer inputPeer, SendAsPeerButton.RequestDelegate delegate) {
+        TLRPC.TL_channels_getSendAs req = new TLRPC.TL_channels_getSendAs();
+        req.peer = inputPeer;
+        return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            FileLog.e("getSendAs request completed");
+            if (error == null) {
+                TLRPC.TL_channels_sendAsPeers data = (TLRPC.TL_channels_sendAsPeers) response;
+                Map<Long, TLRPC.Peer> peersMap = new HashMap<>(10);
+                ArrayList<TLObject> objects = new ArrayList<>();
+
+                HashMap<Long, TLObject> objectsMap = new HashMap<>(10);
+                for (TLRPC.Chat chat: data.chats) {
+                    objectsMap.put(-chat.id, chat);
+                }
+                for (TLRPC.User user: data.users) {
+                    objectsMap.put(user.id, user);
+                }
+
+                for(TLRPC.Peer peer: data.peers) {
+                    long did = DialogObject.getPeerDialogId(peer);
+                    peersMap.put(did, peer);
+                    TLObject object = objectsMap.get(did);
+                    if (object != null) {
+                        objects.add(object);
+                    } else {
+                        FileLog.e(did + "did not found in chats or users");
+                    }
+
+                }
+                getMessagesStorage().putUsersAndChats(data.users, data.chats, true, true);
+                delegate.run(objects, peersMap, null);
+            } else {
+                delegate.run(null, null, error);
+            }
+        }));
     }
 
     public void toggleNoForwards(long chatId, boolean enabled) {

@@ -26,7 +26,6 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessagesController;
@@ -140,7 +139,7 @@ public class SendAsPeerButton extends View {
                     prefetchCallback = () -> {
                         listener.onLoaded(getData());
                     };
-                    prefetchSendAsPeer(inputPeer);
+                    getSendAs(inputPeer);
                 }
             }
         }
@@ -169,7 +168,7 @@ public class SendAsPeerButton extends View {
             this.currentPeer = chatInfo.default_send_as;
             setCurrentPeer(this.currentPeer);
             this.inputPeer = MessagesController.getInputPeer(chat);
-            prefetchSendAsPeer(inputPeer);
+            getSendAs(inputPeer);
         } else {
             this.currentPeer = null;
         }
@@ -219,39 +218,16 @@ public class SendAsPeerButton extends View {
 
     Runnable prefetchCallback;
 
-    public void prefetchSendAsPeer(TLRPC.InputPeer inputPeer) {
+    public void getSendAs(TLRPC.InputPeer inputPeer) {
         if (requestToken != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(requestToken, false);
-            requestToken = 0;
         }
-        TLRPC.TL_channels_getSendAs req = new TLRPC.TL_channels_getSendAs();
-        req.peer = inputPeer;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            FileLog.e("getSendAs request completed");
-            if (error == null) {
-                TLRPC.TL_channels_sendAsPeers data = (TLRPC.TL_channels_sendAsPeers) response;
-                Map<Long, TLRPC.Peer> peersMap = new HashMap<>(10);
-                List<TLObject> objects = new ArrayList<>();
 
-                HashMap<Long, TLObject> objectsMap = new HashMap<>(10);
-                for (TLRPC.Chat chat: data.chats) {
-                    objectsMap.put(-chat.id, chat);
-                }
-                for (TLRPC.User user: data.users) {
-                    objectsMap.put(user.id, user);
-                }
-                for(TLRPC.Peer peer: data.peers) {
-                    long did = DialogObject.getPeerDialogId(peer);
-                    peersMap.put(DialogObject.getPeerDialogId(peer), peer);
-                    TLObject object = objectsMap.get(did);
-                    if (object != null) {
-                        objects.add(object);
-                    } else {
-                        FileLog.e(did + "did not found in chats or users");
-                    }
-                }
-                this.peersMap = peersMap;
+        requestToken = MessagesController.getInstance(currentAccount).getSendAs(inputPeer, (objects, peersMap, error) -> {
+            if (objects != null && peersMap != null) {
                 this.objects = objects;
+                this.peersMap = peersMap;
+
                 if (prefetchCallback != null) {
                     prefetchCallback.run();
                     prefetchCallback = null;
@@ -260,12 +236,13 @@ public class SendAsPeerButton extends View {
                 prefetchCallback = null;
                 toAvatarAnimation(true);
             }
-        }));
+            requestToken = 0;
+        });
     }
 
     public void setAndSaveCurrentPeer(long chatId, TLRPC.Peer currentPeer, TLRPC.ChatFull info) {
         if (currentPeer != null) {
-            MessagesController.getInstance(currentAccount).updateChatDefaultSendAs(chatId, currentPeer, info);
+            MessagesController.getInstance(currentAccount).setSendAs(chatId, currentPeer, info);
             setCurrentPeer(currentPeer);
         }
     }
@@ -367,5 +344,10 @@ public class SendAsPeerButton extends View {
 
     public interface OnPeersOpenListener {
         void onLoaded(SendAsPeerView.SendAsPeerData sendAsPeerData);
+    }
+
+
+    public interface RequestDelegate {
+        void run(List<TLObject> objects, Map<Long, TLRPC.Peer> peersMap, TLRPC.TL_error error);
     }
 }
