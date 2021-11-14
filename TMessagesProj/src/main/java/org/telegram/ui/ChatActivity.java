@@ -15813,6 +15813,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void updateNoForwards() {
+        boolean isNoForwards = ChatObject.isNoForwards(currentChat);
         if (chatListView != null) {
             int count = chatListView.getChildCount();
             for (int a = 0; a < count; a++) {
@@ -15833,7 +15834,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         // update forward in bottom and appbar
         updateSelectedMessages();
         // secure screenshots
-        AndroidUtilities.setFlagSecure(this, ChatObject.isNoForwards(currentChat));
+        if (currentEncryptedChat != null || isNoForwards) {
+            AndroidUtilities.setFlagSecure(this, true);
+        }
+
+        if (forwardingPreviewView != null) {
+            forwardingPreviewView.setIsNoForwards(isNoForwards);
+        }
         //todo in future
         //updateForwardingForReplyingMessage();
     }

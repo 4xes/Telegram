@@ -598,6 +598,8 @@ public class ForwardingPreviewView extends FrameLayout {
         actionItems.add(changeRecipientView);
         actionItems.add(sendMessagesView);
 
+        setIsNoForwards(ChatObject.isNoForwards(chat));
+
         showSendersNameView.setOnClickListener(view -> {
             if (params.hideForwardSendersName) {
                 returnSendersNames = false;
@@ -697,6 +699,10 @@ public class ForwardingPreviewView extends FrameLayout {
         animate().alpha(1f).scaleX(1f).setDuration(ChatListItemAnimator.DEFAULT_DURATION).setInterpolator(ChatListItemAnimator.DEFAULT_INTERPOLATOR).scaleY(1f);
 
         updateColors();
+    }
+
+    public void setIsNoForwards(boolean isNoForwards) {
+        changeRecipientView.setVisibility(isNoForwards? View.GONE: View.VISIBLE);
     }
 
     private void updateSubtitle() {
