@@ -37,12 +37,6 @@ public class SendAsPeerView extends FrameLayout {
 
     private final Theme.ResourcesProvider resourcesProvider;
 
-    public static int startAnimationWidth = AndroidUtilities.dp(174);
-    public static int startAnimationHeight = AndroidUtilities.dp(210);
-
-    public static int endAnimationWidth = AndroidUtilities.dp(250);
-    public static int endAnimationHeight = AndroidUtilities.dp(400);
-
     boolean animationInProgress = false;
 
     int currentScrollY = 0;
@@ -106,18 +100,13 @@ public class SendAsPeerView extends FrameLayout {
             listener.onSelectedPeer(data.peersMap.get(selectedDialog));
         });
 
-        addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 120 - 38, Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
+        addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
         addView(shadowView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
         setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), AndroidUtilities.dp(4), AndroidUtilities.dp(4)));
         setEnabled(false);
     }
 
     boolean ignoreLayout;
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(endAnimationWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(120), MeasureSpec.EXACTLY));
-    }
 
     @Override
     public void requestLayout() {

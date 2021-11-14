@@ -7113,7 +7113,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public void onSendAsPeerPressed(View view, SendAsPeerView.SendAsPeerData sendAsPeerData) {
-                createSendAsPeersMenu(view, 200, 200, sendAsPeerData);
+                createSendAsPeersMenu(view, sendAsPeerData);
             }
         });
         chatActivityEnterView.setDialogId(dialog_id, currentAccount);
@@ -20550,7 +20550,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    private void createSendAsPeersMenu(View v, float x, float y, SendAsPeerView.SendAsPeerData sendAsPeerData) {
+    private void createSendAsPeersMenu(View v, SendAsPeerView.SendAsPeerData sendAsPeerData) {
         if (actionBar.isActionModeShowed() || reportType >= 0 || getParentActivity() == null) {
             return;
         }
@@ -20632,7 +20632,29 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         shadowDrawable.getPadding(backgroundPaddings);
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
         FrameLayout messageSeenLayout = new FrameLayout(contentView.getContext());
-        messageSeenLayout.addView(sendAsPeerView);
+
+        //for animation start sizes w = 174, h = 210
+        int sendAsTargetWidth = AndroidUtilities.dp(250);
+        int sendAsTargetHeight = AndroidUtilities.dp(400);
+
+        int keyboardHeight = contentView.measureKeyboardHeight();
+
+        int padding = AndroidUtilities.dp(16);
+        int sendAsPeerWidth = Math.min(chatListView.getWidth() - padding, sendAsTargetWidth);
+
+        int availableHeight = (int) chatActivityEnterView.getY() - actionBar.getBottom() - padding - backgroundPaddings.top;
+        int sendAsPeerHeight = Math.min(availableHeight, sendAsTargetHeight);
+
+        int x = 0;
+        int maxSendAsPeerHeightContent = AndroidUtilities.dp(38) + (sendAsPeerData.objects.size() * AndroidUtilities.dp(56));
+
+        if (maxSendAsPeerHeightContent < sendAsPeerHeight) {
+            sendAsPeerHeight = maxSendAsPeerHeightContent;
+        }
+
+        int y = (int) chatActivityEnterView.getY() - sendAsPeerHeight - backgroundPaddings.top - AndroidUtilities.dp(8);
+
+        messageSeenLayout.addView(sendAsPeerView, new LinearLayout.LayoutParams(sendAsPeerWidth, sendAsPeerHeight));
         messageSeenLayout.setBackground(shadowDrawable);
         scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -20697,11 +20719,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
         scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
 
-        sendAsPeerView.getLayoutParams().width = scrimPopupContainerLayout.getMeasuredWidth() - AndroidUtilities.dp(16);
-        int popupX = v.getLeft() + (int) x - scrimPopupContainerLayout.getMeasuredWidth() + backgroundPaddings.left - AndroidUtilities.dp(28);
-        if (popupX < AndroidUtilities.dp(6)) {
-            popupX = AndroidUtilities.dp(6);
-        } else if (popupX > chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - scrimPopupContainerLayout.getMeasuredWidth()) {
+        int popupX = x;
+        if (popupX > chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - scrimPopupContainerLayout.getMeasuredWidth()) {
             popupX = chatListView.getMeasuredWidth() - AndroidUtilities.dp(6) - scrimPopupContainerLayout.getMeasuredWidth();
         }
         if (AndroidUtilities.isTablet()) {
@@ -20710,20 +20729,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             popupX += location[0];
         }
         int totalHeight = contentView.getHeight();
-        int height = scrimPopupContainerLayout.getMeasuredHeight();
-        int keyboardHeight = contentView.measureKeyboardHeight();
+        int height = sendAsPeerHeight;
         if (keyboardHeight > AndroidUtilities.dp(20)) {
             totalHeight += keyboardHeight;
         }
         int popupY;
         if (height < totalHeight) {
-            popupY = (int) (chatListView.getY() + v.getTop() + y);
-            if (height - backgroundPaddings.top - backgroundPaddings.bottom > AndroidUtilities.dp(240)) {
-                popupY += AndroidUtilities.dp(240) - height;
-            }
+            popupY = y;
             if (popupY < chatListView.getY() + AndroidUtilities.dp(24)) {
                 popupY = (int) (chatListView.getY() + AndroidUtilities.dp(24));
-            } else if (popupY > totalHeight - height - AndroidUtilities.dp(8)) {
+            } else if (popupY > totalHeight) {
                 popupY = totalHeight - height - AndroidUtilities.dp(8);
             }
         } else {
