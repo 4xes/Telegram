@@ -401,8 +401,8 @@
     <string name="GroupNoForwardingAlert">Sorry, you can\'t forward messages from restricted group</string>
     <string name="ChannelNoForwardingAlert">Sorry, you can\'t forward messages from restricted channel</string>
     <string name="SendAsPeerTitle">Send message as…</string>
-    <string name="SendAsPeerPersonalTitle">Sorry, you can\'t send message by other</string>
-    <string name="SendAsPeerAlert">personal account</string>
+    <string name="SendAsPeerPersonalTitle">personal account</string>
+    <string name="SendAsPeerAlert">Sorry, you can\'t send message by other</string>
     <string name="GroupAddMembers">Add Members</string>
     <string name="ChannelAddSubscribers">Add Subscribers</string>
     <string name="LeaveChannel">Leave Channel</string>

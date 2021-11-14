@@ -3809,6 +3809,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void setSendAsPeers(TLRPC.ChatFull chatInfo, TLRPC.Chat chat, boolean animate) {
         sendAsPeerView.setChatInfo(chat, chatInfo, animate);
+        updateFieldHint(false);
     }
 
     public void setChatInfo(TLRPC.ChatFull chatInfo) {
@@ -3875,7 +3876,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
                 anonymously = ChatObject.shouldSendAnonymously(chat);
             }
-            if (anonymously) {
+            boolean ignoreAnonymously = false;
+            if (sendAsPeerView != null) {
+                TLRPC.Peer peer = sendAsPeerView.getCurrentPeer();
+                if (peer != null) {
+                    if (DialogObject.getPeerDialogId(peer) != UserConfig.getInstance(currentAccount).getClientUserId()) {
+                        ignoreAnonymously = true;
+                    }
+                }
+            }
+            if (!ignoreAnonymously && anonymously) {
                 messageEditText.setHintText(LocaleController.getString("SendAnonymously", R.string.SendAnonymously));
             } else {
                 if (parentFragment != null && parentFragment.isThreadChat()) {
