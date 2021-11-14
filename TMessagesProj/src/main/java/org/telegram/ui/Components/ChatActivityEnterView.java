@@ -1744,6 +1744,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 sendAsPeerView.toAvatarAnimation(true);
             }
         });
+        if (Build.VERSION.SDK_INT >= 21) {
+            sendAsPeerView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        }
         frameLayout.addView(sendAsPeerView, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 3, 0, 0, 0));
 
         for (int a = 0; a < 2; a++) {
