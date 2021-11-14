@@ -3587,6 +3587,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
 
             newMsgObj = new MessageObject(currentAccount, newMsg, replyToMsg, true, true);
+            if (sendAsPeer != null) {
+                newMsgObj.messageOwner.from_id = getMessagesController().getPeer(DialogObject.getPeerDialogId(sendAsPeer));
+            }
             newMsgObj.sendAnimationData = sendAnimationData;
             newMsgObj.wasJustSent = true;
             newMsgObj.scheduled = scheduleDate != 0;
