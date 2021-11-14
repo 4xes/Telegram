@@ -398,8 +398,11 @@
     <string name="ChannelNoForwardsInfo">Forwards from this channel\nare restricted.</string>
     <string name="GroupNoForwardsHint">Forwards from this group are restricted</string>
     <string name="ChannelNoForwardsHint">Forwards from this channel are restricted</string>
+    <string name="GroupNoForwardingAlert">Sorry, you can\'t forward messages from restricted group</string>
+    <string name="ChannelNoForwardingAlert">Sorry, you can\'t forward messages from restricted channel</string>
     <string name="SendAsPeerTitle">Send message as…</string>
-    <string name="SendAsPeerPersonalTitle">personal account</string>
+    <string name="SendAsPeerPersonalTitle">Sorry, you can\'t send message by other</string>
+    <string name="SendAsPeerAlert">personal account</string>
     <string name="GroupAddMembers">Add Members</string>
     <string name="ChannelAddSubscribers">Add Subscribers</string>
     <string name="LeaveChannel">Leave Channel</string>
@@ -1016,8 +1019,6 @@
     <string name="NobodyLikesSpam1">Sorry, you can only send messages to mutual contacts at the moment.</string>
     <string name="NobodyLikesSpam2">Sorry, you can only add mutual contacts to groups at the moment.</string>
     <string name="NobodyLikesSpam3">Sorry, you are currently restricted from posting to public groups.</string>
-    <string name="GroupNoForwardingAlert">Sorry, you can\'t forward messages from restricted group</string>
-    <string name="ChannelNoForwardingAlert">Sorry, you can\'t forward messages from restricted channel</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
     <string name="ShareComment">Write a comment...</string>

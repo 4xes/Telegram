@@ -24,6 +24,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -163,15 +164,12 @@ public class SendAsPeerButton extends View {
     private TLRPC.InputPeer inputPeer;
 
     public void setChatInfo(TLRPC.Chat chat, TLRPC.ChatFull chatInfo, boolean animate) {
-        if (chatInfo.default_send_as != null && chat != null) {
-            if (chat.megagroup && (chat.has_geo || chat.has_link || chat.username != null)) {
-                this.currentPeer = chatInfo.default_send_as;
-                setCurrentPeer(this.currentPeer);
-                this.inputPeer = MessagesController.getInputPeer(chat);
-                prefetchSendAsPeer(inputPeer);
-            } else {
-                this.currentPeer = null;
-            }
+        //todo move to utils checking
+        if (ChatObject.isSendAsPeer(chat, chatInfo)) {
+            this.currentPeer = chatInfo.default_send_as;
+            setCurrentPeer(this.currentPeer);
+            this.inputPeer = MessagesController.getInputPeer(chat);
+            prefetchSendAsPeer(inputPeer);
         } else {
             this.currentPeer = null;
         }
@@ -266,8 +264,10 @@ public class SendAsPeerButton extends View {
     }
 
     public void setAndSaveCurrentPeer(long chatId, TLRPC.Peer currentPeer, TLRPC.ChatFull info) {
-        MessagesController.getInstance(currentAccount).updateChatDefaultSendAs(chatId, currentPeer, info);
-        setCurrentPeer(currentPeer);
+        if (currentPeer != null) {
+            MessagesController.getInstance(currentAccount).updateChatDefaultSendAs(chatId, currentPeer, info);
+            setCurrentPeer(currentPeer);
+        }
     }
 
     private void setCurrentPeer(TLRPC.Peer currentPeer) {

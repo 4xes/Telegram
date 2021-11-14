@@ -225,6 +225,10 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_messages_sendMultiMedia ||
                 request instanceof TLRPC.TL_messages_sendScheduledMessages) {
             switch (error.text) {
+                case "SEND_AS_PEER_INVALID":
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.sendAsPeerFailed);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 8);
+                    break;
                 case "PEER_FLOOD":
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 0);
                     break;

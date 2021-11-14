@@ -6039,12 +6039,8 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public static boolean isSendAs(TLRPC.Chat chat, TLRPC.ChatFull info) {
-        if (info.default_send_as != null && chat != null) {
-            if (chat.megagroup && (chat.has_geo || chat.has_link || chat.username != null)) {
-                if (DialogObject.isChatDialog(DialogObject.getPeerDialogId(info.default_send_as))) {
-                    return true;
-                }
-            }
+        if (ChatObject.isSendAsPeer(chat, info)) {
+            return true;
         }
         return false;
     }

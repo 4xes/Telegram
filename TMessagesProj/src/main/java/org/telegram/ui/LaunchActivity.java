@@ -4403,6 +4403,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 builder.setMessage(isChannel ? LocaleController.getString("ChannelNoForwardingAlert", R.string.ChannelNoForwardingAlert) : LocaleController.getString("GroupNoForwardingAlert", R.string.GroupNoForwardingAlert));
                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
             }
+            if (reason == 8) {
+                builder.setMessage(LocaleController.getString("SendAsPeerAlert", R.string.SendAsPeerAlert));
+                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+            }
             if (reason == 5) {
                 builder.setMessage(LocaleController.getString("NobodyLikesSpam3", R.string.NobodyLikesSpam3));
                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);

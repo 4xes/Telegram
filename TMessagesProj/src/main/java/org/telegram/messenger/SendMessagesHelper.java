@@ -3123,10 +3123,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             isChannel = chat != null && !chat.megagroup;
 
             TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chat.id);
-            if (chatFull != null && chatFull.default_send_as != null) {
-                if (chat != null && chat.megagroup && (chat.has_geo || chat.has_link || chat.username != null)) {
-                    sendAsPeer = getMessagesController().getInputPeer(chatFull.default_send_as);
-                }
+            if (ChatObject.isSendAsPeer(chat, chatFull)) {
+                sendAsPeer = getMessagesController().getInputPeer(chatFull.default_send_as);
             }
 
             if (isChannel && chat.has_link) {
@@ -3573,6 +3571,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             if (newMsg.from_id == null) {
                 newMsg.from_id = newMsg.peer_id;
             }
+
             newMsg.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
 
             long groupId = 0;

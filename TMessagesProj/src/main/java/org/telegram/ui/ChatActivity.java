@@ -1534,6 +1534,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().addObserver(this, NotificationCenter.scheduledMessagesUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.diceStickersDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
+        getNotificationCenter().addObserver(this, NotificationCenter.sendAsPeerFailed);
 
         super.onFragmentCreate();
 
@@ -1822,6 +1823,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().removeObserver(this, NotificationCenter.diceStickersDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.dialogDeleted);
         getNotificationCenter().removeObserver(this, NotificationCenter.didLoadSponsoredMessages);
+        getNotificationCenter().removeObserver(this, NotificationCenter.sendAsPeerFailed);
         if (currentEncryptedChat != null) {
             getNotificationCenter().removeObserver(this, NotificationCenter.didVerifyMessagesStickers);
         }
@@ -14097,6 +14099,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chat != null) {
                         currentChat = chat;
                     }
+                    if (chatActivityEnterView != null && chatInfo != null) {
+                        chatActivityEnterView.setSendAsPeers(chatInfo, currentChat, true);
+                    }
                 } else if (currentUser != null) {
                     TLRPC.User user = getMessagesController().getUser(currentUser.id);
                     if (user != null) {
@@ -14685,6 +14690,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (pendingRequestsDelegate != null) {
                     pendingRequestsDelegate.setChatInfo(chatInfo, true);
                 }
+            }
+        } else if (id == NotificationCenter.sendAsPeerFailed) {
+            if (currentChat != null) {
+                //update sendAsPeer
+                getMessagesController().loadFullChat(currentChat.id, 0, true);
             }
         } else if (id == NotificationCenter.chatInfoCantLoad) {
             long chatId = (Long) args[0];

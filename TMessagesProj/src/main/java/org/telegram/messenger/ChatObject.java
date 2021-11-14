@@ -1591,6 +1591,10 @@ public class ChatObject {
         return chat != null && TextUtils.isEmpty(chat.username) && chat.noforwards;
     }
 
+    public static boolean isSendAsPeer(TLRPC.Chat chat, TLRPC.ChatFull info) {
+        return info != null && info.default_send_as != null;
+    }
+
     public static String getBannedRightsString(TLRPC.TL_chatBannedRights bannedRights) {
         String currentBannedRights = "";
         currentBannedRights += bannedRights.view_messages ? 1 : 0;
