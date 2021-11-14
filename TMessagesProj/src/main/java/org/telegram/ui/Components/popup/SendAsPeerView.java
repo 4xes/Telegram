@@ -45,6 +45,8 @@ public class SendAsPeerView extends FrameLayout {
 
     boolean animationInProgress = false;
 
+    int currentScrollY = 0;
+
     @SuppressLint("NotifyDataSetChanged")
     public SendAsPeerView(@NonNull Context context, SendAsPeerData data, Theme.ResourcesProvider resourcesProvider, SendAsPeerSelectListener listener) {
         super(context);
@@ -59,8 +61,25 @@ public class SendAsPeerView extends FrameLayout {
         titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
         titleView.setText(LocaleController.getString("SendAsPeerTitle", R.string.SendAsPeerTitle));
         addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 16, 13, 14, 0));
+        View shadowView = new View(context);
+        shadowView.setBackgroundResource(R.drawable.header_shadow);
 
         final RecyclerListView listView = createListView();
+
+        final int offsetThresholdY = AndroidUtilities.dp(8);
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                currentScrollY += dy;
+                int value = Math.max(Math.min(currentScrollY, offsetThresholdY), 0);
+                float newAlpha = ((float) value / offsetThresholdY);
+                if (shadowView.getAlpha() != newAlpha) {
+                    shadowView.setAlpha(newAlpha);
+                }
+            }
+        });
         listView.setOnItemClickListener((view, position) -> {
             if (animationInProgress) {
                 return;
@@ -87,7 +106,8 @@ public class SendAsPeerView extends FrameLayout {
             listener.onSelectedPeer(data.peersMap.get(selectedDialog));
         });
 
-        addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(100), Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
+        addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 120 - 38, Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
+        addView(shadowView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
         setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), AndroidUtilities.dp(4), AndroidUtilities.dp(4)));
         setEnabled(false);
     }
@@ -96,7 +116,7 @@ public class SendAsPeerView extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(endAnimationWidth, endAnimationHeight);
+        super.onMeasure(MeasureSpec.makeMeasureSpec(endAnimationWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(120), MeasureSpec.EXACTLY));
     }
 
     @Override
