@@ -15784,10 +15784,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    private boolean isNoForwards() {
-        return ChatObject.isNoForwards(currentChat);
-    }
-
     private void updateSelectedMessages() {
         addToSelectedMessages(null, true);
     }
@@ -15817,6 +15813,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void updateNoForwards() {
+        if (chatListView != null) {
+            int count = chatListView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = chatListView.getChildAt(a);
+                if (view instanceof ChatMessageCell) {
+                    ChatMessageCell cell = (ChatMessageCell) view;
+                    MessageObject messageObject = cell.getMessageObject();
+                    if (messageObject != null) {
+                        messageObject.forceUpdate = true;
+                        cell.invalidate();
+                    }
+                }
+            }
+        }
         // update popup
         updatePopupNoForwardItems();
         updatePopupNoForwardInfo();
