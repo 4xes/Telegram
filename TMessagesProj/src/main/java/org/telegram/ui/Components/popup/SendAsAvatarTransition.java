@@ -4,17 +4,11 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
-import android.graphics.Color;
-
-import android.graphics.Paint;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.Interpolator;
-import android.view.animation.LinearInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.MessageEnterTransitionContainer;
 
 public class SendAsAvatarTransition implements MessageEnterTransitionContainer.Transition {
