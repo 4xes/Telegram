@@ -234,6 +234,8 @@ import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
 import org.telegram.ui.Components.history.HistoryCalendarActivity;
+import org.telegram.ui.Components.popup.SendAsAvatarTransition;
+import org.telegram.ui.Components.popup.SendAsPeerButton;
 import org.telegram.ui.Components.popup.SendAsPeerView;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Delegates.ChatActivityMemberRequestsDelegate;
@@ -20584,7 +20586,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         Rect rect = new Rect();
         Rect backgroundPaddings = new Rect();
 
-        LinearLayout scrimPopupContainerLayout = new LinearLayout(contentView.getContext()) {
+        FrameLayout scrimPopupContainerLayout = new FrameLayout(contentView.getContext()) {
             @Override
             public boolean dispatchKeyEvent(KeyEvent event) {
                 if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
@@ -20593,37 +20595,24 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return super.dispatchKeyEvent(event);
             }
         };
-        scrimPopupContainerLayout.setOnTouchListener(new View.OnTouchListener() {
+        scrimPopupContainerLayout.setWillNotDraw(false);
 
-            private int[] pos = new int[2];
 
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
-                        View contentView = scrimPopupWindow.getContentView();
-                        contentView.getLocationInWindow(pos);
-                        rect.set(pos[0], pos[1], pos[0] + contentView.getMeasuredWidth(), pos[1] + contentView.getMeasuredHeight());
-                        if (!rect.contains((int) event.getX(), (int) event.getY())) {
-                            scrimPopupWindow.dismiss();
-                        }
-                    }
-                } else if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
-                        scrimPopupWindow.dismiss();
-                    }
-                }
-                return false;
-            }
-        });
-        scrimPopupContainerLayout.setOrientation(LinearLayout.VERTICAL);
+        MessageEnterTransitionContainer enterTransitionContainer = new MessageEnterTransitionContainer(contentView.getContext(), currentAccount);
 
-        SendAsPeerView sendAsPeerView = new SendAsPeerView(contentView.getContext(), sendAsPeerData, themeDelegate, peer -> {
+
+        SendAsPeerView sendAsPeerView = new SendAsPeerView(contentView.getContext(), sendAsPeerData, themeDelegate, (cell, peer) -> {
             if (chatActivityEnterView != null) {
-                if (currentChat != null && chatInfo != null) {
-                    chatActivityEnterView.getSendAsPeerView().setAndSaveCurrentPeer(currentChat.id, peer, chatInfo);
+                if (cell != null && peer != null) {
+                    SendAsPeerButton button = chatActivityEnterView.getSendAsPeerView();
+                    SendAsAvatarTransition transition = new SendAsAvatarTransition(cell, button, enterTransitionContainer, themeDelegate);
+                    transition.start();
+                    if (currentChat != null && chatInfo != null) {
+                        button.setAndSaveCurrentPeer(currentChat.id, peer, chatInfo);
+                    }
+                } else {
+                    chatActivityEnterView.getSendAsPeerView().toAvatarAnimation(true);
                 }
-                chatActivityEnterView.getSendAsPeerView().toAvatarAnimation(true);
             }
             if (scrimPopupWindow != null) {
                 scrimPopupWindow.dismiss();
@@ -20632,7 +20621,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         Drawable shadowDrawable = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
         shadowDrawable.getPadding(backgroundPaddings);
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-        FrameLayout messageSeenLayout = new FrameLayout(contentView.getContext());
+        FrameLayout drawableLayout = new FrameLayout(contentView.getContext());
 
         int sendAsTargetWidth = AndroidUtilities.dp(250);
         int sendAsTargetHeight = AndroidUtilities.dp(400);
@@ -20652,11 +20641,47 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             sendAsPeerHeight = maxSendAsPeerHeightContent;
         }
 
+        scrimPopupContainerLayout.setOnTouchListener(new View.OnTouchListener() {
+
+            private int[] pos = new int[2];
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                        View contentView = sendAsPeerView;
+                        if (contentView != null) {
+                            contentView.getLocationInWindow(pos);
+                            rect.set(pos[0], pos[1], pos[0] + contentView.getMeasuredWidth(), pos[1] + contentView.getMeasuredHeight());
+                            if (!rect.contains((int) event.getX(), (int) event.getY())) {
+                                scrimPopupWindow.dismiss();
+                            }
+                        }
+                    }
+                } else if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                    if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                        scrimPopupWindow.dismiss();
+                    }
+                }
+                return false;
+            }
+        });
+
         int y = (int) chatActivityEnterView.getY() - sendAsPeerHeight - backgroundPaddings.top - AndroidUtilities.dp(8);
 
-        messageSeenLayout.addView(sendAsPeerView, new LinearLayout.LayoutParams(sendAsPeerWidth, sendAsPeerHeight));
-        messageSeenLayout.setBackground(shadowDrawable);
-        scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        drawableLayout.addView(sendAsPeerView, new FrameLayout.LayoutParams(sendAsPeerWidth, sendAsPeerHeight));
+        drawableLayout.setBackground(shadowDrawable);
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        layoutParams.bottomMargin = chatActivityEnterView.getMeasuredHeight();
+        scrimPopupContainerLayout.addView(drawableLayout, layoutParams);
+
+        FrameLayout.LayoutParams transitionLayoutParams = new FrameLayout.LayoutParams(
+                sendAsPeerWidth + backgroundPaddings.left + backgroundPaddings.right,
+                sendAsPeerHeight + backgroundPaddings.top + backgroundPaddings.bottom + chatActivityEnterView.getMeasuredHeight());
+        layoutParams.bottomMargin = chatActivityEnterView.getMeasuredHeight();
+
+        scrimPopupContainerLayout.addView(enterTransitionContainer, transitionLayoutParams);
+
 
         scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
 
@@ -20726,7 +20751,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         };
 
         scrimPopupWindow.setPauseNotifications(true);
-        scrimPopupWindow.setDismissAnimationDuration(200);
+        scrimPopupWindow.setDismissAnimationDuration(250);
         scrimPopupWindow.setOutsideTouchable(true);
         scrimPopupWindow.setClippingEnabled(true);
         scrimPopupWindow.setAnimationStyle(R.style.PopupSendAsAnimation);

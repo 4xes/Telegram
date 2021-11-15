@@ -617,8 +617,6 @@ public class ActionBarPopupWindow extends PopupWindow {
                 }
             });
             windowAnimatorSet.start();
-        } else {
-            onDismissAnimationEnded();
         }
     }
 
@@ -684,12 +682,15 @@ public class ActionBarPopupWindow extends PopupWindow {
                 windowAnimatorSet.setDuration(outEmptyTime);
             } else {
                 if (getAnimationStyle() == R.style.PopupSendAsAnimation) {
+
+                    View child = viewGroup.getChildAt(0);
+
                     windowAnimatorSet.playTogether(
-                            ObjectAnimator.ofFloat(viewGroup, View.SCALE_X, 0.70f),
-                            ObjectAnimator.ofFloat(viewGroup, View.SCALE_Y, 0.53f),
-                            ObjectAnimator.ofFloat(viewGroup, View.ALPHA, 0.0f));
-                    viewGroup.setPivotX(0);
-                    viewGroup.setPivotY(viewGroup.getMeasuredHeight());
+                            ObjectAnimator.ofFloat(child, View.SCALE_X, 0.70f),
+                            ObjectAnimator.ofFloat(child, View.SCALE_Y, 0.53f),
+                            ObjectAnimator.ofFloat(child, View.ALPHA, 0.0f));
+                    child.setPivotX(0);
+                    child.setPivotY(child.getMeasuredHeight());
                     windowAnimatorSet.setStartDelay(100);
                     windowAnimatorSet.setDuration(dismissAnimationDuration);
                 } else {

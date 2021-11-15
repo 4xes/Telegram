@@ -58,6 +58,33 @@ public class SendAsPeerButton extends View {
     private static final int closeColor = 0xff50A7EA;
     final int maxEmojiOffset = AndroidUtilities.dp(48);
 
+    boolean inTransitionProgress = false;
+
+    public void setEnterTransitionInProgress(boolean inTransitionProgress) {
+        this.inTransitionProgress = inTransitionProgress;
+    }
+
+    public boolean isInTransitionProgress() {
+        return inTransitionProgress;
+    }
+
+    public float transitionProgress = 0f;
+
+    public void setTransitionProgress(float transitionProgress) {
+        this.transitionProgress = transitionProgress;
+    }
+
+    private static final int avatarSize = AndroidUtilities.dp(32);
+    private static final int avatarRadius = avatarSize / 2;
+
+    public float getAvatarRadius() {
+        return avatarRadius;
+    }
+
+    public RectF getRectDrawing() {
+        return rect;
+    }
+
     public SendAsPeerButton(Context context) {
         super(context);
 
@@ -81,7 +108,14 @@ public class SendAsPeerButton extends View {
         updateColors();
     }
 
-    private void setDialogId(long uid) {
+    private long uidAvatar = 0;
+
+    public void setDialogId(long uid) {
+        if (uidAvatar == uid) {
+            return;
+        } else {
+            uidAvatar = uid;
+        }
         ImageLocation imageLocation;
         Object imageParent;
 
@@ -89,12 +123,12 @@ public class SendAsPeerButton extends View {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
             avatarDrawable.setInfo(user);
 
-            imageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL);
+            imageLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL);
             imageParent = user;
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
             avatarDrawable.setInfo(chat);
-            imageLocation = ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL);
+            imageLocation = ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL);
             imageParent = chat;
         }
         imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
@@ -324,19 +358,27 @@ public class SendAsPeerButton extends View {
         if (progress > 0.5) {
             scaleClose = scaleClose + 0.25f * (progress - 0.5f) * 2f;
         }
-        canvas.save();
-        canvas.scale(scaleAvatar, scaleAvatar, rect.centerX(), rect.centerY());
-        backPaint.setColor(Color.argb(colors[6] + (int) ((colors[7] - colors[6]) * progress), colors[0] + (int) ((colors[1] - colors[0]) * progress), colors[2] + (int) ((colors[3] - colors[2]) * progress), colors[4] + (int) ((colors[5] - colors[4]) * progress)));
-        canvas.drawOval(rect, backPaint);
-        imageReceiver.draw(canvas);
-        canvas.restore();
-        if (progress != 0) {
+        float drawProgress = progress;
+        if (isInTransitionProgress()) {
+            drawProgress = this.transitionProgress;
+            scaleClose = this.transitionProgress;
+        }
+
+        if (!isInTransitionProgress()) {
+            canvas.save();
+            canvas.scale(scaleAvatar, scaleAvatar, rect.centerX(), rect.centerY());
+            backPaint.setColor(Color.argb(colors[6] + (int) ((colors[7] - colors[6]) * drawProgress), colors[0] + (int) ((colors[1] - colors[0]) * drawProgress), colors[2] + (int) ((colors[3] - colors[2]) * drawProgress), colors[4] + (int) ((colors[5] - colors[4]) * drawProgress)));
+            canvas.drawOval(rect, backPaint);
+            imageReceiver.draw(canvas);
+            canvas.restore();
+        }
+        if (drawProgress != 0.0) {
             backPaint.setColor(closeColor);
-            backPaint.setAlpha((int) (255 * progress));
+            backPaint.setAlpha((int) (255 * drawProgress));
             canvas.save();
             canvas.scale(scaleClose, scaleClose, rect.centerX(), rect.centerY());
             canvas.drawOval(rect, backPaint);
-            closeDrawable.setAlpha((int) (255 * progress));
+            closeDrawable.setAlpha((int) (255 * drawProgress));
             closeDrawable.draw(canvas);
             canvas.restore();
         }

@@ -1736,12 +1736,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         sendAsPeerView = new SendAsPeerButton(context);
         sendAsPeerView.setOnClickListener((v) -> {
-            if (sendAsPeerView.isAvatar()) {
-                sendAsPeerView.onPeersLoaded(sendAsPeerData -> delegate.onSendAsPeerPressed(v, sendAsPeerData));
-                sendAsPeerView.toCloseAnimation(true);
-            } else {
-                delegate.onSendAsPeerPressed(v,null);
-                sendAsPeerView.toAvatarAnimation(true);
+            if (!sendAsPeerView.isInTransitionProgress()) {
+                if (sendAsPeerView.isAvatar()) {
+                    sendAsPeerView.onPeersLoaded(sendAsPeerData -> delegate.onSendAsPeerPressed(v, sendAsPeerData));
+                    sendAsPeerView.toCloseAnimation(true);
+                } else {
+                    delegate.onSendAsPeerPressed(v,null);
+                    sendAsPeerView.toAvatarAnimation(true);
+                }
             }
         });
         if (Build.VERSION.SDK_INT >= 21) {

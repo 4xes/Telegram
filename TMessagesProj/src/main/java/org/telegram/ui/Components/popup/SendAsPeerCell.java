@@ -10,6 +10,8 @@ package org.telegram.ui.Components.popup;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -46,14 +48,32 @@ public class SendAsPeerCell extends FrameLayout {
 
     private final Theme.ResourcesProvider resourcesProvider;
 
+    private static final int avatarSizeDp = 38;
+    private static final int avatarSize = AndroidUtilities.dp(avatarSizeDp);
+    private static final int avatarRadius = avatarSize / 2;
+
+    RectF rect = new RectF(0, 0, avatarSize, avatarSize);
+
+    public RectF getAvatarRect() {
+        return rect;
+    }
+
+    public BackupImageView getAvatarImageView() {
+        return avatarImageView;
+    }
+
+    public float getAvatarRadius() {
+        return avatarRadius;
+    }
+
     public SendAsPeerCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
         setWillNotDraw(false);
         avatarImageView = new BackupImageView(context);
-        addView(avatarImageView, LayoutHelper.createFrame(38, 38, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
-        avatarImageView.setRoundRadius(AndroidUtilities.dp(19));
+        addView(avatarImageView, LayoutHelper.createFrame(avatarSizeDp, avatarSizeDp, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
+        avatarImageView.setRoundRadius(avatarRadius);
 
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

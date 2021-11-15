@@ -80,11 +80,12 @@ public class SendAsPeerView extends FrameLayout {
             }
 
             long selectedDialog = 0;
+            SendAsPeerCell cell = null;
             if (view instanceof SendAsPeerCell) {
-                SendAsPeerCell cell = ((SendAsPeerCell) view);
+                cell = ((SendAsPeerCell) view);
                 selectedDialog = cell.getCurrentDialog();
                 if (selectedDialog == currentDialogId) {
-                    listener.onSelectedPeer(null);
+                    listener.onSelectedPeer(null, null);
                     return;
                 }
                 cell.setChecked(true, true);
@@ -97,7 +98,7 @@ public class SendAsPeerView extends FrameLayout {
                     }
                 }
             }
-            listener.onSelectedPeer(data.peersMap.get(selectedDialog));
+            listener.onSelectedPeer(cell, data.peersMap.get(selectedDialog));
         });
 
         addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 38, 0, 0));
@@ -179,6 +180,6 @@ public class SendAsPeerView extends FrameLayout {
     }
 
     public interface SendAsPeerSelectListener {
-        void onSelectedPeer(TLRPC.Peer peer);
+        void onSelectedPeer(SendAsPeerCell cell, TLRPC.Peer peer);
     }
 }
