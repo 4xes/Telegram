@@ -37,7 +37,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SharedMediaLayout;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -210,6 +209,7 @@ public class HistoryCalendarActivity extends BaseFragment {
         }
         loading = true;
         TLRPC.TL_messages_getSearchResultsCalendar req = new TLRPC.TL_messages_getSearchResultsCalendar();
+        req.filter = new TLRPC.TL_inputMessagesFilterPhotoVideo();
 
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
         req.offset_id = lastId;
@@ -232,6 +232,8 @@ public class HistoryCalendarActivity extends BaseFragment {
                     PeriodDay periodDay = new PeriodDay();
                     MessageObject messageObject = new MessageObject(currentAccount, res.messages.get(i), false, false);
                     periodDay.messageObject = messageObject;
+                    periodDay.count = period.count;
+                    periodDay.min_msg_id = period.min_msg_id;
                     startOffset += res.periods.get(i).count;
                     periodDay.startOffset = startOffset;
                     int index = calendar.get(Calendar.DAY_OF_MONTH) - 1;
@@ -594,6 +596,8 @@ public class HistoryCalendarActivity extends BaseFragment {
         float enterAlpha = 1f;
         float startEnterDelay = 1f;
         boolean wasDrawn;
+        int min_msg_id;
+        int count;
     }
 
     @Override
