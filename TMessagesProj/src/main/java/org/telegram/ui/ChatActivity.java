@@ -233,6 +233,7 @@ import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
+import org.telegram.ui.Components.history.HistoryCalendarActivity;
 import org.telegram.ui.Components.popup.SendAsPeerView;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Delegates.ChatActivityMemberRequestsDelegate;
@@ -23655,8 +23656,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
 
                     @Override
+                    public void didClickDate(ChatActionCell cell) {
+                        Bundle bundle = new Bundle();
+                        bundle.putLong("dialog_id", dialog_id);
+                        MessageObject message = cell.getMessageObject();
+
+                        HistoryCalendarActivity calendarActivity = new HistoryCalendarActivity(bundle, message.messageOwner.date);
+                        presentFragment(calendarActivity);
+                    }
+
+                    @Override
                     public void didLongPress(ChatActionCell cell, float x, float y) {
-                        createMenu(cell, false, false, x, y);
+                        MessageObject message = cell.getMessageObject();
+                        if (message.type != 10) {
+                            createMenu(cell, false, false, x, y);
+                        } else {
+                            didClickDate(cell);
+                        }
                     }
 
                     @Override

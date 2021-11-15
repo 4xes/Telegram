@@ -55,6 +55,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         default void didClickImage(ChatActionCell cell) {
         }
 
+        default void didClickDate(ChatActionCell cell) {
+
+        }
+
         default void didLongPress(ChatActionCell cell, float x, float y) {
         }
 
@@ -91,6 +95,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private int textXLeft;
     private int previousWidth;
     private boolean imagePressed;
+    private boolean datePressed;
 
     TextPaint textPaint;
 
@@ -301,6 +306,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     imagePressed = true;
                     result = true;
                 }
+                if (currentMessageObject.type == 10 && isInsideText(x, y)) {
+                    datePressed = true;
+                    result = true;
+                }
+
                 if (result) {
                     startCheckLongPress();
                 }
@@ -324,10 +334,25 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                     }
                 }
             }
+            if (datePressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    datePressed = false;
+                    if (delegate != null) {
+                        delegate.didClickDate(this);
+                        playSoundEffect(SoundEffectConstants.CLICK);
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    datePressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (!isInsideText(x, y)) {
+                        datePressed = false;
+                    }
+                }
+            }
         }
         if (!result) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
-                if (x >= textX && y >= textY && x <= textX + textWidth && y <= textY + textHeight) {
+                if (isInsideText(x, y)) {
                     y -= textY;
                     x -= textXLeft;
 
@@ -401,6 +426,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
 
         return result;
+    }
+
+    private boolean isInsideText(float x, float y) {
+        return x >= textX && y >= textY && x <= textX + textWidth && y <= textY + textHeight;
     }
 
     private void createLayout(CharSequence text, int width) {
