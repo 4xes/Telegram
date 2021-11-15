@@ -508,6 +508,15 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
     }
 
+    public void onDismissAnimationStarted() {
+
+    }
+
+
+    public void onDismissAnimationEnded() {
+
+    }
+
     private void registerListener(View anchor) {
         if (mSuperScrollListener != null) {
             ViewTreeObserver vto = (anchor.getWindowToken() != null) ? anchor.getViewTreeObserver() : null;
@@ -608,6 +617,8 @@ public class ActionBarPopupWindow extends PopupWindow {
                 }
             });
             windowAnimatorSet.start();
+        } else {
+            onDismissAnimationEnded();
         }
     }
 
@@ -672,15 +683,27 @@ public class ActionBarPopupWindow extends PopupWindow {
                 windowAnimatorSet.playTogether(ValueAnimator.ofFloat(0, 1f));
                 windowAnimatorSet.setDuration(outEmptyTime);
             } else {
-                windowAnimatorSet.playTogether(
-                        ObjectAnimator.ofFloat(viewGroup, View.TRANSLATION_Y, AndroidUtilities.dp((content != null && content.shownFromBotton) ? 5 : -5)),
-                        ObjectAnimator.ofFloat(viewGroup, View.ALPHA, 0.0f));
-                windowAnimatorSet.setDuration(dismissAnimationDuration);
+                if (getAnimationStyle() == R.style.PopupSendAsAnimation) {
+                    windowAnimatorSet.playTogether(
+                            ObjectAnimator.ofFloat(viewGroup, View.SCALE_X, 0.70f),
+                            ObjectAnimator.ofFloat(viewGroup, View.SCALE_Y, 0.53f),
+                            ObjectAnimator.ofFloat(viewGroup, View.ALPHA, 0.0f));
+                    viewGroup.setPivotX(0);
+                    viewGroup.setPivotY(viewGroup.getMeasuredHeight());
+                    windowAnimatorSet.setStartDelay(100);
+                    windowAnimatorSet.setDuration(dismissAnimationDuration);
+                } else {
+                    windowAnimatorSet.playTogether(
+                            ObjectAnimator.ofFloat(viewGroup, View.TRANSLATION_Y, AndroidUtilities.dp((content != null && content.shownFromBotton) ? 5 : -5)),
+                            ObjectAnimator.ofFloat(viewGroup, View.ALPHA, 0.0f));
+                    windowAnimatorSet.setDuration(dismissAnimationDuration);
+                }
             }
 
             windowAnimatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
+                    onDismissAnimationEnded();
                     windowAnimatorSet = null;
                     isClosingAnimated = false;
                     setFocusable(false);
@@ -698,8 +721,10 @@ public class ActionBarPopupWindow extends PopupWindow {
             if (pauseNotifications) {
                 popupAnimationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(popupAnimationIndex, null);
             }
+            onDismissAnimationStarted();
             windowAnimatorSet.start();
         } else {
+            onDismissAnimationEnded();
             try {
                 super.dismiss();
             } catch (Exception ignore) {

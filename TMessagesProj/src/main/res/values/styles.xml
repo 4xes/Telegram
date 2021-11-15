@@ -89,6 +89,11 @@
         <item name="android:windowExitAnimation">@anim/popup_out</item>
     </style>
 
+    <style name="PopupSendAsAnimation" parent="android:Animation" mce_bogus="1">
+        <item name="android:windowEnterAnimation">@anim/popup_send_as_in</item>
+        <item name="android:windowExitAnimation">@anim/popup_send_as_out</item>
+    </style>
+
     <!--ACTION BAR-->
 
     <style name="ActionBar.Transparent.TMessages.Start" parent="android:style/Widget.Holo.Light.ActionBar">

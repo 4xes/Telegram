@@ -20633,7 +20633,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
         FrameLayout messageSeenLayout = new FrameLayout(contentView.getContext());
 
-        //for animation start sizes w = 174, h = 210
         int sendAsTargetWidth = AndroidUtilities.dp(250);
         int sendAsTargetHeight = AndroidUtilities.dp(400);
 
@@ -20659,6 +20658,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         scrimPopupContainerLayout.addView(messageSeenLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+
+            @Override
+            public void onDismissAnimationStarted() {
+                super.onDismissAnimationStarted();
+                if (sendAsPeerView != null) {
+                    sendAsPeerView.animationInProgress = true;
+                }
+            }
+
+            @Override
+            public void onDismissAnimationEnded() {
+                super.onDismissAnimationEnded();
+                if (sendAsPeerView != null) {
+                    sendAsPeerView.animationInProgress = false;
+                }
+            }
+
             @Override
             public void dismiss() {
                 super.dismiss();
@@ -20709,10 +20725,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         };
 
         scrimPopupWindow.setPauseNotifications(true);
-        scrimPopupWindow.setDismissAnimationDuration(220);
+        scrimPopupWindow.setDismissAnimationDuration(200);
         scrimPopupWindow.setOutsideTouchable(true);
         scrimPopupWindow.setClippingEnabled(true);
-        scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+        scrimPopupWindow.setAnimationStyle(R.style.PopupSendAsAnimation);
         scrimPopupWindow.setFocusable(true);
         scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
         scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);

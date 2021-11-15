@@ -30,14 +30,14 @@ import java.util.Map;
 @SuppressLint("ViewConstructor")
 public class SendAsPeerView extends FrameLayout {
 
-    private long currentDialogId = 0;
+    private long currentDialogId;
     private final SendAsPeerData data;
 
     protected TextView titleView;
 
     private final Theme.ResourcesProvider resourcesProvider;
 
-    boolean animationInProgress = false;
+    public boolean animationInProgress = false;
 
     int currentScrollY = 0;
 
