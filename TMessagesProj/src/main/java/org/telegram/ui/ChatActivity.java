@@ -20605,7 +20605,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (chatActivityEnterView != null) {
                 if (cell != null && peer != null) {
                     SendAsPeerButton button = chatActivityEnterView.getSendAsPeerView();
-                    SendAsAvatarTransition transition = new SendAsAvatarTransition(cell, button, enterTransitionContainer, themeDelegate);
+                    SendAsAvatarTransition transition = new SendAsAvatarTransition(cell, button, enterTransitionContainer);
                     transition.start();
                     if (currentChat != null && chatInfo != null) {
                         button.setAndSaveCurrentPeer(currentChat.id, peer, chatInfo);
@@ -20751,7 +20751,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         };
 
         scrimPopupWindow.setPauseNotifications(true);
-        scrimPopupWindow.setDismissAnimationDuration(250);
+        scrimPopupWindow.setDismissAnimationDuration(350);
         scrimPopupWindow.setOutsideTouchable(true);
         scrimPopupWindow.setClippingEnabled(true);
         scrimPopupWindow.setAnimationStyle(R.style.PopupSendAsAnimation);

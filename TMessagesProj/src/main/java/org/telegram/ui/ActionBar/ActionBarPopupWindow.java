@@ -691,8 +691,8 @@ public class ActionBarPopupWindow extends PopupWindow {
                             ObjectAnimator.ofFloat(child, View.ALPHA, 0.0f));
                     child.setPivotX(0);
                     child.setPivotY(child.getMeasuredHeight());
-                    windowAnimatorSet.setStartDelay(100);
-                    windowAnimatorSet.setDuration(dismissAnimationDuration);
+                    windowAnimatorSet.setStartDelay((long)(dismissAnimationDuration * 0.25f));
+                    windowAnimatorSet.setDuration((long)(dismissAnimationDuration * 0.75f));
                 } else {
                     windowAnimatorSet.playTogether(
                             ObjectAnimator.ofFloat(viewGroup, View.TRANSLATION_Y, AndroidUtilities.dp((content != null && content.shownFromBotton) ? 5 : -5)),

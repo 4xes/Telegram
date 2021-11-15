@@ -93,7 +93,6 @@ public class SendAsPeerButton extends View {
         setScaleY(0f);
 
         int buttonSize = AndroidUtilities.dp(48);
-        int avatarSize = AndroidUtilities.dp(32);
         int offset = (buttonSize - avatarSize) / 2;
         closeDrawable = getResources().getDrawable(R.drawable.ic_send_as_peer);
         closeDrawable.setBounds(offset, offset, offset + avatarSize, offset + avatarSize);
@@ -103,12 +102,16 @@ public class SendAsPeerButton extends View {
         imageReceiver = new ImageReceiver();
         imageReceiver.setRoundRadius(avatarSize / 2);
         imageReceiver.setParentView(this);
-        imageReceiver.setImageCoords(offset, offset, avatarSize, avatarSize);
         rect.set(offset, offset, offset + avatarSize, offset + avatarSize);
+        resetDrawRect();
         updateColors();
     }
 
     private long uidAvatar = 0;
+
+    public ImageReceiver getImageReceiver() {
+        return imageReceiver;
+    }
 
     public void setDialogId(long uid) {
         if (uidAvatar == uid) {
@@ -179,6 +182,18 @@ public class SendAsPeerButton extends View {
         }
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        imageReceiver.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        imageReceiver.onAttachedToWindow();
+    }
+
     private SendAsPeerView.SendAsPeerData getData() {
         if (currentPeer != null && inputPeer != null && objects != null && peersMap != null) {
             return new SendAsPeerView.SendAsPeerData(
@@ -197,7 +212,6 @@ public class SendAsPeerButton extends View {
     private TLRPC.InputPeer inputPeer;
 
     public void setChatInfo(TLRPC.Chat chat, TLRPC.ChatFull chatInfo, boolean animate) {
-        //todo move to utils checking
         if (ChatObject.isSendAsPeer(chat, chatInfo)) {
             this.currentPeer = chatInfo.default_send_as;
             setCurrentPeer(this.currentPeer);
@@ -268,7 +282,6 @@ public class SendAsPeerButton extends View {
                 }
             } else {
                 prefetchCallback = null;
-                toAvatarAnimation(true);
             }
             requestToken = 0;
         });
@@ -330,27 +343,33 @@ public class SendAsPeerButton extends View {
         setMeasuredDimension(imageSize, imageSize);
     }
 
+    public void resetDrawRect() {
+        imageReceiver.setImageCoords((int) rect.left, (int) rect.top, (int) rect.width(), (int) rect.height());
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
-        float ft = 400.0f;
-        if (isClose && progress != 1.0f || !isClose && progress != 0.0f) {
-            long newTime = System.currentTimeMillis();
-            long dt = newTime - lastUpdateTime;
-            if (dt < 0 || dt > 17) {
-                dt = 17;
-            }
-            if (isClose) {
-                progress += dt / ft;
-                if (progress >= 1.0f) {
-                    progress = 1.0f;
+        if (!isInTransitionProgress()) {
+            float ft = 400.0f;
+            if (isClose && progress != 1.0f || !isClose && progress != 0.0f) {
+                long newTime = System.currentTimeMillis();
+                long dt = newTime - lastUpdateTime;
+                if (dt < 0 || dt > 17) {
+                    dt = 17;
                 }
-            } else {
-                progress -= dt / ft;
-                if (progress < 0.0f) {
-                    progress = 0.0f;
+                if (isClose) {
+                    progress += dt / ft;
+                    if (progress >= 1.0f) {
+                        progress = 1.0f;
+                    }
+                } else {
+                    progress -= dt / ft;
+                    if (progress < 0.0f) {
+                        progress = 0.0f;
+                    }
                 }
+                invalidate();
             }
-            invalidate();
         }
         float scaleAvatar = 1f;
         float scaleClose = 0.75f;

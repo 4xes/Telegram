@@ -9170,8 +9170,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public int getSendAs(TLRPC.InputPeer inputPeer, SendAsPeerButton.RequestDelegate delegate) {
         TLRPC.TL_channels_getSendAs req = new TLRPC.TL_channels_getSendAs();
         req.peer = inputPeer;
-        return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            FileLog.e("getSendAs request completed");
+        return ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (error == null) {
                 TLRPC.TL_channels_sendAsPeers data = (TLRPC.TL_channels_sendAsPeers) response;
                 Map<Long, TLRPC.Peer> peersMap = new HashMap<>(10);
@@ -9191,17 +9190,18 @@ public class MessagesController extends BaseController implements NotificationCe
                     TLObject object = objectsMap.get(did);
                     if (object != null) {
                         objects.add(object);
-                    } else {
-                        FileLog.e(did + "did not found in chats or users");
                     }
-
                 }
                 getMessagesStorage().putUsersAndChats(data.users, data.chats, true, true);
-                delegate.run(objects, peersMap, null);
+                AndroidUtilities.runOnUIThread(() -> {
+                    delegate.run(objects, peersMap, null);
+                });
             } else {
-                delegate.run(null, null, error);
+                AndroidUtilities.runOnUIThread(() -> {
+                    delegate.run(null, null, error);
+                });
             }
-        }));
+        });
     }
 
     public void toggleNoForwards(long chatId, boolean enabled) {

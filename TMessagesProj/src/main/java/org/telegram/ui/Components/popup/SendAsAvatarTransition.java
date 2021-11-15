@@ -26,19 +26,13 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
 
     private final ValueAnimator animator;
     MessageEnterTransitionContainer container;
-    private final Theme.ResourcesProvider resourcesProvider;
 
-    private final Paint paint = new Paint();
-
-    private float cellAvatarCenterX;
-    private float cellAvatarCenterY;
-
-    private Interpolator interpolator = new DecelerateInterpolator();
+    private final float cellAvatarCenterX;
+    private final float cellAvatarCenterY;
 
     int overshootDp = AndroidUtilities.dp(6);
 
-    public SendAsAvatarTransition(SendAsPeerCell cell, SendAsPeerButton button, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
-        this.resourcesProvider = resourcesProvider;
+    public SendAsAvatarTransition(SendAsPeerCell cell, SendAsPeerButton button, MessageEnterTransitionContainer container) {
         this.container = container;
         this.button = button;
         this.cell = cell;
@@ -46,9 +40,9 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
         fromRadius = cell.getAvatarRadius();
         toRadius = button.getAvatarRadius();
 
-        paint.setColor(Color.RED);
-        paint.setStyle(Paint.Style.FILL);
-
+        button.setDialogId(cell.getCurrentDialog());
+        cell.getAvatarImageView().setVisibility(View.INVISIBLE);
+        button.setVisibility(View.INVISIBLE);
         button.setEnterTransitionInProgress(true);
 
         container.addTransition(this);
@@ -62,33 +56,24 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
         cellAvatarCenterX = avatarLocationX + cell.getAvatarRect().centerX();
         cellAvatarCenterY = avatarLocationY + cell.getAvatarRect().centerY();
 
-        ImageReceiver imageReceiver = cell.getAvatarImageView().getImageReceiver();
-        float saveX = imageReceiver.getImageX();
-        float saveY = imageReceiver.getImageY();
-        float saveWidth = imageReceiver.getImageWidth();
-        float saveHeight = imageReceiver.getImageHeight();
 
-        animator = ValueAnimator.ofFloat(0f, 1f);
+        animator = ValueAnimator.ofFloat(0f, 1.1f);
         animator.addUpdateListener(valueAnimator -> {
             progress = (float) valueAnimator.getAnimatedValue();
             container.invalidate();
         });
-        button.setDialogId(cell.getCurrentDialog());
 
-        cell.getAvatarImageView().setVisibility(View.INVISIBLE);
-        button.setVisibility(View.INVISIBLE);
-        animator.setInterpolator(new LinearInterpolator());
-        animator.setDuration(220);
+        animator.setInterpolator(new DecelerateInterpolator());
+        animator.setDuration(250);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                container.removeTransition(SendAsAvatarTransition.this);
+                button.resetDrawRect();
                 button.setEnterTransitionInProgress(false);
                 button.toAvatarAnimation(false);
                 button.setVisibility(View.VISIBLE);
-                imageReceiver.setImageCoords(saveX, saveY, saveWidth, saveHeight);
-                cell.getAvatarImageView().setVisibility(View.VISIBLE);
                 button.invalidate();
+                container.removeTransition(SendAsAvatarTransition.this);
             }
         });
     }
@@ -96,8 +81,6 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
     public void start() {
         animator.start();
     }
-
-
 
     @Override
     public void onDraw(Canvas canvas) {
@@ -109,7 +92,16 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
 
         float toOvershootY = toCenterY + overshootDp;
 
-        float avatarProgress = interpolator.getInterpolation(progress);
+        float progress = Math.min(this.progress, 1f);
+        if (this.progress > 1f) {
+            button.resetDrawRect();
+            button.setEnterTransitionInProgress(false);
+            button.toAvatarAnimation(false);
+            button.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        float avatarProgress = progress;
         float avatarProgressX;
         float y;
         if (avatarProgress <= 0.7) {
@@ -126,15 +118,8 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
 
         float x = cellAvatarCenterX + ((toCenterX - cellAvatarCenterX) * avatarProgressX);
 
-        int avatarSave = canvas.save();
         float avatarRadius = cell.getAvatarRadius() + ((button.getAvatarRadius() - cell.getAvatarRadius()) * scaleAvatarProgress);
 
-        ImageReceiver imageReceiver = cell.getAvatarImageView().getImageReceiver();
-
-        imageReceiver.setImageCoords(x - avatarRadius, y - avatarRadius, avatarRadius * 2f, avatarRadius * 2f);
-        imageReceiver.draw(canvas);
-
-        canvas.restoreToCount(avatarSave);
 
         int restoreButtonFade = canvas.save();
         canvas.translate(location[0], location[1]);
@@ -143,6 +128,9 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
         button.draw(canvas);
         canvas.restoreToCount(restoreButtonFade);
 
+        ImageReceiver imageReceiver = button.getImageReceiver();
+        imageReceiver.setImageCoords((int) (x - avatarRadius), (int) (y - avatarRadius), (int) (avatarRadius * 2f), (int) (avatarRadius * 2f));
+        imageReceiver.draw(canvas);
     }
 
     protected final int[] location = new int[2];
@@ -153,10 +141,5 @@ public class SendAsAvatarTransition implements MessageEnterTransitionContainer.T
         parent.getLocationOnScreen(locationTemp);
         location[0]-= locationTemp[0];
         location[1]-= locationTemp[1];
-    }
-
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
     }
 }
