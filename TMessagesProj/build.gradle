@@ -160,6 +160,7 @@ android {
             minifyEnabled true
             shrinkResources false
             multiDexEnabled true
+            applicationIdSuffix ".blackfox"
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
