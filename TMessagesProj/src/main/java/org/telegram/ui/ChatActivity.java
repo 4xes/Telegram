@@ -15847,9 +15847,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         // update forward in bottom and appbar
         updateSelectedMessages();
         // secure screenshots
-        if (currentEncryptedChat != null || isNoForwards) {
-            AndroidUtilities.setFlagSecure(this, true);
-        }
+        AndroidUtilities.setFlagSecure(this, currentEncryptedChat != null || isNoForwards);
 
         if (forwardingPreviewView != null) {
             forwardingPreviewView.setIsNoForwards(isNoForwards);
