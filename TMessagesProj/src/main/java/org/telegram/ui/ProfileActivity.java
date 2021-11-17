@@ -3390,6 +3390,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             noForwardsHintView.setVisibility(View.INVISIBLE);
             boolean isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
             noForwardsHintView.setText(isChannel ? LocaleController.getString("ChannelNoForwardsHint", R.string.ChannelNoForwardsHint) : LocaleController.getString("GroupNoForwardsHint", R.string.GroupNoForwardsHint));
+            noForwardsHintView.setBottomOffset(-AndroidUtilities.dp(6));
             ((FrameLayout) fragmentView).addView(noForwardsHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
         }
         noForwardsHintView.showForView(view, true);
