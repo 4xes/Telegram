@@ -410,6 +410,11 @@
     <string name="LinkInvalidStartNumberMega">Group names can\'t start with a number.</string>
     <string name="LinkChecking">Checking name…</string>
     <string name="LinkAvailable">%1$s is available.</string>
+    <string name="Reactions">Reactions</string>
+    <string name="ReactionsOff">Off</string>
+    <string name="ReactionsEnable">Enable Reactions</string>
+    <string name="ReactionsEnableHint">Allow subscribers to react to channel posts.</string>
+    <string name="ReactionsAvailable">Available reactions</string>
     <string name="ChannelMembers">Members</string>
     <string name="ChannelAddToGroup">Add to group</string>
     <string name="ChannelAddToChannel">Add to channel</string>

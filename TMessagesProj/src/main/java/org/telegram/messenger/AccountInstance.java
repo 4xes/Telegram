@@ -3,6 +3,7 @@ package org.telegram.messenger;
 import android.content.SharedPreferences;
 
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.ui.Reactions.ReactionsRequestController;
 
 public class AccountInstance {
 
@@ -23,6 +24,10 @@ public class AccountInstance {
 
     public AccountInstance(int instance) {
         currentAccount = instance;
+    }
+
+    public ReactionsRequestController getReactionsController() {
+        return ReactionsRequestController.getInstance(currentAccount);
     }
 
     public MessagesController getMessagesController() {
