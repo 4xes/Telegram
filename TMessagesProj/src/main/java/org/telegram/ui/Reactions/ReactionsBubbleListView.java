@@ -1,5 +1,6 @@
 package org.telegram.ui.Reactions;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -7,6 +8,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.Build;
@@ -15,6 +17,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,8 +27,9 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
-import java.util.ArrayList;
+import java.util.List;
 
+@SuppressLint("ViewConstructor")
 public class ReactionsBubbleListView extends RecyclerListView {
 
     private final RectF bounds = new RectF();
@@ -35,12 +40,15 @@ public class ReactionsBubbleListView extends RecyclerListView {
 
     private LinearGradient gradientShader;
 
-    private final int horizontalPadding = AndroidUtilities.dp(14);
+    public static final int SPACING = 4;
+    public static final int HORIZONTAL_PADDING = 14;
+
+    private final int horizontalPadding = AndroidUtilities.dp(HORIZONTAL_PADDING);
     private float progress = 1f;
 
-    private final ArrayList<TLRPC.TL_availableReaction> reactions;
+    private final List<TLRPC.TL_availableReaction> reactions;
 
-    public ReactionsBubbleListView(Context context, int cornerRadius, ArrayList<TLRPC.TL_availableReaction> reactions) {
+    public ReactionsBubbleListView(Context context, int cornerRadius, List<TLRPC.TL_availableReaction> reactions, @Nullable ReactionSelectedListener selectedListener) {
         super(context);
         this.reactions = reactions;
         this.cornerRadius = cornerRadius;
@@ -55,10 +63,31 @@ public class ReactionsBubbleListView extends RecyclerListView {
             });
         }
         setPadding(horizontalPadding, 0, horizontalPadding, 0);
-        setClipToPadding(false);
+        addItemDecoration(new ItemDecoration() {
 
+            final int spacing = AndroidUtilities.dp(SPACING);
+
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
+                int position = parent.getChildAdapterPosition(view);
+
+                if (position < state.getItemCount()) {
+                    outRect.set(0,0,spacing, 0);
+                } else {
+                    outRect.setEmpty();
+                }
+            }
+        });
+        setClipToPadding(false);
+        setSelectorDrawableColor(Color.TRANSPARENT);
         setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         setAdapter(new ReactionsAdapter());
+        setOnItemClickListener((view, position) -> {
+                if (selectedListener != null) {
+                    selectedListener.onSelected((ReactionCell) view, reactions.get(position).reaction);
+                }
+            }
+        );
     }
 
     @Override
@@ -109,7 +138,7 @@ public class ReactionsBubbleListView extends RecyclerListView {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             ReactionCell cell = new ReactionCell(parent.getContext());
-            cell.setLayoutParams(LayoutHelper.createFrame(34, 34, Gravity.TOP, 0, 4, 0, 0));
+            cell.setLayoutParams(LayoutHelper.createFrame(ReactionCell.SIZE_CELL, ReactionCell.SIZE_CELL, Gravity.TOP, 0, 4, 0, 0));
             return new RecyclerListView.Holder(cell);
         }
 
@@ -125,5 +154,9 @@ public class ReactionsBubbleListView extends RecyclerListView {
             return reactions.size();
         }
 
+    }
+
+    public interface ReactionSelectedListener {
+        void onSelected(ReactionCell cell, String reaction);
     }
 }

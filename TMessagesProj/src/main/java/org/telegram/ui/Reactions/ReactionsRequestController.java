@@ -4,8 +4,6 @@ import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BaseController;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.RequestDelegate;
@@ -50,12 +48,25 @@ public class ReactionsRequestController extends BaseController {
     }
 
     @Nullable
-    public List<TLRPC.TL_availableReaction> getReactions(@Nullable TLRPC.ChatFull info) {
+    public List<TLRPC.TL_availableReaction> getReactions(@Nullable TLRPC.ChatFull chatInfo, @Nullable TLRPC.UserFull userInfo) {
         final TLRPC.TL_messages_availableReactions reactions = cachedReactions();
-        if (info == null || reactions == null) {
+        if ((chatInfo == null && userInfo == null) || reactions == null) {
             return null;
         }
-        return reactions.reactions.stream().filter(reaction -> info.available_reactions.contains(reaction.reaction)).collect(Collectors.toList());
+        if (chatInfo != null) {
+            List<TLRPC.TL_availableReaction> filtered = reactions
+                    .reactions
+                    .stream()
+                    .filter(reaction -> chatInfo.available_reactions.contains(reaction.reaction))
+                    .collect(Collectors.toList());
+
+            if (filtered.isEmpty()) {
+                return null;
+            } else {
+                return filtered;
+            }
+        }
+        return reactions.reactions;
     }
 
     public boolean canSendReaction(MessageObject messageObject) {
@@ -89,7 +100,17 @@ public class ReactionsRequestController extends BaseController {
         });
     }
 
-    public int requestReactions(RequestDelegate onComplete) {
+    public void prefetchReactions() {
+        requestReactions(null);
+    }
+
+    /**
+     * Загружает список доступных реакций, если реакции закешированы и срок актуальный, то просто берет из кеш, если кеш неактуальный пытается обновить
+     *
+     * @param onComplete каллбек (TLRPC.TL_messages_availableReactions, TLRPC.TL_error error)
+     * @return requestToken
+     */
+    public int requestReactions(@Nullable RequestDelegate onComplete) {
         TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
         final TLRPC.TL_messages_availableReactions reactions = cachedReactions();
         if (reactions != null) {

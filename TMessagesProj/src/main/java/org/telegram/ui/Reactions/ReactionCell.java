@@ -23,13 +23,15 @@ public class ReactionCell extends FrameLayout {
     private TLRPC.Document sticker;
     private Object parentObject;
 
+    public static int SIZE_CELL = 34;
+
     public ReactionCell(Context context) {
         super(context);
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
         imageView.setLayerNum(1);
-        addView(imageView, LayoutHelper.createFrame(34, 34));
+        addView(imageView, LayoutHelper.createFrame(SIZE_CELL, SIZE_CELL));
         setFocusable(true);
     }
 

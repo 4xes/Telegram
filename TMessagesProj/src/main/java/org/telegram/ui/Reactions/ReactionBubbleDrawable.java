@@ -26,16 +26,15 @@ public class ReactionBubbleDrawable extends Drawable {
     final Drawable drawableCircleSmall;
 
     public static final int heightBubbleDp = 72;
-    public static final int heightBubble = AndroidUtilities.dp(heightBubbleDp);
     private final Rect contentPadding = new Rect();
 
-    private static final int circleSize = AndroidUtilities.dp(24);
-    private static final int circlePaddingRight = AndroidUtilities.dp(22);
-    private static final int circlePaddingBottom = AndroidUtilities.dp(11);
+    private final int circleSize = AndroidUtilities.dp(24);
+    private final int circlePaddingRight = AndroidUtilities.dp(22);
+    private final int circlePaddingBottom = AndroidUtilities.dp(11);
 
-    private static final int circleSmallSize = AndroidUtilities.dp(16);
-    private static final int circleSmallPaddingRight = AndroidUtilities.dp(22);
-    private static final int circleSmallPaddingBottom = 0;
+    private final int circleSmallSize = AndroidUtilities.dp(16);
+    private final int circleSmallPaddingRight = AndroidUtilities.dp(22);
+    private final int circleSmallPaddingBottom = 0;
 
     private static final int circleOverSize = AndroidUtilities.dp(14);
     private final RectF circleOverRect = new RectF(0f, 0f, circleOverSize, circleOverSize);
@@ -56,7 +55,7 @@ public class ReactionBubbleDrawable extends Drawable {
         drawableCircleSmall = context.getResources().getDrawable(R.drawable.popup_reactions_circle_small);
         backgroundEnd.getPadding(contentPadding);
 
-        contentHeight = heightBubble - contentPadding.top - contentPadding.bottom;
+        contentHeight = AndroidUtilities.dp(heightBubbleDp) - contentPadding.top - contentPadding.bottom;
 
         overPaint.setColor(Color.WHITE);
         overPaint.setStyle(Paint.Style.FILL);
@@ -73,7 +72,7 @@ public class ReactionBubbleDrawable extends Drawable {
             backgroundEnd.setColorFilter(colorFilter);
             drawableCircle.setColorFilter(colorFilter);
             drawableCircleSmall.setColorFilter(colorFilter);
-            overPaint.setColor(backgroundColor);
+            overPaint.setColor(color);
         }
     }
 
@@ -135,7 +134,6 @@ public class ReactionBubbleDrawable extends Drawable {
     public void setAlpha(int alpha) {
 
     }
-
     public Rect getContentPadding() {
         return contentPadding;
     }

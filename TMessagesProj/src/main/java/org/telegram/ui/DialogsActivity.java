@@ -103,6 +103,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -173,6 +174,8 @@ import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.RecyclerItemsEnterAnimator;
+import org.telegram.ui.Reactions.ReactionBubbleDrawable;
+import org.telegram.ui.Reactions.ReactionsBubbleView;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -3535,6 +3538,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         updateMenuButton(false);
+
+//        getAccountInstance().getReactionsController().requestReactions(new RequestDelegate() {
+//            @Override
+//            public void run(TLObject response, TLRPC.TL_error error) {
+//                TLRPC.TL_messages_availableReactions reactions = (TLRPC.TL_messages_availableReactions) response;
+//                ReactionsBubbleView bubbleLayout = new ReactionsBubbleView(getParentActivity(), reactions.reactions, null);
+//                bubbleLayout.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+//                contentView.addView(bubbleLayout, LayoutHelper.createFrame(200, ReactionBubbleDrawable.heightBubbleDp, Gravity.CENTER, 100,100, 100, 100));
+//            }
+//        });
         return fragmentView;
     }
 
