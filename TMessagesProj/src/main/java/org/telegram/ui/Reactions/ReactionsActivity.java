@@ -94,7 +94,7 @@ public class ReactionsActivity extends BaseFragment {
 
     private void loadReactions(boolean notify) {
         reactionsLoading = true;
-        int reqId = getAccountInstance().getReactionsController().requestReactions((response, error) -> {
+        int reqId = getAccountInstance().getReactionsController().getAvailableReactions((response, error) -> {
             AndroidUtilities.runOnUIThread(() -> getNotificationCenter().doOnIdle(() -> {
                 DiffCallback callback = saveListState();
                 reactionsLoading = false;
@@ -254,6 +254,7 @@ public class ReactionsActivity extends BaseFragment {
         };
         listView.setLayoutManager(layoutManager);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
+        listView.setHasFixedSize(true);
         recyclerItemsEnterAnimator = new RecyclerItemsEnterAnimator(listView, false);
         DefaultItemAnimator defaultItemAnimator = new DefaultItemAnimator();
         defaultItemAnimator.setDelayAnimations(false);

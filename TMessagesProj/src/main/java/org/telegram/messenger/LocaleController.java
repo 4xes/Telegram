@@ -1824,6 +1824,28 @@ public class LocaleController {
         }
     }
 
+    public static String formatShortNumber(int number) {
+        StringBuilder K = new StringBuilder();
+        int lastDec = 0;
+        while (number / 1000 > 0) {
+            K.append("K");
+            lastDec = (number % 1000) / 100;
+            number /= 1000;
+        }
+        if (lastDec != 0 && K.length() > 0) {
+            if (K.length() == 2) {
+                return String.format(Locale.US, "%d.%dM", number, lastDec);
+            } else {
+                return String.format(Locale.US, "%d.%d%s", number, lastDec, K.toString());
+            }
+        }
+        if (K.length() == 2) {
+            return String.format(Locale.US, "%dM", number);
+        } else {
+            return String.format(Locale.US, "%d%s", number, K.toString());
+        }
+    }
+
     public static String formatUserStatus(int currentAccount, TLRPC.User user) {
         return formatUserStatus(currentAccount, user, null);
     }

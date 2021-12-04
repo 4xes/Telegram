@@ -415,6 +415,7 @@
     <string name="ReactionsEnable">Enable Reactions</string>
     <string name="ReactionsEnableHint">Allow subscribers to react to channel posts.</string>
     <string name="ReactionsAvailable">Available reactions</string>
+    <string name="Reacted">%1$s Reacted</string>
     <string name="ChannelMembers">Members</string>
     <string name="ChannelAddToGroup">Add to group</string>
     <string name="ChannelAddToChannel">Add to channel</string>

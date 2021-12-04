@@ -1,5 +1,7 @@
 package org.telegram.ui.Popup;
 
+import static org.telegram.ui.Popup.ChatPopupWindow.POPUP_WIDTH;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -22,6 +24,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.List;
@@ -71,7 +74,7 @@ public class ChatPopupItemsListView extends RecyclerListView {
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             ActionBarMenuSubItem cell = new ActionBarMenuSubItem(parent.getContext(), true, true, resourcesProvider);
             cell.setItemHeight(MENU_ITEM_HEIGHT);
-            cell.setMinimumWidth(AndroidUtilities.dp(ChatPopupWindow.POPUP_WIDTH));
+            cell.setLayoutParams(LayoutHelper.createFrame(POPUP_WIDTH, MENU_ITEM_HEIGHT));
             return new Holder(cell);
         }
 

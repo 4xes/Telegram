@@ -41,7 +41,7 @@ public class ReactionBubbleDrawable extends Drawable {
 
     private final Rect bounds = new Rect();
 
-    private float progress = 0.99f;
+    private float progressAnimation = 1f;
 
     private final Paint overPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int backgroundColor = Color.WHITE;
@@ -76,16 +76,23 @@ public class ReactionBubbleDrawable extends Drawable {
         }
     }
 
+    public void setProgressAnimation(float progressAnimation) {
+        if (this.progressAnimation != progressAnimation) {
+            this.progressAnimation = progressAnimation;
+            invalidateSelf();
+        }
+    }
+
     public int getContentHeight() {
         return contentHeight;
     }
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        if (progress == 1f) {
+        if (progressAnimation == 1f) {
             backgroundEnd.draw(canvas);
         } else {
-            if (progress == 0f) {
+            if (progressAnimation == 0f) {
                 backgroundStart.draw(canvas);
             } else {
                 drawSmallCircle(canvas);
@@ -102,7 +109,7 @@ public class ReactionBubbleDrawable extends Drawable {
         final float y = bounds.height() - circlePaddingBottom - circleSize;
         canvas.translate(x, y);
         final float centerCircle = circleSize / 2f;
-        canvas.scale(progress, progress, centerCircle, centerCircle);
+        canvas.scale(progressAnimation, progressAnimation, centerCircle, centerCircle);
         drawableCircle.draw(canvas);
         canvas.restoreToCount(saveTranslate);
     }
@@ -114,7 +121,7 @@ public class ReactionBubbleDrawable extends Drawable {
         final float y = bounds.height() - circlePaddingBottom - circleSize + offset;
         canvas.translate(x, y);
         final float centerCircle = circleOverSize / 2f;
-        canvas.scale(progress, progress, centerCircle, centerCircle);
+        canvas.scale(progressAnimation, progressAnimation, centerCircle, centerCircle);
         canvas.drawOval(circleOverRect, overPaint);
         canvas.restoreToCount(saveTranslate);
     }
@@ -125,7 +132,7 @@ public class ReactionBubbleDrawable extends Drawable {
         final float y = bounds.height() - circleSmallPaddingBottom - circleSmallSize;
         canvas.translate(x, y);
         final float centerCircle = circleSmallSize / 2f;
-        canvas.scale(progress, progress, centerCircle, centerCircle);
+        canvas.scale(progressAnimation, progressAnimation, centerCircle, centerCircle);
         drawableCircleSmall.draw(canvas);
         canvas.restoreToCount(saveTranslate);
     }

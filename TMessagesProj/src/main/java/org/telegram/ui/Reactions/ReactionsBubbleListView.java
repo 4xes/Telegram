@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -36,23 +37,106 @@ public class ReactionsBubbleListView extends RecyclerListView {
     private final Path mask = new Path();
     private final int cornerRadius;
 
+    private Matrix gradientMatrix;
     private final Paint gradientPaint = new Paint();
 
-    private LinearGradient gradientShader;
+    private LinearGradient startGradientShader;
+    private LinearGradient endGradientShader;
 
     public static final int SPACING = 4;
     public static final int HORIZONTAL_PADDING = 14;
 
     private final int horizontalPadding = AndroidUtilities.dp(HORIZONTAL_PADDING);
-    private float progress = 1f;
+    private float progressAnimation = 1f;
 
     private final List<TLRPC.TL_availableReaction> reactions;
+
+    private int colorBackground = Color.WHITE;
+
+    class ScrollLayoutManager extends LinearLayoutManager {
+
+        final int shrinkPadding = AndroidUtilities.dp(10);
+        final int shrinkWidth = shrinkPadding * 2;
+
+        public ScrollLayoutManager(Context context) {
+            super(context, LinearLayoutManager.HORIZONTAL, false);
+        }
+
+        @Override
+        public void onLayoutCompleted(State state) {
+            super.onLayoutCompleted(state);
+            rescaleChildren();
+        }
+
+        @Override
+        public int scrollHorizontallyBy(int dx, Recycler recycler, State state) {
+            int orientation = getOrientation();
+            if (orientation == HORIZONTAL) {
+                int scrolled = super.scrollHorizontallyBy(dx, recycler, state);
+
+                rescaleChildren();
+                return scrolled;
+            } else {
+                return 0;
+            }
+        }
+
+        private void rescaleChildren() {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child != null) {
+                    int left = getDecoratedLeft(child);
+                    int right = getDecoratedRight(child);
+
+                    //int width = right - left;
+
+                    int distance = 0;
+                    boolean isLeft = false;
+                    if (left < shrinkPadding) {
+                        isLeft = true;
+                        distance = shrinkPadding - left;
+                    } else if (right > getMeasuredWidth() - shrinkPadding) {
+                        distance = right - (getMeasuredWidth() - shrinkPadding);
+                    }
+
+                    if (distance == 0) {
+                        child.setScaleX(1f);
+                        child.setScaleY(1f);
+                        child.setTranslationX(0f);
+                    } else {
+                        float percentShrink = (float) distance / (float) shrinkWidth;
+                        float scale = 1f - Math.min(percentShrink / 3f, 0.25f);
+                        child.setScaleX(scale);
+                        child.setScaleY(scale);
+
+//                        float offset = (width / 2f) * (1f - scale);
+//                        if (isLeft) {
+//                            child.setTranslationX(offset);
+//                        } else {
+//                            child.setTranslationX(-offset);
+//                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void setProgressAnimation(float progressAnimation) {
+        if (this.progressAnimation != progressAnimation) {
+            this.progressAnimation = progressAnimation;
+            invalidate();
+        }
+    }
 
     public ReactionsBubbleListView(Context context, int cornerRadius, List<TLRPC.TL_availableReaction> reactions, @Nullable ReactionSelectedListener selectedListener) {
         super(context);
         this.reactions = reactions;
         this.cornerRadius = cornerRadius;
         gradientPaint.setStyle(Paint.Style.FILL);
+        startGradientShader = createShader(true);
+        endGradientShader = createShader(false);
+        gradientMatrix = new Matrix();
+
         if (isSupportOutline()) {
             setClipToOutline(true);
             setOutlineProvider(new ViewOutlineProvider() {
@@ -63,24 +147,11 @@ public class ReactionsBubbleListView extends RecyclerListView {
             });
         }
         setPadding(horizontalPadding, 0, horizontalPadding, 0);
-        addItemDecoration(new ItemDecoration() {
-
-            final int spacing = AndroidUtilities.dp(SPACING);
-
-            @Override
-            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
-                int position = parent.getChildAdapterPosition(view);
-
-                if (position < state.getItemCount()) {
-                    outRect.set(0,0,spacing, 0);
-                } else {
-                    outRect.setEmpty();
-                }
-            }
-        });
+        addItemDecoration(new SpacingHorizontalDecorator(AndroidUtilities.dp(SPACING)));
+        setHasFixedSize(true);
         setClipToPadding(false);
         setSelectorDrawableColor(Color.TRANSPARENT);
-        setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        setLayoutManager(new ScrollLayoutManager(getContext()));
         setAdapter(new ReactionsAdapter());
         setOnItemClickListener((view, position) -> {
                 if (selectedListener != null) {
@@ -90,11 +161,17 @@ public class ReactionsBubbleListView extends RecyclerListView {
         );
     }
 
+    public int calculateContent() {
+        int cellsWidth = AndroidUtilities.dp(ReactionCell.SIZE_CELL) * reactions.size();
+        int spacing = AndroidUtilities.dp(SPACING) * (reactions.size() - 1);
+        int padding = AndroidUtilities.dp(HORIZONTAL_PADDING) * 2;
+        return cellsWidth + spacing + padding;
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         bounds.set(0f, 0f, getMeasuredWidth(), getMeasuredHeight());
-
         rebuildMask();
     }
 
@@ -102,11 +179,30 @@ public class ReactionsBubbleListView extends RecyclerListView {
     protected void dispatchDraw(Canvas canvas) {
         if (isSupportOutline()) {
             super.dispatchDraw(canvas);
+            drawFading(canvas);
         } else {
             int save = canvas.save();
             canvas.clipPath(mask);
             super.dispatchDraw(canvas);
+            drawFading(canvas);
             canvas.restoreToCount(save);
+        }
+    }
+
+    public void drawFading(Canvas canvas) {
+        int alpha = Math.round(255 * progressAnimation);
+        if (alpha != 0) {
+            gradientMatrix.setTranslate(bounds.left, 0);
+            startGradientShader.setLocalMatrix(gradientMatrix);
+            gradientPaint.setShader(startGradientShader);
+            gradientPaint.setAlpha(alpha);
+            canvas.drawRect(bounds.left, bounds.top, bounds.left + horizontalPadding, bounds.bottom, gradientPaint);
+
+            gradientMatrix.setTranslate(bounds.right - horizontalPadding, 0);
+            endGradientShader.setLocalMatrix(gradientMatrix);
+            gradientPaint.setShader(endGradientShader);
+            gradientPaint.setAlpha(alpha);
+            canvas.drawRect(bounds.right - horizontalPadding, bounds.top, bounds.right, bounds.bottom, gradientPaint);
         }
     }
 
@@ -124,8 +220,17 @@ public class ReactionsBubbleListView extends RecyclerListView {
 
     @Override
     public void setBackgroundColor(int color) {
-        gradientShader = new LinearGradient(0, horizontalPadding, 0, 0, Color.TRANSPARENT, color, Shader.TileMode.CLAMP);
-        gradientPaint.setShader(gradientShader);
+        if (colorBackground != color) {
+            colorBackground = color;
+            startGradientShader = createShader(true);
+            endGradientShader = createShader(true);
+        }
+    }
+
+    public LinearGradient createShader(boolean isLeft) {
+        int start = isLeft ? colorBackground : Color.TRANSPARENT;
+        int end = isLeft ? Color.TRANSPARENT : colorBackground;
+        return new LinearGradient(0, 0, horizontalPadding, 0, start, end, Shader.TileMode.CLAMP);
     }
 
     private class ReactionsAdapter extends RecyclerListView.SelectionAdapter {

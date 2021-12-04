@@ -10,6 +10,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.List;
@@ -28,10 +29,19 @@ public class ReactionsBubbleView extends FrameLayout {
         setBackground(bubbleDrawable);
     }
 
+    public void setProgressAnimation(float progressAnimation) {
+        bubbleDrawable.setProgressAnimation(progressAnimation);
+        bubbleListView.setProgressAnimation(progressAnimation);
+    }
+
     public Rect getPaddingDrawable() {
         Rect padding = new Rect();
         bubbleDrawable.getPadding(padding);
         return padding;
+    }
+
+    public int calculateContent() {
+        return bubbleListView.calculateContent();
     }
 
     public int getContentHeight() {
@@ -41,6 +51,7 @@ public class ReactionsBubbleView extends FrameLayout {
     @Override
     public void setBackgroundColor(int color) {
         bubbleDrawable.setBackgroundColor(color);
+        bubbleListView.setBackgroundColor(color);
     }
 
     @Override

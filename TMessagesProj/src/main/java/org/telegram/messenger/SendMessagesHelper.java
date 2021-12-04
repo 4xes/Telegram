@@ -2653,33 +2653,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return voteSendTime.get(pollId, 0L);
     }
 
-    public void sendReaction(MessageObject messageObject, CharSequence reaction, ChatActivity parentFragment) {
-        if (messageObject == null || parentFragment == null) {
-            return;
-        }
-        TLRPC.TL_messages_sendReaction req = new TLRPC.TL_messages_sendReaction();
-        req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
-        req.msg_id = messageObject.getId();
-        if (reaction != null) {
-            req.reaction = reaction.toString();
-            req.flags |= 1;
-        }
-        getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response != null) {
-                getMessagesController().processUpdates((TLRPC.Updates) response, false);
-            }
-            /*AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    waitingForVote.remove(key);
-                    if (finishRunnable != null) {
-                        finishRunnable.run();
-                    }
-                }
-            });*/
-        });
-    }
-
     public void requestUrlAuth(String url, ChatActivity parentFragment, boolean ask) {
         TLRPC.TL_messages_requestUrlAuth req = new TLRPC.TL_messages_requestUrlAuth();
         req.url = url;
