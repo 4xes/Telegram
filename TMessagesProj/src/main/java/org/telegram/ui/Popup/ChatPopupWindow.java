@@ -325,6 +325,30 @@ public class ChatPopupWindow extends FrameLayout {
 
     }
 
+    private final int translationSize = AndroidUtilities.dp(40);
+
+    public void animateMenu(float progress) {
+        childContainer.setTranslationX(container.getMeasuredWidth() * progress);
+        if (reactionsView != null) {
+            reactionsView.setAlpha(progress);
+        }
+        float translationX = -translationSize * (1f - progress);
+        float translationY = translationX * 0.5f;
+        if (menuItemReactionView != null) {
+            menuItemReactionView.setTranslationX(translationX);
+            menuItemReactionView.setTranslationY(translationY);
+        }
+        if (divider != null) {
+            divider.setTranslationX(translationX);
+            divider.setTranslationY(translationY);
+        }
+        if (itemsListView != null) {
+            itemsListView.setTranslationX(translationX);
+            itemsListView.setTranslationY(translationY);
+        }
+        dimLayout.invalidate();
+    }
+
     public void animateShowMenu() {
         if (animator != null) {
             animator.cancel();
@@ -334,11 +358,7 @@ public class ChatPopupWindow extends FrameLayout {
         animator.setInterpolator(AndroidUtilities.decelerateInterpolator);
         animator.addUpdateListener(animation -> {
             float progress = (float) animation.getAnimatedValue();
-            childContainer.setTranslationX(container.getMeasuredWidth() * progress);
-            if (reactionsView != null) {
-                reactionsView.setAlpha(progress);
-            }
-            dimLayout.invalidate();
+            animateMenu(progress);
         });
         animator.addListener(new HideViewAfterAnimation(reactionsView));
         animator.start();
@@ -360,11 +380,7 @@ public class ChatPopupWindow extends FrameLayout {
         animator.setInterpolator(AndroidUtilities.decelerateInterpolator);
         animator.addUpdateListener(animation -> {
             float progress = (float) animation.getAnimatedValue();
-            childContainer.setTranslationX(container.getMeasuredWidth() * progress);
-            if (reactionsView != null) {
-                reactionsView.setAlpha(progress);
-            }
-            dimLayout.invalidate();
+            animateMenu(progress);
         });
         animator.addListener(new ShowViewAfterAnimation(reactionsView));
         animator.start();
