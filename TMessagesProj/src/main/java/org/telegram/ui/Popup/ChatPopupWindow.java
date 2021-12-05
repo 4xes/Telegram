@@ -496,8 +496,10 @@ public class ChatPopupWindow extends FrameLayout {
         if (sumCount == 1) {
             final TLRPC.User user = reactedUsers != null? reactedUsers.get(0): readUsers.get(0);
             menuItemReactionView.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-            TLRPC.Document sticker = requestController.getStaticIcon(userReactions.get(user.id));
-            menuItemReactionView.setReaction(sticker);
+            if (userReactions != null && !userReactions.isEmpty()) {
+                TLRPC.Document sticker = requestController.getStaticIcon(userReactions.get(user.id));
+                menuItemReactionView.setReaction(sticker);
+            }
             menuItemReactionView.setOnClickListener(v -> {
                 if (userSelectedListener != null) {
                     userSelectedListener.onSelected(user);
