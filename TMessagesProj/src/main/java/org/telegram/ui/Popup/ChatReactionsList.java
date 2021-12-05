@@ -26,9 +26,11 @@ public class ChatReactionsList extends RecyclerListView {
     ReactionsPagingController controller;
     final LinearLayoutManager layoutManager;
     final ReactionsAdapter adapter;
+    ChatPopupWindow.OnUserSelectedListener userSelectedListener;
 
-    public ChatReactionsList(Context context, Theme.ResourcesProvider resourcesProvider, @Nullable ReactionsPagingController controller) {
+    public ChatReactionsList(Context context, Theme.ResourcesProvider resourcesProvider, @Nullable ReactionsPagingController controller, ChatPopupWindow.OnUserSelectedListener userSelectedListener) {
         super(context, resourcesProvider);
+        this.userSelectedListener = userSelectedListener;
         setSelectorDrawableColor(Color.TRANSPARENT);
         setHasFixedSize(true);
         this.controller = controller;
@@ -43,12 +45,24 @@ public class ChatReactionsList extends RecyclerListView {
         });
         adapter = new ReactionsAdapter();
         adapter.updateIndexes();
+        setOnItemClickListener((view, position) -> {
+            if (view instanceof UserReactionCell) {
+                if (userSelectedListener != null && controller != null) {
+                    userSelectedListener.onSelected(controller.getUser(position));
+                }
+            }
+        });
+        setAdapter(adapter);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
         if (this.controller != null) {
             if (!controller.isEnded()) {
                 controller.load(this::update);
             }
         }
-        setAdapter(adapter);
     }
 
     public void setController(ReactionsPagingController controller) {
@@ -120,11 +134,12 @@ public class ChatReactionsList extends RecyclerListView {
             if (viewType == TYPE_USER_CELL) {
                 UserReactionCell cell = new UserReactionCell(parent.getContext(), true, true, resourcesProvider);
                 cell.setMinimumWidth(AndroidUtilities.dp(ChatPopupWindow.POPUP_WIDTH));
+                cell.updateSelectorBackground(false, false);
                 view = cell;
             } else {
                 FlickerLoadingView flickerLoadingView = new FlickerLoadingView(getContext());
                 flickerLoadingView.setIsSingleCell(true);
-                flickerLoadingView.setViewType(FlickerLoadingView.MESSAGE_SEEN_TYPE);
+                flickerLoadingView.setViewType(FlickerLoadingView.REACTION_ITEM);
                 flickerLoadingView.setItemsCount(5);
                 flickerLoadingView.showDate(false);
                 flickerLoadingView.setPaddingLeft(AndroidUtilities.dp(5));

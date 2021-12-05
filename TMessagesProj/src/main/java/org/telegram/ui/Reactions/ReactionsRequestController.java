@@ -293,10 +293,13 @@ public class ReactionsRequestController extends BaseController {
         req.id = messageObject.getId();
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(messageObject.getDialogId());
         req.limit = limit;
-        req.offset = offset;
         if (reactionFilter != null) {
             req.reaction = reactionFilter;
             req.flags |= 1;
+        }
+        if (offset != null) {
+            req.offset = offset;
+            req.flags |= 2;
         }
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                 if (error != null) {

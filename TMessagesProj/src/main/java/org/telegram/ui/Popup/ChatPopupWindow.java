@@ -39,6 +39,7 @@ import org.telegram.ui.Reactions.ReactionsBubbleView;
 import org.telegram.ui.Reactions.ReactionsPagingController;
 import org.telegram.ui.Reactions.ReactionsRequestController;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -140,6 +141,9 @@ public class ChatPopupWindow extends FrameLayout {
         backButton.setTextAndIcon(LocaleController.getString("Back", R.string.Back), R.drawable.msg_arrow_back);
         backButton.setOnClickListener(onClickListener);
         backButton.setItemHeight(MENU_ACTION_HEIGHT);
+        backButton.setColors(
+                getThemedColor(Theme.key_actionBarDefaultSubmenuItem),
+                getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
         FrameLayout.LayoutParams layoutParams = LayoutHelper.createFrame(POPUP_WIDTH, MENU_ACTION_HEIGHT, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         backButton.setLayoutParams(layoutParams);
         return backButton;
@@ -287,7 +291,7 @@ public class ChatPopupWindow extends FrameLayout {
             childContainer.addView(backAction);
             childContainer.addView(createDivider());
 
-            ChatReactionsList chatReactionsList = new ChatReactionsList(getContext(), resourcesProvider, controller);
+            ChatReactionsList chatReactionsList = new ChatReactionsList(getContext(), resourcesProvider, controller, userSelectedListener);
             childContainer.addView(chatReactionsList);
             MarginLayoutParams itemsParams = ((MarginLayoutParams) chatReactionsList.getLayoutParams());
             itemsParams.topMargin = AndroidUtilities.dp(MENU_ACTION_HEIGHT + MENU_ITEM_DIVIDER_HEIGHT);
@@ -427,21 +431,28 @@ public class ChatPopupWindow extends FrameLayout {
                 @Override
                 public View createView(int position) {
                     ArrayList<TLRPC.User> filtered;
+                    final Map<Long, String> reactions;
                     String filter = filters.get(position);
+                    String offsetNext;
                     if (filter == null) {
+                        reactions = userReactions;
                         filtered = new ArrayList<>(reactedUsers);
+                        offsetNext = offset;
                     } else {
                         filtered = new ArrayList<>();
+                        reactions = new HashMap<>();
+                        offsetNext = null;
                         for (TLRPC.User user: users) {
                             String reaction = userReactions.get(user.id);
                             if (filter.equals(reaction)) {
                                 filtered.add(user);
+                                reactions.put(user.id, filter);
                             }
                         }
                     }
-                    ReactionsPagingController controller = new ReactionsPagingController(requestController, messageObject, currentAccount, null, filtered, userReactions, filter, counts.get(position), offset);
+                    ReactionsPagingController controller = new ReactionsPagingController(requestController, messageObject, currentAccount, null, filtered, reactions, filter, counts.get(position), offsetNext);
                     FrameLayout parent = new FrameLayout(getContext());
-                    ChatReactionsList list = new ChatReactionsList(getContext(), resourcesProvider, controller);
+                    ChatReactionsList list = new ChatReactionsList(getContext(), resourcesProvider, controller, userSelectedListener);
                     parent.addView(list);
                     return parent;
                 }
@@ -497,10 +508,10 @@ public class ChatPopupWindow extends FrameLayout {
             if (reactedCount == 0 && readCount > 0) {
                 menuItemReactionView.setTitle(LocaleController.formatPluralString(isVoice ? "MessagePlayed" : "MessageSeen", readCount));
                 menuItemReactionView.setOnClickListener(v -> createSimpleSecondMenu(requestController, messageObject, currentAccount, readUsers, reactedUsers, userReactions, count, offset));
-            } else if (reactedCount > 0 && readCount == 0) {
+            } else if (reactedCount > 10 && readCount == 0) {
                 menuItemReactionView.setTitle(LocaleController.formatString("Reacted", R.string.Reacted, String.valueOf(count)));
                 menuItemReactionView.setOnClickListener(v -> createTabsSecondMenu(requestController, messageObject, currentAccount, reactedUsers, userReactions, count, offset));
-            } else if (reactedCount > 0 && readCount > 0) {
+            } else if (reactedCount > 0) {
                 menuItemReactionView.setTitle(LocaleController.formatString("Reacted", R.string.Reacted, count + "/" + sumCount));
                 menuItemReactionView.setOnClickListener(v -> createSimpleSecondMenu(requestController, messageObject, currentAccount, readUsers, reactedUsers, userReactions, count, offset));
             } else {

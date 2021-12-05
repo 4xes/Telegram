@@ -34,6 +34,7 @@ public class FlickerLoadingView extends View {
     public final static int MESSAGE_SEEN_TYPE = 13;
     public final static int CHAT_THEMES_TYPE = 14;
     public final static int MEMBER_REQUESTS_TYPE = 15;
+    public final static int REACTION_ITEM = 16;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -441,7 +442,41 @@ public class FlickerLoadingView extends View {
                 canvas.drawCircle(getMeasuredWidth() - AndroidUtilities.dp(8 + 24 + 12 + 12) + AndroidUtilities.dp(13) + AndroidUtilities.dp(12) * i, cy, AndroidUtilities.dp(13f), backgroundPaint);
                 canvas.drawCircle(getMeasuredWidth() - AndroidUtilities.dp(8 + 24 + 12 + 12) + AndroidUtilities.dp(13) + AndroidUtilities.dp(12) * i, cy, AndroidUtilities.dp(12f), paint);
             }
-        } else if (getViewType() == CHAT_THEMES_TYPE) {
+        } else if (getViewType() == REACTION_ITEM) {
+            int k = 0;
+            while (h <= getMeasuredHeight()) {
+                float cy = (k * getCellHeight(getMeasuredHeight())) + getCellHeight(getMeasuredHeight()) / 2f;
+                int r = AndroidUtilities.dp(17);
+
+                canvas.drawCircle(AndroidUtilities.dp(10) + r, cy,  r, paint);
+
+                float textHeight = AndroidUtilities.dp(8);
+                float cornerRadius = textHeight / 2f;
+                rectF.left = AndroidUtilities.dp(57);
+                rectF.right = rectF.left + AndroidUtilities.dp(40);
+                rectF.top = cy - cornerRadius;
+                rectF.bottom = cy + cornerRadius;
+                canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, paint);
+
+                rectF.left = rectF.right + AndroidUtilities.dp(4);
+                if ((k & 1) == 0) {
+                    rectF.right = rectF.left + AndroidUtilities.dp(50);
+                } else {
+                    rectF.right = rectF.left + AndroidUtilities.dp(60);
+                }
+                canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, paint);
+
+                r = AndroidUtilities.dp(11);
+                canvas.drawCircle(getMeasuredWidth()  - AndroidUtilities.dp(10) - r, cy,  r, paint);
+
+                h += getCellHeight(getMeasuredWidth());
+                k++;
+                if (isSingleCell && k >= itemsCount) {
+                    break;
+                }
+            }
+        }
+        else if (getViewType() == CHAT_THEMES_TYPE) {
             int x = AndroidUtilities.dp(12);
             int itemWidth = AndroidUtilities.dp(77);
             int INNER_RECT_SPACE = AndroidUtilities.dp(4);
@@ -595,6 +630,8 @@ public class FlickerLoadingView extends View {
             return AndroidUtilities.dp(103);
         } else if (getViewType() == MEMBER_REQUESTS_TYPE) {
             return AndroidUtilities.dp(107);
+        } else if (getViewType() == REACTION_ITEM) {
+            return AndroidUtilities.dp(44);
         }
         return 0;
     }

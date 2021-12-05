@@ -61,7 +61,7 @@ public class ReactionsPagingController {
                 }
             }
             userReactions.putAll(mapReactions);
-            if (reactionCount <= reactedUsers.size()) {
+            if (nextOffset == null) {
                 isEnded = true;
             }
             userUpdate.onLoaded(oldSize, recentReactedUsers.size());
@@ -79,8 +79,7 @@ public class ReactionsPagingController {
     @Nullable
     public TLRPC.Document getReaction(long userId) {
         String reaction = userReactions.get(userId);
-        TLRPC.Document document = requestController.getStaticIcon(reaction);
-        return document;
+        return requestController.getStaticIcon(reaction);
     }
 
     public boolean isLoading() {

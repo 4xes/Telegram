@@ -45,13 +45,13 @@ public class UserReactionCell extends FrameLayout {
         selectorColor = getThemedColor(Theme.key_dialogButtonSelector);
 
         avatarImageView = new BackupImageView(context);
-        addView(avatarImageView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL, 13, 0, 0, 0));
+        addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER_VERTICAL, 10, 0, 0, 0));
         avatarImageView.setRoundRadius(AndroidUtilities.dp(16));
         nameView = new TextView(context);
         nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameView.setLines(1);
         nameView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 59, 0, 59, 0));
+        addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 57, 0, 59, 0));
 
         nameView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
 
@@ -90,11 +90,10 @@ public class UserReactionCell extends FrameLayout {
         setBackground(Theme.createRadSelectorDrawable(selectorColor, topBackgroundRadius, bottomBackgroundRadius));
     }
 
-
     private void setReaction(TLRPC.Document document) {
-        String parentObject = "react";
+        String parentObject = null;
         if (document != null) {
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 80);
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundGray, 1.0f);
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
                 if (svgThumb != null) {

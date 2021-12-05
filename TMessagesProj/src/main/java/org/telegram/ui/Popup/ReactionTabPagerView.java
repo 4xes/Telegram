@@ -768,6 +768,18 @@ public class ReactionTabPagerView extends FrameLayout {
                 super.onInitializeAccessibilityNodeInfo(info);
                 info.setSelected(currentTab != null && selectedTabId != -1 && currentTab.id == selectedTabId);
             }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                imageReceiver.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                imageReceiver.onDetachedFromWindow();
+            }
         }
 
         private Paint tabPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
