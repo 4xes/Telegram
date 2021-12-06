@@ -3539,15 +3539,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         updateMenuButton(false);
 
-//        getAccountInstance().getReactionsController().requestReactions(new RequestDelegate() {
-//            @Override
-//            public void run(TLObject response, TLRPC.TL_error error) {
-//                TLRPC.TL_messages_availableReactions reactions = (TLRPC.TL_messages_availableReactions) response;
-//                ReactionsBubbleView bubbleLayout = new ReactionsBubbleView(getParentActivity(), reactions.reactions, null);
-//                bubbleLayout.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
-//                contentView.addView(bubbleLayout, LayoutHelper.createFrame(200, ReactionBubbleDrawable.heightBubbleDp, Gravity.CENTER, 100,100, 100, 100));
-//            }
-//        });
+        getAccountInstance().getReactionsController().prefetchReactions();
+
+
         return fragmentView;
     }
 

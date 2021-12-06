@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 public class MessageObject {
@@ -2131,6 +2132,20 @@ public class MessageObject {
 
     public boolean hasReactions() {
         return messageOwner.reactions != null && !messageOwner.reactions.results.isEmpty();
+    }
+
+    public @Nullable ArrayList<TLRPC.TL_reactionCount> getReactionCounts() {
+        if (hasReactions()) {
+            return messageOwner.reactions.results;
+        }
+        return null;
+    }
+
+    public @Nullable TLRPC.TL_messageReactions getReactions() {
+        if (messageOwner.reactions != null) {
+            return messageOwner.reactions;
+        }
+        return null;
     }
 
     public static void updatePollResults(TLRPC.TL_messageMediaPoll media, TLRPC.PollResults results) {

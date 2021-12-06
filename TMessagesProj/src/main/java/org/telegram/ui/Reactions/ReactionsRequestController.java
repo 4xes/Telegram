@@ -104,6 +104,8 @@ public class ReactionsRequestController extends BaseController {
             selectAnimation.put(emoji, reaction.select_animation);
             activateAnimation.put(emoji, reaction.activate_animation);
             effectAnimation.put(emoji, reaction.effect_animation);
+
+            ChatMessageReactionsHelper.updateDocument(emoji, reaction.static_icon);
         }
     }
 
@@ -167,6 +169,16 @@ public class ReactionsRequestController extends BaseController {
     @Nullable
     public TLRPC.Document getStaticIcon(String emoji) {
         return staticIcon.get(emoji);
+    }
+
+    @Nullable
+    public TLRPC.Document getEffectAnimation(String emoji) {
+        return effectAnimation.get(emoji);
+    }
+
+    @Nullable
+    public TLRPC.Document getActivateAnimation(String emoji) {
+        return activateAnimation.get(emoji);
     }
 
     public void getReadParticipants(MessageObject messageObject, int currentAccount, TLRPC.Chat chat, @NonNull ParticipantsReadDelegate onComplete) {

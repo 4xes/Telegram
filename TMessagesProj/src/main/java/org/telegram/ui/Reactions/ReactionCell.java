@@ -59,7 +59,14 @@ public class ReactionCell extends FrameLayout {
         return data;
     }
 
-    public void setSticker(TLRPC.Document document, Object parent) {
+    TLRPC.TL_availableReaction reaction;
+
+    public void setSticker(TLRPC.TL_availableReaction reaction, Object parent) {
+        this.reaction = reaction;
+        TLRPC.Document document = null;
+        if (reaction != null) {
+            document = reaction.select_animation;
+        }
         if (document != null) {
             sticker = document;
             parentObject = parent;
@@ -72,7 +79,12 @@ public class ReactionCell extends FrameLayout {
             } else {
                 imageView.setImage(ImageLocation.getForDocument(document), "66_66", null, null, parentObject);
             }
+
         }
+    }
+
+    public TLRPC.TL_availableReaction getReaction() {
+        return reaction;
     }
 
     public BackupImageView getImageView() {

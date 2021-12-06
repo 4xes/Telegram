@@ -45,20 +45,21 @@ public class ReactionsPreferences {
 
     @Nullable
     public TLRPC.TL_messages_availableReactions getAvailableReactions() {
-        TLRPC.TL_messages_availableReactions availableReactions = null;
-        String string = preferences.getString(KEY_AVAILABLE_REACTIONS, null);
-        if (string != null) {
-            byte[] bytes = Base64.decode(string, Base64.DEFAULT);
-            if (bytes != null) {
-                SerializedData data = new SerializedData(bytes);
-                availableReactions = (TLRPC.TL_messages_availableReactions) TLRPC.TL_messages_availableReactions.TLdeserialize(data, data.readInt32(false), false);
-                data.cleanup();
-            }
-            if (availableReactions == null) {
-                resetReactions();
-            }
-        }
-        return availableReactions;
+        return null;
+//        TLRPC.TL_messages_availableReactions availableReactions = null;
+//        String string = preferences.getString(KEY_AVAILABLE_REACTIONS, null);
+//        if (string != null) {
+//            byte[] bytes = Base64.decode(string, Base64.DEFAULT);
+//            if (bytes != null) {
+//                SerializedData data = new SerializedData(bytes);
+//                availableReactions = (TLRPC.TL_messages_availableReactions) TLRPC.TL_messages_availableReactions.TLdeserialize(data, data.readInt32(false), false);
+//                data.cleanup();
+//            }
+//            if (availableReactions == null) {
+//                resetReactions();
+//            }
+//        }
+//        return availableReactions;
     }
 
     private void resetReactions() {

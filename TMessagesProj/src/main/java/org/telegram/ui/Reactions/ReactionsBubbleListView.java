@@ -251,7 +251,7 @@ public class ReactionsBubbleListView extends RecyclerListView {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             TLRPC.TL_availableReaction object = reactions.get(position);
             ReactionCell cell = (ReactionCell) holder.itemView;
-            cell.setSticker(object.select_animation, "react");
+            cell.setSticker(object, "react");
         }
 
         @Override

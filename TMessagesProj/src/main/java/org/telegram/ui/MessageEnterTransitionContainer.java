@@ -26,12 +26,12 @@ public class MessageEnterTransitionContainer extends View {
         void onDraw(Canvas canvas);
     }
 
-    void addTransition(Transition transition) {
+    public void addTransition(Transition transition) {
         transitions.add(transition);
         checkVisibility();
     }
 
-    void removeTransition(Transition transition) {
+    public void removeTransition(Transition transition) {
         transitions.remove(transition);
         checkVisibility();
     }
