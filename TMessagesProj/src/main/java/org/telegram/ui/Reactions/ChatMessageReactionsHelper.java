@@ -56,6 +56,7 @@ public class ChatMessageReactionsHelper {
     private MessageObject message;
 
     private final ArrayList<TLRPC.TL_reactionCount> counts = new ArrayList<>(11);
+    private final HashMap<String, Long> avatar = new HashMap<>(3);
     private final HashMap<String, Reaction> reactions = new HashMap<>(11);
 
     static class Reaction {
@@ -133,6 +134,9 @@ public class ChatMessageReactionsHelper {
         message = currentMessage;
         counts.clear();
         if (message != null) {
+            if (cell.currentMessagesGroup != null) {
+                return;
+            }
             style = message.shouldDrawWithoutBackground() ? backgroundTheme : bubbleTheme;
             ArrayList<TLRPC.TL_reactionCount> messageCounts = message.getReactionCounts();
             if (messageCounts != null) {
@@ -159,7 +163,7 @@ public class ChatMessageReactionsHelper {
         canvas.translate(
                 left,
                 top);
-        canvas.drawRect(size, debugPaint);
+        //canvas.drawRect(size, debugPaint);
 
         for (int i = 0; i < counts.size(); i++) {
             TLRPC.TL_reactionCount count = counts.get(i);
@@ -190,8 +194,26 @@ public class ChatMessageReactionsHelper {
         float bottomOffset = 0f;
         if (!message.shouldDrawWithoutBackground()) {
             bottomOffset = cell.getBackgroundDrawableBottom() - cell.getTimeY();
+            if (skipTimeHeight()) {
+                bottomOffset += AndroidUtilities.dp(8);
+            }
         }
-        return cell.getBackgroundDrawableBottom() - getHeight() - bottomOffset;
+        float additionalOffset = 0f;
+        if (message.isGif() || message.isVideo() || message.type == 4) {
+            additionalOffset += getHeight();
+            additionalOffset += AndroidUtilities.dp(26);
+        }
+        if (message.isPoll()) {
+            additionalOffset += AndroidUtilities.dp(20);
+        }
+        if (message.type == 14) {
+            additionalOffset += AndroidUtilities.dp(20);
+        }
+        if (message.type == 0) {
+            additionalOffset += AndroidUtilities.dp(15);
+        }
+
+        return cell.getBackgroundDrawableBottom() - getHeight() - bottomOffset + additionalOffset;
     }
 
     public TLRPC.TL_reactionCount isTapReaction(float x, float y) {
@@ -272,6 +294,14 @@ public class ChatMessageReactionsHelper {
         }
     }
 
+    private boolean skipTimeHeight() {
+        int i = counts.size() - 1;
+        if (i % 4 == 0 || i % 4 == 1) {
+            return true;
+        }
+        return false;
+    }
+
     public void calculateReactions() {
         float x = 0f;
         int measureWidth = 0;
@@ -305,12 +335,16 @@ public class ChatMessageReactionsHelper {
             if (measureHeight < reaction.rect.bottom) {
                 measureHeight = (int) reaction.rect.bottom;
             }
+
         }
         if (measureWidth > 0) {
             measureWidth += rightPadding;
         }
         if (measureHeight > 0) {
             measureHeight += bottomPadding;
+            if (skipTimeHeight()) {
+                measureHeight -= bottomPadding;
+            }
         }
         size.set(0, 0 , measureWidth, measureHeight);
     }
@@ -334,7 +368,17 @@ public class ChatMessageReactionsHelper {
         if (counts.size() == 0) {
             return 0;
         }
-        return (int) size.height();
+        int additionalSize = 0;
+        if (message.isPoll()) {
+            additionalSize += AndroidUtilities.dp(16);
+        }
+        if (message.type == 14) {
+            additionalSize += AndroidUtilities.dp(16);
+        }
+        if (message.type == 0) {
+            additionalSize += AndroidUtilities.dp(14);
+        }
+        return (int) size.height() + additionalSize;
     }
 
     public boolean hideChoose = false;

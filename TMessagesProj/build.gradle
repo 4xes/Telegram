@@ -157,6 +157,7 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
+            applicationIdSuffix ".blackfox"
             minifyEnabled true
             shrinkResources false
             multiDexEnabled true
