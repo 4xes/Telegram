@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -108,6 +109,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RawRes;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -183,6 +185,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.IDN;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
@@ -1461,6 +1464,33 @@ public class AndroidUtilities {
         return pathString != null && pathString.toLowerCase().contains("/data/data/" + ApplicationLoader.applicationContext.getPackageName());
     }
 
+    public static byte[] getResource(Context context, @RawRes int id) throws IOException {
+        Resources resources = context.getResources();
+
+        try (InputStream is = resources.openRawResource(id)) {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            byte[] readBuffer = new byte[4 * 1024];
+            int read;
+            do {
+                read = is.read(readBuffer, 0, readBuffer.length);
+                if (read == -1) {
+                    break;
+                }
+                bout.write(readBuffer, 0, read);
+            } while (true);
+
+            return bout.toByteArray();
+        }
+    }
+    public static String readRes(@RawRes int id)  {
+        byte[] bytes;
+        try {
+            bytes = getResource(ApplicationLoader.applicationContext, id);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
     @SuppressLint("WrongConstant")
     public static void lockOrientation(Activity activity) {
         if (activity == null || prevOrientation != -10) {

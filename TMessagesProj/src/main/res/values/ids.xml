@@ -25,6 +25,7 @@
     <item name="acc_action_chat_preview" type="id"/>
     <item name="acc_action_open_forwarded_origin" type="id"/>
     <item name="shake_animation" type="id"/>
+    <item name="dust_renderer_view" type="id"/>
 
     <item name="timeout_callback" type="id"/>
 

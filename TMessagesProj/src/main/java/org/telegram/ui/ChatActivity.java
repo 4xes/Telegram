@@ -114,6 +114,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.blackfox.surface.renderer.DustEffect;
+import com.blackfox.surface.renderer.DustEffectDelegate;
+import com.blackfox.surface.renderer.particle.DustRequest;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.zxing.common.detector.MathUtils;
 
@@ -20762,6 +20765,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chatAdapter != null) {
                         removedIndexes.add(chatAdapter.messagesStartRow + index);
                     }
+//                    if (DustEffect.supports()) {
+//                        ChatMessageCell messageCell = findMessageCell(removed.getId(), true);
+//                        DustEffect.startDustEffect(removed.getId(), messageCell, new DustEffectDelegate() {
+//                            @Override
+//                            public void onStartEffect(DustRequest dustRequest) {
+//
+//                            }
+//
+//                            @Override
+//                            public void onFinishedEffect(DustRequest dustRequest) {
+//
+//                            }
+//                        });
+//                    }
                     if (removed.getGroupId() != 0) {
                         MessageObject.GroupedMessages groupedMessages = groupedMessagesMap.get(removed.getGroupId());
                         if (groupedMessages != null) {
@@ -20904,6 +20921,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             updateScheduledInterface(true);
         }
     }
+
 
     private void replaceMessageObjects(ArrayList<MessageObject> messageObjects, int loadIndex, boolean remove) {
         LongSparseArray<MessageObject.GroupedMessages> newGroups = null;

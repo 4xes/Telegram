@@ -14,6 +14,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 
+import com.blackfox.surface.renderer.DustEffect;
+import com.blackfox.surface.renderer.DustEffectDelegate;
+import com.blackfox.surface.renderer.particle.DustRequest;
+
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -21,6 +25,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.BotHelpCell;
+import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.ChatGreetingsView;
@@ -1376,6 +1381,47 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             FileLog.d("animate remove impl");
         }
         final View view = holder.itemView;
+        if (DustEffect.supports()) {
+            if (holder.itemView instanceof ChatMessageCell) {
+                MessageObject messageObject = ((ChatMessageCell) holder.itemView).getMessageObject();
+                if (messageObject.deleted) {
+                    DustEffect.startDustEffect(messageObject.getId(), holder.itemView, new DustEffectDelegate() {
+                        @Override
+                        public void onStartEffect(DustRequest dustRequest) {
+                            dispatchRemoveFinished(holder);
+                            dispatchFinishedWhenDone();
+                        }
+
+                        @Override
+                        public void onFinishedEffect(DustRequest dustRequest) {
+
+                        }
+                    });
+                    return;
+                }
+            }
+            if (holder.itemView instanceof ChatActionCell) {
+                MessageObject messageObject = ((ChatActionCell) holder.itemView).getMessageObject();
+                if (messageObject.deleted) {
+                    DustEffect.startDustEffect(messageObject.getId(), holder.itemView, new DustEffectDelegate() {
+                        @Override
+                        public void onStartEffect(DustRequest dustRequest) {
+                            //I’m not entirely sure that the view needs to be cleaned to defaults,
+                            // but it is cleaned in the animator, although only the alpha changes
+                            resetViewToDefault(view);
+                            dispatchRemoveFinished(holder);
+                            dispatchFinishedWhenDone();
+                        }
+
+                        @Override
+                        public void onFinishedEffect(DustRequest dustRequest) {
+
+                        }
+                    });
+                    return;
+                }
+            }
+        }
         mRemoveAnimations.add(holder);
         ObjectAnimator animator = ObjectAnimator.ofFloat(view, View.ALPHA, view.getAlpha(), 0f);
 
@@ -1388,11 +1434,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     @Override
                     public void onAnimationEnd(Animator animator) {
                         animator.removeAllListeners();
-                        view.setAlpha(1);
-                        view.setScaleX(1f);
-                        view.setScaleY(1f);
-                        view.setTranslationX(0);
-                        view.setTranslationY(0);
+                        resetViewToDefault(view);
                         if (mRemoveAnimations.remove(holder)) {
                             dispatchRemoveFinished(holder);
                             dispatchFinishedWhenDone();
@@ -1402,6 +1444,14 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         animators.put(holder, animator);
         animator.start();
         recyclerListView.stopScroll();
+    }
+
+    private void resetViewToDefault(View view) {
+        view.setAlpha(1);
+        view.setScaleX(1f);
+        view.setScaleY(1f);
+        view.setTranslationX(0);
+        view.setTranslationY(0);
     }
 
     public void setShouldAnimateEnterFromBottom(boolean shouldAnimateEnterFromBottom) {
