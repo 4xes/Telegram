@@ -229,6 +229,7 @@ import org.telegram.ui.Components.*;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.Forum.ForumUtilities;
+import org.telegram.ui.Components.Hint.BotStartButtonHint;
 import org.telegram.ui.Components.Premium.GiftPremiumBottomSheet;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -409,6 +410,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private HintView2 savedMessagesTagHint;
     private HintView2 groupEmojiPackHint;
     private HintView2 botMessageHint;
+    private BotStartButtonHint botStartButtonHint;
     private HintView2 factCheckHint;
 
     private int reactionsMentionCount;
@@ -7953,10 +7955,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         bottomOverlayStartButton.setGravity(Gravity.CENTER);
         bottomOverlayStartButton.setTypeface(AndroidUtilities.bold());
         bottomOverlayStartButton.setVisibility(View.GONE);
-        bottomOverlayStartButton.setOnClickListener(v -> bottomOverlayChatText.callOnClick());
+        bottomOverlayStartButton.setOnClickListener(v -> {
+            if (botStartButtonHint != null) {
+                botStartButtonHint.hide();
+            }
+            bottomOverlayChatText.callOnClick();
+        });
         bottomOverlayChat.addView(bottomOverlayStartButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER, 8, 8, 8, 8));
 
-        if (currentUser != null && currentUser.bot && currentUser.id != UserObject.VERIFY && !UserObject.isDeleted(currentUser) && !UserObject.isReplyUser(currentUser) && !isInScheduleMode() && chatMode != MODE_PINNED && chatMode != MODE_SAVED && !isReport()) {
+        if (isBotChat()) {
             bottomOverlayStartButton.setVisibility(View.VISIBLE);
             bottomOverlayChat.setVisibility(View.VISIBLE);
         }
@@ -8470,6 +8477,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         Timer.finish(t);
 
         return fragmentView;
+    }
+
+    private boolean isBotChat() {
+        return currentUser != null && currentUser.bot && currentUser.id != UserObject.VERIFY && !UserObject.isDeleted(currentUser) && !UserObject.isReplyUser(currentUser) && !isInScheduleMode() && chatMode != MODE_PINNED && chatMode != MODE_SAVED && !isReport();
     }
 
     private void checkBotMessageHint() {
@@ -17208,6 +17219,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             notifyHeightChanged();
+            updatePositionBotStartHint();
         }
 
         private void setNonNoveTranslation(float y) {
@@ -20614,6 +20626,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (currentChat != null && chatFull.id == currentChat.id) {
                 checkGroupEmojiPackHint();
+
                 if (chatFull instanceof TLRPC.TL_channelFull) {
                     if (currentChat.megagroup) {
                         int lastDate = 0;
@@ -24812,6 +24825,28 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         checkGroupEmojiPackHint();
     }
 
+    private void checkBotStartShowHint() {
+        boolean overlayVisible = bottomOverlayChat != null && bottomOverlayChat.getVisibility() == View.VISIBLE;
+        boolean startButtonVisible = bottomOverlayStartButton != null && bottomOverlayStartButton.getVisibility() == View.VISIBLE;
+        if (overlayVisible && startButtonVisible && isBotChat()) {
+            if (botStartButtonHint == null) {
+                botStartButtonHint = new BotStartButtonHint(getContext());
+                botStartButtonHint.show(contentView, bottomOverlayChat);
+            }
+        } else {
+            if (botStartButtonHint != null) {
+                botStartButtonHint.hide();
+                botStartButtonHint = null;
+            }
+        }
+    }
+
+    private void updatePositionBotStartHint(){
+        if (botStartButtonHint != null && bottomOverlayChat != null) {
+            botStartButtonHint.fixLayout(bottomOverlayChat);
+        }
+    }
+
     private void checkGroupEmojiPackHint() {
         if (groupEmojiPackHint == null && ChatObject.isMegagroup(currentChat)) {
             final TLRPC.ChatFull chatFull = getMessagesController().getChatFull(currentChat.id);
@@ -25411,6 +25446,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatActivityEnterView.setVisibility(View.VISIBLE);
             chatActivityEnterView.setBotInfo(botInfo);
         }
+        checkBotStartShowHint();
         checkRaiseSensors();
     }
 

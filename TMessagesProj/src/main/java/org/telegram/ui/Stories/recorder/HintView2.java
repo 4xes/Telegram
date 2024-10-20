@@ -151,6 +151,10 @@ public class HintView2 extends View {
         setTextColor(0xffffffff);
     }
 
+    public void setBackgroundAlpha(int alpha) {
+        backgroundPaint.setAlpha(alpha);
+    }
+
     public HintView2 setDirection(int direction) {
         this.direction = direction;
         return this;
