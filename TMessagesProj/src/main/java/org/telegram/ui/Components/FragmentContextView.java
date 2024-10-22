@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -164,25 +166,35 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 return;
             }
             ChatObject.Call call = chatActivity.getGroupCall();
-            if (call == null || !call.isScheduled()) {
-                timeLayout = null;
-                scheduleRunnableScheduled = false;
-                return;
-            }
-            int currentTime = fragment.getConnectionsManager().getCurrentTime();
-            int diff = call.call.schedule_date - currentTime;
-            String str;
+            changeScheduleText(call);
+            AndroidUtilities.runOnUIThread(updateScheduleTimeRunnable, 1000);
+        }
+    };
+
+    private void changeScheduleText(ChatObject.Call call) {
+        if (call == null || !call.isScheduled()) {
+            timeLayout = null;
+            scheduleRunnableScheduled = false;
+            return;
+        }
+        int currentTime = fragment.getConnectionsManager().getCurrentTime();
+        int diff = call.call.schedule_date - currentTime;
+        String str;
+
+        TLRPC.Chat currentChat = chatActivity.getCurrentChat();
+        if (currentChat != null && !ChatObject.canManageCalls(currentChat) && !call.call.schedule_start_subscribed) {
+            str = LocaleController.getString(R.string.VoipChannelNotifyMe);
+        } else {
             if (diff >= 24 * 60 * 60) {
                 str = LocaleController.formatPluralString("Days", Math.round(diff / (24 * 60 * 60.0f)));
             } else {
                 str = AndroidUtilities.formatFullDuration(call.call.schedule_date - currentTime);
             }
-            int width = (int) Math.ceil(gradientTextPaint.measureText(str));
-            timeLayout = new StaticLayout(str, gradientTextPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            AndroidUtilities.runOnUIThread(updateScheduleTimeRunnable, 1000);
-            frameLayout.invalidate();
         }
-    };
+        int width = (int) Math.ceil(gradientTextPaint.measureText(str));
+        timeLayout = new StaticLayout(str, gradientTextPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        frameLayout.invalidate();
+    }
 
     private final int account = UserConfig.selectedAccount;
 
@@ -736,7 +748,12 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (call == null) {
                     return;
                 }
-                VoIPHelper.startCall(fragment.getMessagesController().getChat(call.chatId), null, null, false, call.call != null && !call.call.rtmp_stream, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
+                TLRPC.Chat currentChat = chatActivity.getCurrentChat();
+                if (call.isScheduled() && currentChat != null && !ChatObject.canManageCalls(currentChat)) {
+                    subscribeOnSchedule(call);
+                } else {
+                    VoIPHelper.startCall(fragment.getMessagesController().getChat(call.chatId), null, null, false, call.call != null && !call.call.rtmp_stream, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
+                }
             } else if (currentStyle == STYLE_IMPORTING_MESSAGES) {
                 SendMessagesHelper.ImportingHistory importingHistory = fragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) fragment).getDialogId());
                 if (importingHistory == null) {
@@ -748,6 +765,26 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 checkImport(false);
             }
         });
+    }
+
+    private void subscribeOnSchedule(ChatObject.Call call) {
+        TLRPC.TL_phone_toggleGroupCallStartSubscription req = new TLRPC.TL_phone_toggleGroupCallStartSubscription();
+        req.call = call.getInputGroupCall();
+        call.call.schedule_start_subscribed = !call.call.schedule_start_subscribed;
+        req.subscribed = call.call.schedule_start_subscribed;
+
+        if (call.call.schedule_start_subscribed) {
+            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.silent_unmute, getString(R.string.VoipNotifiedMeBulletin)).show();
+        }
+
+        AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
+        accountInstance.getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (response != null) {
+                accountInstance.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+            }
+        });
+        changeScheduleText(call);
+
     }
 
     private boolean slidingSpeed;

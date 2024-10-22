@@ -4087,6 +4087,7 @@
     <string name="VoipChannelVoiceChat">Live Stream</string>
     <string name="VoipChannelLabelLive">LIVE</string>
     <string name="VoipChannelWatching">watching</string>
+    <string name="VoipChannelNotifyMe">Notify Me</string>
     <string name="VoipChannelScheduledVoiceChat">Scheduled Live Stream</string>
     <string name="VoipChannelOpenVoiceChat">Open live stream</string>
     <string name="VoipChannelJoinAnonymousAdmin">Sorry, you can\'t join live streams as an anonymous administrator.</string>
@@ -4178,6 +4179,7 @@
     <string name="VoipGroupStartNow">Start Now</string>
     <string name="VoipGroupSetReminder">Set Reminder</string>
     <string name="VoipGroupCancelReminder">Cancel Reminder</string>
+    <string name="VoipNotifiedMeBulletin">You will be notified when the live stream starts.</string>
     <string name="VoipGroupScheduleInfo">Members of the group will be notified that the voice chat will start in %1$s.</string>
     <string name="VoipChannelScheduleInfo">Subscribers of the channel will be notified that the live stream will start in %1$s.</string>
     <string name="VoipChatStartsIn">Starts in</string>
