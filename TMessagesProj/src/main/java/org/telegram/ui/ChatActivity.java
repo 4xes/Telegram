@@ -9809,6 +9809,36 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         contentView.addView(instantCameraView, 21, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
     }
 
+    public void prepareBlur() {
+        AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
+            scrimBlurBitmap = bitmap;
+            scrimBlurBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            scrimBlurBitmapPaint.setShader(scrimBlurBitmapShader = new BitmapShader(scrimBlurBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+            ColorMatrix colorMatrix = new ColorMatrix();
+            AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? .08f : +.25f);
+            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? -.02f : -.07f);
+            scrimBlurBitmapPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+            scrimBlurMatrix = new Matrix();
+        }, 14);
+    }
+
+    public boolean drawBlurRound(Canvas canvas, RectF rect, float leftX, float topY, float rx, float ry) {
+        if (scrimBlurBitmapPaint != null) {
+            scrimBlurMatrix.reset();
+            final float s = ((float) contentView.getMeasuredWidth()) / scrimBlurBitmap.getWidth();
+            scrimBlurMatrix.postScale(s, s);
+            scrimBlurBitmapShader.setLocalMatrix(scrimBlurMatrix);
+            scrimBlurBitmapPaint.setAlpha(255);
+            int count = canvas.save();
+            canvas.translate(-leftX, -topY);
+            canvas.drawRoundRect(rect, rx, ry, scrimBlurBitmapPaint);
+            canvas.restoreToCount(count);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private void dimBehindView(float value, boolean blur, boolean hidePagedownButtons) {
         boolean enable = value > 0;
         if (scrimView instanceof ChatMessageCell) {
@@ -9837,17 +9867,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             animators.add(scrimPaintAlphaAnimator = ValueAnimator.ofFloat(0, value));
             
             if (blur) {
-                AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
-                    scrimBlurBitmap = bitmap;
-
-                    scrimBlurBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                    scrimBlurBitmapPaint.setShader(scrimBlurBitmapShader = new BitmapShader(scrimBlurBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-                    ColorMatrix colorMatrix = new ColorMatrix();
-                    AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? .08f : +.25f);
-                    AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? -.02f : -.07f);
-                    scrimBlurBitmapPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
-                    scrimBlurMatrix = new Matrix();
-                }, 14);
+                prepareBlur();
             }
         } else {
             scrimViewProgress = scrimPaintAlpha / max;
@@ -29925,6 +29945,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return false;
     }
 
+    private void showFastForwards(ChatMessageCell cell, ArrayList<MessageObject> messages) {
+        LinearLayout.LayoutParams params = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
+        ForwardsContainerLayout forwardsContainerLayout = new ForwardsContainerLayout(ChatActivity.this, contentView.getContext(), currentAccount, getResourceProvider(), cell, messages);
+        ((ViewGroup) contentView.getParent()).addView(forwardsContainerLayout, params);
+        forwardsContainerLayout.startAnimation();
+    }
+
     private void createEmptyView(boolean recreate) {
         if (emptyViewContainer != null && !recreate || getContext() == null) {
             return;
@@ -35276,7 +35303,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         @Override
-        public void didPressSideButton(ChatMessageCell cell) {
+        public void didPressSideButton(ChatMessageCell cell, boolean longPress) {
             if (getParentActivity() == null) {
                 return;
             }
@@ -35306,6 +35333,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (arrayList == null) {
                     arrayList = new ArrayList<>();
                     arrayList.add(messageObject);
+                }
+                if (longPress) {
+                    showFastForwards(cell, messages);
+                    return;
                 }
                 final boolean includeStory = getMessagesController().storiesEnabled() && StoryEntry.canRepostMessage(messageObject);
                 showDialog(new ShareAlert(getContext(), ChatActivity.this, arrayList, null, null, ChatObject.isChannel(currentChat), null, null, false, false, includeStory, themeDelegate) {
@@ -36420,7 +36451,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         @Override
         public void didPressReplyMessage(ChatMessageCell cell, int id) {
             if (UserObject.isReplyUser(currentUser)) {
-                didPressSideButton(cell);
+                didPressSideButton(cell, false);
                 return;
             }
             MessageObject messageObject = cell.getMessageObject();
