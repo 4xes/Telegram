@@ -29945,9 +29945,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return false;
     }
 
-    private void showFastForwards(ChatMessageCell cell, ArrayList<MessageObject> messages) {
+    private void showFastForwards(ChatMessageCell cell) {
         LinearLayout.LayoutParams params = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
-        ForwardsContainerLayout forwardsContainerLayout = new ForwardsContainerLayout(ChatActivity.this, contentView.getContext(), currentAccount, getResourceProvider(), cell, messages);
+        ForwardsContainerLayout forwardsContainerLayout = new ForwardsContainerLayout(ChatActivity.this, contentView.getContext(), currentAccount, getResourceProvider(), cell);
         ((ViewGroup) contentView.getParent()).addView(forwardsContainerLayout, params);
         forwardsContainerLayout.startAnimation();
     }
@@ -35335,7 +35335,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     arrayList.add(messageObject);
                 }
                 if (longPress) {
-                    showFastForwards(cell, messages);
+                    showFastForwards(cell);
                     return;
                 }
                 final boolean includeStory = getMessagesController().storiesEnabled() && StoryEntry.canRepostMessage(messageObject);

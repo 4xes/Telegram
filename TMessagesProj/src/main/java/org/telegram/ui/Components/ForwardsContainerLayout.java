@@ -8,20 +8,15 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
-import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -30,7 +25,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
-import android.widget.Button;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -75,7 +69,6 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
     private final OvershootInterpolator avatarOvershootInterpolator = new OvershootInterpolator(1.4f);
     private final AccelerateDecelerateInterpolator shareInterpolator = new AccelerateDecelerateInterpolator();
     private final ArrayList<TLRPC.Dialog> dialogs;
-    private final ArrayList<MessageObject> messages;
     private final int avatarSize = dp(48);
     private final int forwardsHorizontalPadding = dp(12);
     private final int forwardsVerticalPadding = dp(8);
@@ -92,7 +85,6 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
     private final int forwardsWidth;
     private final Path path = new Path();
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint testPaintCorner = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final ChatMessageCell cell;
     private final Rect shadowPad = new Rect();
     private final RectF endRect = new RectF();
@@ -101,33 +93,25 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
     private final RectF shareRect = new RectF();
     private final RectF tempRect = new RectF();
     private final Drawable shadow;
-    private final boolean debug = false;
-    private Button debugButton;
+    private final ForwardsAdapter adapter;
+    private final float nameStartAlpha = 0f;
+    private final float nameStartScale = 0.7f;
+    private final int nameStartTransitionY = dp(6);
     private float progress = 0f;
     private ValueAnimator animator;
     private int selected = -1;
     private boolean isSending = false;
-
-    private final ForwardsAdapter adapter;
-
-    private NameTextView[] nameViews;
-
-    private final float nameStartAlpha = 0f;
-    private final float nameStartScale = 0.7f;
-    private final int nameStartTransitionY = dp(6);
-
+    private final NameTextView[] nameViews;
     private boolean isDismiss = false;
 
-    Matrix matrix = new Matrix();
 
-    public ForwardsContainerLayout(ChatActivity fragment, @NonNull Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, ChatMessageCell cell, ArrayList<MessageObject> messages) {
+    public ForwardsContainerLayout(ChatActivity fragment, @NonNull Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, ChatMessageCell cell) {
         super(context);
 
         this.resourcesProvider = resourcesProvider;
         this.currentAccount = currentAccount;
         this.fragment = fragment;
         this.cell = cell;
-        this.messages = messages;
         this.dialogs = fetchDialogs();
         this.adapter = new ForwardsAdapter(this.dialogs);
         this.nameViews = new NameTextView[this.dialogs.size()];
@@ -165,15 +149,6 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         shadowPad.left = shadowPad.top = shadowPad.right = shadowPad.bottom = dp(7);
         shadow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelShadow, resourcesProvider), PorterDuff.Mode.MULTIPLY));
 
-//        debugButton = new Button(context);
-//        debugButton.setText("StartAnimation");
-//        debugButton.setOnClickListener(v -> {
-//            startAnimation();
-//        });
-//        addView(debugButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 16, 200, 0, 0));
-
-        testPaintCorner.setStyle(Paint.Style.STROKE);
-
         recyclerListView.setOnItemClickListener((view, position) -> onSelected(position));
 
         setOnTouchListener(new View.OnTouchListener() {
@@ -204,32 +179,21 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
             return;
         }
         for (int i = 0; i < recyclerListView.getChildCount(); i++) {
-            View avatarView =  recyclerListView.getChildAt(i);
+            View avatarView = recyclerListView.getChildAt(i);
             NameTextView nameView = nameViews[i];
             if (selected != position) {
                 boolean isSelected = i == position;
-                float avatarAlpha = isSelected ? 1.0f: 0.5f;
-                float avatarScale = isSelected ? 1.1f: 1.0f;
+                float avatarAlpha = isSelected ? 1.0f : 0.5f;
+                float avatarScale = isSelected ? 1.1f : 1.0f;
                 avatarView.clearAnimation();
-                avatarView.animate()
-                        .alpha(avatarAlpha)
-                        .scaleX(avatarScale)
-                        .scaleY(avatarScale)
-                        .setDuration(SELECT_ANIMATION_DURATION)
-                        .start();
+                avatarView.animate().alpha(avatarAlpha).scaleX(avatarScale).scaleY(avatarScale).setDuration(SELECT_ANIMATION_DURATION).start();
 
                 if (nameView != null) {
-                    float nameAlpha = isSelected ? 1.0f: nameStartAlpha;
-                    float nameScale = isSelected ? 1.0f: nameStartScale;
-                    float nameTransitionY = isSelected ? 0: nameStartTransitionY;
+                    float nameAlpha = isSelected ? 1.0f : nameStartAlpha;
+                    float nameScale = isSelected ? 1.0f : nameStartScale;
+                    float nameTransitionY = isSelected ? 0 : nameStartTransitionY;
                     nameView.clearAnimation();
-                    nameView.animate()
-                            .alpha(nameAlpha)
-                            .scaleX(nameScale)
-                            .scaleY(nameScale)
-                            .translationY(nameTransitionY)
-                            .setDuration(SELECT_ANIMATION_DURATION)
-                            .start();
+                    nameView.animate().alpha(nameAlpha).scaleX(nameScale).scaleY(nameScale).translationY(nameTransitionY).setDuration(SELECT_ANIMATION_DURATION).start();
 
                 }
             }
@@ -247,7 +211,9 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         isSending = true;
         long did = dialogs.get(position).id;
 
-        int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(new ArrayList<MessageObject>() {{ add(cell.getMessageObject()); }}, did, false,false, true, 0, null);
+        int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(new ArrayList<MessageObject>() {{
+            add(cell.getMessageObject());
+        }}, did, false, false, true, 0, null);
         if (result == 0) {
             SpannableStringBuilder text;
             int icon;
@@ -277,14 +243,9 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
                 }
                 icon = R.raw.forward;
             }
-            Bulletin bulletin = BulletinFactory.of(fragment)
-                    .createSimpleBulletin(
-                            icon,
-                            text
-                    );
+            Bulletin bulletin = BulletinFactory.of(fragment).createSimpleBulletin(icon, text);
+            Bulletin.LottieLayout layout = ((Bulletin.LottieLayout) bulletin.getLayout());
 
-            Bulletin.LottieLayout  layout = ((Bulletin.LottieLayout) bulletin.getLayout());
-            RLottieImageView imageView = layout.imageView;
 
             layout.postDelayed(() -> {
                 layout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -349,9 +310,6 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
 
         calculateStartRect();
         calculateEndRect(fragment.fragmentView.getMeasuredWidth());
-        shader = null;
-        getShader();
-
 
         updateMargins();
     }
@@ -417,7 +375,7 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
                 invalidate();
                 animator = ValueAnimator.ofFloat(progress, 0f);
                 animator.addUpdateListener(this);
-                animator.setDuration((long) (300L));
+                animator.setDuration(300L);
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -500,17 +458,11 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         return Math.max(0.0f, progress - time) / (1.0f - time);
     }
 
-    private final Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+//    private final Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         calculateStartRect();
-
-//        matrix.reset();
-//        matrix.setTranslate(300, 300);
-//        Shader shader = getShader();
-//        shader.setLocalMatrix(matrix);
-//        canvas.drawCircle(300, 300, 100, gradientPaint);
 
         float cellX = location[0];
         float cellY = location[1];
@@ -534,11 +486,7 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         boolean isShortLeft = shareRect.left < endRect.left + forwardsCorners;
         if (curveProgress < curveRotationTime || isShortLeft) {
             float curveRotationProgress = curveProgress / curveRotationTime;
-            float leftForwardsDegree = interpolate(
-                    isShortLeft? curveProgress : curveRotationProgress,
-                    -90,
-                    isShortLeft ? -45 : 0
-            );
+            float leftForwardsDegree = interpolate(isShortLeft ? curveProgress : curveRotationProgress, -90, isShortLeft ? -45 : 0);
             pointOnTheCircle(leftForwardsDegree, forwardsRadius, forwardsRect.left + forwardsRadius, forwardTop);
         } else {
             float startLeft = forwardsRect.left + forwardsRadius;
@@ -565,11 +513,7 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         boolean isShortRight = shareRect.right > endRect.right - forwardsCorners;
         if (curveProgress < curveRotationTime || isShortRight) {
             float curveRotationProgress = curveProgress / curveRotationTime;
-            float rightForwardsDegree = interpolate(
-                    isShortRight? curveProgress : curveRotationProgress,
-                    90,
-                    isShortRight ? 45 : 0
-            );
+            float rightForwardsDegree = interpolate(isShortRight ? curveProgress : curveRotationProgress, 90, isShortRight ? 45 : 0);
             pointOnTheCircle(rightForwardsDegree, forwardsRadius, forwardsRect.right - forwardsRadius, forwardTop);
         } else {
             float startRight = forwardsRect.right - forwardsRadius;
@@ -627,7 +571,7 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         if (!isShowed()) {
             for (int i = 0; i < recyclerListView.getChildCount(); i++) {
                 int avatarsSave = canvas.save();
-                View avatarView =  recyclerListView.getChildAt(i);
+                View avatarView = recyclerListView.getChildAt(i);
 
                 float scale = getAvatarScaleProgress(i);
                 float radius = avatarView.getMeasuredWidth() / 2f;
@@ -644,68 +588,22 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
                 canvas.restoreToCount(avatarsSave);
             }
 
-            if (debugButton != null) {
-                int buttonDebug = canvas.save();
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) debugButton.getLayoutParams();
-                canvas.translate(layoutParams.leftMargin, layoutParams.topMargin);
-                debugButton.draw(canvas);
-                canvas.restoreToCount(buttonDebug);
-            }
-
         } else {
             super.dispatchDraw(canvas);
         }
 
-        if (debug) {
-            testPaintCorner.setColor(Color.GREEN);
-            canvas.drawRoundRect(endRect, forwardsCorners, forwardsCorners, testPaintCorner);
-
-            testPaintCorner.setColor(Color.RED);
-            canvas.drawPath(path, testPaintCorner);
-        }
 
     }
 
-    private Shader shader;
-
-    private Shader getShader() {
-        if (shader == null) {
-            int colorCenter = Color.TRANSPARENT;
-            int colorAround = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
-            Shader gradientShader =  new RadialGradient(0, 0, shareRadius * 2, new int[]{colorCenter, colorAround }, new float[] {0.0f, 1.0f}, Shader.TileMode.CLAMP);
-            gradientShader.setLocalMatrix(matrix);
-            gradientPaint.setShader(gradientShader);
-            shader = gradientShader;
-        }
-
-        return shader;
-    }
 
     private void drawShape(Canvas canvas, float forwardsRadius) {
         if (isRunningAnimation()) {
-
             canvas.drawPath(path, backgroundPaint);
         }
 
         if (isRunningAnimation() || isShowed()) {
             canvas.drawRoundRect(forwardsRect, forwardsRadius, forwardsRadius, backgroundPaint);
         }
-
-//        if (isRunningAnimation()) {
-//            matrix.reset();
-//            matrix.setTranslate(shareRect.centerX(), shareRect.centerY());
-//            Shader shader = getShader();
-//            shader.setLocalMatrix(matrix);
-//            canvas.drawCircle(shareRect.centerX(), shareRect.centerY(), shareRadius, gradientPaint);
-//        }
-    }
-
-    private Paint getButtonPaint() {
-        return getThemedPaint(cell.isSideButtonPressed() ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground);
-    }
-
-    private Paint getGradintPaint() {
-        return Theme.chat_actionBackgroundGradientDarkenPaint;
     }
 
     public boolean hasGradientService() {
@@ -842,6 +740,35 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         return dialogs;
     }
 
+    public Paint getThemedPaint(String paintKey) {
+        Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
+        return paint != null ? paint : Theme.getThemePaint(paintKey);
+    }
+
+    @Nullable
+    private String getName(long uid) {
+        TLRPC.User user;
+        if (DialogObject.isUserDialog(uid)) {
+            user = MessagesController.getInstance(currentAccount).getUser(uid);
+            if (UserObject.isUserSelf(user)) {
+                return LocaleController.getString(R.string.SavedMessages);
+            } else {
+                if (user != null) {
+                    return ContactsController.formatName(user.first_name, user.last_name);
+                } else {
+                    return null;
+                }
+            }
+        } else {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
+            if (chat != null) {
+                return chat.title;
+            } else {
+                return null;
+            }
+        }
+    }
+
     private static class SpacingDecoration extends RecyclerView.ItemDecoration {
         private final int spacing;
 
@@ -849,12 +776,11 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
             this.spacing = spacing;
         }
 
-        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, RecyclerView parent,
-                                   RecyclerView.State state) {
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, RecyclerView parent, RecyclerView.State state) {
             if (parent.getAdapter() != null) {
-                int dataCount= parent.getAdapter().getItemCount();
-                int  viewPosition = parent.getChildAdapterPosition(view);
-                outRect.set(0, 0, (viewPosition != dataCount - 1) ? spacing: 0, 0);
+                int dataCount = parent.getAdapter().getItemCount();
+                int viewPosition = parent.getChildAdapterPosition(view);
+                outRect.set(0, 0, (viewPosition != dataCount - 1) ? spacing : 0, 0);
             }
         }
     }
@@ -879,46 +805,6 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
             return super.dispatchTouchEvent(ev);
-        }
-    }
-
-    public Paint getThemedPaint(String paintKey) {
-        Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
-        return paint != null ? paint : Theme.getThemePaint(paintKey);
-    }
-
-    private class ForwardsAdapter extends RecyclerView.Adapter<ForwardViewHolder> {
-
-        private final ArrayList<TLRPC.Dialog> dialogs;
-
-        public ForwardsAdapter(ArrayList<TLRPC.Dialog> dialogs) {
-            this.dialogs = dialogs;
-        }
-
-        @NonNull
-        @Override
-        public ForwardViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            BackupImageView imageView = new BackupImageView(parent.getContext());
-            int size = avatarSize;
-            imageView.setRoundRadius(size / 2);
-            ViewGroup.LayoutParams layoutParams = new LayoutParams(size, size);
-            imageView.setLayoutParams(layoutParams);
-            return new ForwardViewHolder(imageView);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull ForwardViewHolder holder, int position) {
-            holder.bind(currentAccount, dialogs.get(position).id);
-        }
-
-        @Override
-        public long getItemId(int position) {
-            return super.getItemId(position);
-        }
-
-        @Override
-        public int getItemCount() {
-            return dialogs.size();
         }
     }
 
@@ -959,27 +845,38 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
 
     }
 
-    @Nullable
-    private String getName(long uid) {
-        TLRPC.User user;
-        if (DialogObject.isUserDialog(uid)) {
-            user = MessagesController.getInstance(currentAccount).getUser(uid);
-            if (UserObject.isUserSelf(user)) {
-                return LocaleController.getString(R.string.SavedMessages);
-            } else {
-                if (user != null) {
-                    return ContactsController.formatName(user.first_name, user.last_name);
-                } else {
-                    return null;
-                }
-            }
-        } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
-            if (chat != null) {
-                return chat.title;
-            } else {
-                return null;
-            }
+    private class ForwardsAdapter extends RecyclerView.Adapter<ForwardViewHolder> {
+
+        private final ArrayList<TLRPC.Dialog> dialogs;
+
+        public ForwardsAdapter(ArrayList<TLRPC.Dialog> dialogs) {
+            this.dialogs = dialogs;
+        }
+
+        @NonNull
+        @Override
+        public ForwardViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            BackupImageView imageView = new BackupImageView(parent.getContext());
+            int size = avatarSize;
+            imageView.setRoundRadius(size / 2);
+            ViewGroup.LayoutParams layoutParams = new LayoutParams(size, size);
+            imageView.setLayoutParams(layoutParams);
+            return new ForwardViewHolder(imageView);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ForwardViewHolder holder, int position) {
+            holder.bind(currentAccount, dialogs.get(position).id);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return super.getItemId(position);
+        }
+
+        @Override
+        public int getItemCount() {
+            return dialogs.size();
         }
     }
 
@@ -1025,17 +922,9 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
             TextPaint textPaint = (TextPaint) getThemedPaint(Theme.key_paint_chatActionText);
             textPaint.getTextBounds(text, 0, text.length(), textRect);
 
-            float y = ((getMeasuredHeight() / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)) ;
+            float y = ((getMeasuredHeight() / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f));
 
             canvas.drawText(text, horizontalPadding + rect.left, y, textPaint);
-            testPaintCorner.setColor(Color.YELLOW);
-            testPaintCorner.setAlpha(1);
-            rect.left = 0f;
-            rect.top = 0f;
-            rect.right = getMeasuredWidth();
-            rect.bottom = getMeasuredHeight();
-            rect.inset(dp(1), dp(1));
-            canvas.drawRoundRect(rect, radius, radius, testPaintCorner);
         }
 
         private TextPaint getTextPaint() {
@@ -1046,10 +935,7 @@ public class ForwardsContainerLayout extends FrameLayout implements ValueAnimato
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int width = calculateWidth();
 
-            super.onMeasure(
-                    MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-                    MeasureSpec.makeMeasureSpec(nameHeight, MeasureSpec.EXACTLY)
-            );
+            super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(nameHeight, MeasureSpec.EXACTLY));
         }
 
         public int calculateWidth() {
