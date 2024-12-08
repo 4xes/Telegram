@@ -2,15 +2,11 @@ package org.telegram.ui.Stories.recorder;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
 import android.os.Build;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
@@ -26,24 +22,131 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.camera.CameraController;
-import org.telegram.messenger.camera.CameraSession;
 import org.telegram.messenger.camera.CameraSessionWrapper;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 
-import java.util.Arrays;
-import java.util.Locale;
-
 public class DualCameraView extends CameraView {
 
+    private static final int[] dualWhitelistByDevice = new int[]{
+            1893745684,  // XIAOMI CUPID
+            -215458996,  // XIAOMI VAYU
+            -862041025,  // XIAOMI WILLOW
+            -1258375037, // XIAOMI INGRES
+            -1320049076, // XIAOMI GINKGO
+            -215749424,  // XIAOMI LISA
+            1901578030,  // XIAOMI LEMON
+            -215451421,  // XIAOMI VIVA
+            1908491424,  // XIAOMI STONE
+            -1321491332, // XIAOMI RAPHAEL
+            -1155551678, // XIAOMI MARBLE
+            1908524435,  // XIAOMI SURYA
+            976847578,   // XIAOMI LAUREL_SPROUT
+            -1489198134, // XIAOMI ALIOTH
+            1910814392,  // XIAOMI VENUS
+            -713271737,  // OPPO OP4F2F
+            -2010722764, // SAMSUNG A52SXQ (A52s 5G)
+            1407170066,  // SAMSUNG D2Q (Note10+)
+            -821405251,  // SAMSUNG BEYOND2
+            -1394190955, // SAMSUNG A71
+            -1394190055, // SAMSUNG B4Q
+            1407170066,  // HUAWEI HWNAM
+            1407159934,  // HUAWEI HWCOR
+            1407172057,  // HUAWEI HWPCT
+            1231389747,  // FAIRPHONE FP3
+            -2076538925, // MOTOROLA RSTAR
+            41497626,    // MOTOROLA RHODEC
+            846150482,   // MOTOROLA CHANNEL
+            -1198092731, // MOTOROLA CYPRUS64
+            -251277614,  // MOTOROLA HANOIP
+//        -2078385967, // MOTOROLA PSTAR
+            -2073158771, // MOTOROLA VICKY
+            1273004781   // MOTOROLA BLACKJACK
+//        -1426053134  // REALME REE2ADL1
+    };
+    private static final int[] dualWhitelistByModel = new int[]{
+
+    };
+    private final PointF lastTouch = new PointF();
+    private final PointF touch = new PointF();
+    private final Matrix touchMatrix = new Matrix(), finalMatrix = new Matrix();
+    private final Matrix toScreen = new Matrix();
+    private final Matrix toGL = new Matrix();
+    private final float[] vertices = new float[2];
     private boolean dualAvailable;
+    private float lastTouchDistance;
+    private double lastTouchRotation;
+    private boolean multitouch;
+    private boolean allowRotation;
+    private boolean down;
+    private float rotationDiff;
+    private boolean snappedRotation;
+    private boolean doNotSpanRotation;
+    private boolean firstMeasure = true;
+    private boolean atTop, atBottom;
+
+    private boolean enabledSavedDual;
+    private float tapX, tapY;
+    private long tapTime;
+    private Matrix invMatrix = new Matrix();
+    private Runnable longpressRunnable;
+    private Runnable lastFocusToPoint;
+    private float cx, cy, angle, w, h;
+    private float[] vertex = new float[2];
+    private float[] verticesSrc, verticesDst;
 
     public DualCameraView(Context context, boolean frontface, boolean lazy) {
         super(context, frontface, lazy);
         dualAvailable = dualAvailableStatic(context);
+    }
+
+    public static boolean dualAvailableDefault(Context context, boolean withWhitelist) {
+        boolean def = (
+                SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
+                        Camera.getNumberOfCameras() > 1 &&
+                        SharedConfig.allowPreparingHevcPlayers()
+        );
+        if (def) {
+            def = context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent");
+            if (!def && withWhitelist) {
+                int hash = (Build.MANUFACTURER + " " + Build.DEVICE).toUpperCase().hashCode();
+                for (int i = 0; i < dualWhitelistByDevice.length; ++i) {
+                    if (dualWhitelistByDevice[i] == hash) {
+                        def = true;
+                        break;
+                    }
+                }
+                if (!def) {
+                    hash = (Build.MANUFACTURER + Build.MODEL).toUpperCase().hashCode();
+                    for (int i = 0; i < dualWhitelistByModel.length; ++i) {
+                        if (dualWhitelistByModel[i] == hash) {
+                            def = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return def;
+    }
+
+    public static boolean dualAvailableStatic(Context context) {
+        return MessagesController.getGlobalMainSettings().getBoolean("dual_available", dualAvailableDefault(context, true));
+    }
+
+    public static boolean roundDualAvailableStatic(Context context) {
+        return MessagesController.getGlobalMainSettings().getBoolean("rounddual_available", roundDualAvailableDefault(context));
+    }
+
+    public static boolean roundDualAvailableDefault(Context context) {
+        return (
+                SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH &&
+                        Camera.getNumberOfCameras() > 1 &&
+                        SharedConfig.allowPreparingHevcPlayers() &&
+                        context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent")
+        );
     }
 
     @Override
@@ -57,27 +160,6 @@ public class DualCameraView extends CameraView {
         saveDual();
         super.destroy(async, beforeDestroyRunnable);
     }
-
-    private final PointF lastTouch = new PointF();
-    private final PointF touch = new PointF();
-    private float lastTouchDistance;
-    private double lastTouchRotation;
-    private boolean multitouch;
-    private boolean allowRotation;
-    private final Matrix touchMatrix = new Matrix(), finalMatrix = new Matrix();
-    private boolean down;
-    private float rotationDiff;
-    private boolean snappedRotation;
-    private boolean doNotSpanRotation;
-    private float[] tempPoint = new float[4];
-
-    private final Matrix toScreen = new Matrix();
-    private final Matrix toGL = new Matrix();
-
-    private boolean firstMeasure = true;
-    private boolean atTop, atBottom;
-
-    private boolean enabledSavedDual;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -197,10 +279,6 @@ public class DualCameraView extends CameraView {
         return vertex[0] >= -1 && vertex[0] <= 1 && vertex[1] >= -H && vertex[1] <= H;
     }
 
-    private float tapX, tapY;
-    private long tapTime;
-    private Matrix invMatrix = new Matrix();
-    private Runnable longpressRunnable;
     private boolean checkTap(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             tapTime = System.currentTimeMillis();
@@ -245,7 +323,6 @@ public class DualCameraView extends CameraView {
         return false;
     }
 
-    private Runnable lastFocusToPoint;
     public void allowToTapFocus() {
         if (lastFocusToPoint != null) {
             lastFocusToPoint.run();
@@ -399,15 +476,15 @@ public class DualCameraView extends CameraView {
         return r;
     }
 
-    protected void onEntityDraggedTop(boolean value) {}
-    protected void onEntityDraggedBottom(boolean value) {}
+    protected void onEntityDraggedTop(boolean value) {
+    }
+
+    protected void onEntityDraggedBottom(boolean value) {
+    }
 
     public boolean isDualTouch() {
         return down;
     }
-
-    private final float[] vertices = new float[2];
-    private float cx, cy, angle, w, h;
 
     private void extractPointsData(Matrix matrix) {
         vertices[0] = 0;
@@ -428,17 +505,7 @@ public class DualCameraView extends CameraView {
         h = 2 * MathUtils.distance(cx, cy, vertices[0], vertices[1]);
     }
 
-    private Matrix tempMatrix = new Matrix();
-    private float[] vertex = new float[2];
-    private float[] verticesSrc, verticesDst;
     public boolean isPointInsideDual(Matrix matrix, float x, float y) {
-//        vertex[0] = x;
-//        vertex[1] = y;
-//        toGL.mapPoints(vertex);
-//        matrix.invert(tempMatrix);
-//        tempMatrix.mapPoints(vertex);
-//        return vertex[0] >= -1f && vertex[0] <= 1f && vertex[1] >= -1f && vertex[1] <= 1f;
-
         if (verticesSrc == null) {
             verticesSrc = new float[8];
         }
@@ -482,10 +549,10 @@ public class DualCameraView extends CameraView {
             if (!dualAvailableDefault(getContext(), false)) {
                 MessagesController.getGlobalMainSettings().edit().putBoolean("dual_available", dualAvailable = false).apply();
                 new AlertDialog.Builder(getContext())
-                    .setTitle(LocaleController.getString(R.string.DualErrorTitle))
-                    .setMessage(LocaleController.getString(R.string.DualErrorMessage))
-                    .setPositiveButton(LocaleController.getString(R.string.OK), null)
-                    .show();
+                        .setTitle(LocaleController.getString(R.string.DualErrorTitle))
+                        .setMessage(LocaleController.getString(R.string.DualErrorMessage))
+                        .setPositiveButton(LocaleController.getString(R.string.OK), null)
+                        .show();
             }
             log(false);
             toggleDual();
@@ -503,95 +570,6 @@ public class DualCameraView extends CameraView {
     public boolean dualAvailable() {
         return dualAvailable;
     }
-
-    private static final int[] dualWhitelistByDevice = new int[] {
-        1893745684,  // XIAOMI CUPID
-        -215458996,  // XIAOMI VAYU
-        -862041025,  // XIAOMI WILLOW
-        -1258375037, // XIAOMI INGRES
-        -1320049076, // XIAOMI GINKGO
-        -215749424,  // XIAOMI LISA
-        1901578030,  // XIAOMI LEMON
-        -215451421,  // XIAOMI VIVA
-        1908491424,  // XIAOMI STONE
-        -1321491332, // XIAOMI RAPHAEL
-        -1155551678, // XIAOMI MARBLE
-        1908524435,  // XIAOMI SURYA
-        976847578,   // XIAOMI LAUREL_SPROUT
-        -1489198134, // XIAOMI ALIOTH
-        1910814392,  // XIAOMI VENUS
-        -713271737,  // OPPO OP4F2F
-        -2010722764, // SAMSUNG A52SXQ (A52s 5G)
-        1407170066,  // SAMSUNG D2Q (Note10+)
-        -821405251,  // SAMSUNG BEYOND2
-        -1394190955, // SAMSUNG A71
-        -1394190055, // SAMSUNG B4Q
-        1407170066,  // HUAWEI HWNAM
-        1407159934,  // HUAWEI HWCOR
-        1407172057,  // HUAWEI HWPCT
-        1231389747,  // FAIRPHONE FP3
-        -2076538925, // MOTOROLA RSTAR
-        41497626,    // MOTOROLA RHODEC
-        846150482,   // MOTOROLA CHANNEL
-        -1198092731, // MOTOROLA CYPRUS64
-        -251277614,  // MOTOROLA HANOIP
-//        -2078385967, // MOTOROLA PSTAR
-        -2073158771, // MOTOROLA VICKY
-        1273004781   // MOTOROLA BLACKJACK
-//        -1426053134  // REALME REE2ADL1
-    };
-
-    private static final int[] dualWhitelistByModel = new int[] {
-
-    };
-
-    public static boolean dualAvailableDefault(Context context, boolean withWhitelist) {
-        boolean def = (
-            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
-            Camera.getNumberOfCameras() > 1 &&
-            SharedConfig.allowPreparingHevcPlayers()
-        );
-        if (def) {
-            def = context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent");
-            if (!def && withWhitelist) {
-                int hash = (Build.MANUFACTURER + " " + Build.DEVICE).toUpperCase().hashCode();
-                for (int i = 0; i < dualWhitelistByDevice.length; ++i) {
-                    if (dualWhitelistByDevice[i] == hash) {
-                        def = true;
-                        break;
-                    }
-                }
-                if (!def) {
-                    hash = (Build.MANUFACTURER + Build.MODEL).toUpperCase().hashCode();
-                    for (int i = 0; i < dualWhitelistByModel.length; ++i) {
-                        if (dualWhitelistByModel[i] == hash) {
-                            def = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return def;
-    }
-
-    public static boolean dualAvailableStatic(Context context) {
-        return MessagesController.getGlobalMainSettings().getBoolean("dual_available", dualAvailableDefault(context, true));
-    }
-
-    public static boolean roundDualAvailableStatic(Context context) {
-        return MessagesController.getGlobalMainSettings().getBoolean("rounddual_available", roundDualAvailableDefault(context));
-    }
-
-    public static boolean roundDualAvailableDefault(Context context) {
-        return (
-            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH &&
-            Camera.getNumberOfCameras() > 1 &&
-            SharedConfig.allowPreparingHevcPlayers() &&
-            context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent")
-        );
-    }
-
 
     private Matrix getSavedDualMatrix() {
         String str = MessagesController.getGlobalMainSettings().getString("dualmatrix", null);

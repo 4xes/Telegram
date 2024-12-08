@@ -97,23 +97,17 @@ import javax.microedition.khronos.egl.EGLSurface;
 
 @SuppressLint("NewApi")
 public class CameraView extends FrameLayout implements TextureView.SurfaceTextureListener, CameraController.ICameraView, CameraController.ErrorCallback  {
-
-    public boolean WRITE_TO_FILE_IN_BACKGROUND = false;
-
     public boolean isStory;
     public boolean recordHevc;
     private float scaleX, scaleY;
     private Size[] previewSize = new Size[2];
     private Size[] pictureSize = new Size[2];
     CameraInfo[] info = new CameraInfo[2];
-    private boolean mirror;
     private boolean lazy;
     private TextureView textureView;
     public ImageView blurredStubView;
     private boolean inited;
     private CameraViewDelegate delegate;
-    private int clipTop;
-    private int clipBottom;
     private boolean isFrontface;
     private Matrix txform = new Matrix();
     private Matrix matrix = new Matrix();
@@ -124,8 +118,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private final CameraSessionWrapper[] cameraSession = new CameraSessionWrapper[2];
     private CameraSessionWrapper cameraSessionRecording;
 
-    private boolean useMaxPreview;
-
     private long lastDrawTime;
     private float focusProgress = 1.0f;
     private float innerAlpha;
@@ -135,7 +127,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private int cy;
     private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private boolean optimizeForBarcode;
     File recordFile;
 
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
@@ -421,8 +412,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         textureInited = true;
     }
 
-    public void setOptimizeForBarcode(boolean value) {
-        optimizeForBarcode = value;
+    public void setOptimizeForBarcode() {
         if (cameraSession[0] != null) {
             cameraSession[0].setOptimizeForBarcode(true);
         }
@@ -533,20 +523,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         checkPreviewMatrix();
     }
 
-    public void setMirror(boolean value) {
-        mirror = value;
-    }
-
     public boolean isFrontface() {
         return isFrontface;
     }
 
     public TextureView getTextureView() {
         return textureView;
-    }
-
-    public void setUseMaxPreview(boolean value) {
-        useMaxPreview = value;
     }
 
     public boolean hasFrontFaceCamera() {
@@ -824,14 +806,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         } else {
             textureView.setAlpha(show ? 1 : 0);
         }
-    }
-
-    public void setClipTop(int value) {
-        clipTop = value;
-    }
-
-    public void setClipBottom(int value) {
-        clipBottom = value;
     }
 
     private final Runnable updateRotationMatrix = () -> {

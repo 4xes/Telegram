@@ -69,6 +69,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.Stories.recorder.SourceView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.util.ArrayList;
@@ -917,11 +918,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     StoryRecorder.getInstance(fragment.getParentActivity(), currentAccount)
                         .selectedPeerId(dialogId)
                         .canChangePeer(false)
-                        .open(StoryRecorder.SourceView.fromStoryCell(finalCell));
+                        .open(SourceView.fromStoryCell(finalCell));
                 }
             }, true, resourcesProvider);
         } else {
-            StoryRecorder.getInstance(fragment.getParentActivity(), currentAccount).open(StoryRecorder.SourceView.fromStoryCell(cell));
+            StoryRecorder.getInstance(fragment.getParentActivity(), currentAccount).open(SourceView.fromStoryCell(cell));
         }
     }
 

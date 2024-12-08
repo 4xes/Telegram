@@ -172,6 +172,7 @@ import org.telegram.ui.ReportBottomSheet;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.Stories.recorder.SourceView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
@@ -179,7 +180,6 @@ import org.telegram.ui.WrappedResourceProvider;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
-import java.net.IDN;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -1336,7 +1336,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                             entry.botLang = list.lang_code;
                                         }
                                     }
-                                    editor.openEdit(StoryRecorder.SourceView.fromStoryViewer(storyViewer), entry, time, true);
+                                    editor.openEdit(SourceView.fromStoryViewer(storyViewer), entry, time, true);
                                     editor.setOnFullyOpenListener(() -> {
                                         editOpened = true;
                                         setActive(false);
@@ -1462,7 +1462,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                             entry.botLang = list.lang_code;
                                         }
                                     }
-                                    editor.openEdit(StoryRecorder.SourceView.fromStoryViewer(storyViewer), entry, time, true);
+                                    editor.openEdit(SourceView.fromStoryViewer(storyViewer), entry, time, true);
                                     editor.setOnFullyOpenListener(() -> {
                                         editOpened = true;
                                         setActive(false);
@@ -3236,7 +3236,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 time = playerSharedScope.player.currentPosition;
             }
             StoryEntry entry = StoryEntry.repostStoryItem(currentStory.getPath(), currentStory.storyItem);
-            editor.openForward(StoryRecorder.SourceView.fromStoryViewer(storyViewer), entry, time, true);
+            editor.openForward(SourceView.fromStoryViewer(storyViewer), entry, time, true);
             editor.setOnFullyOpenListener(() -> {
                 editOpened = true;
                 setActive(false);
@@ -3281,11 +3281,11 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             if (cell2 == null) {
                                 cell2 = finalStoriesCell.findStoryCell(did);
                             }
-                            editor.replaceSourceView(StoryRecorder.SourceView.fromStoryCell(cell2));
+                            editor.replaceSourceView(SourceView.fromStoryCell(cell2));
                             close.run();
                         });
                     } else {
-                        editor.replaceSourceView(StoryRecorder.SourceView.fromStoryCell(finalCell));
+                        editor.replaceSourceView(SourceView.fromStoryCell(finalCell));
                         AndroidUtilities.runOnUIThread(close, 400);
                     }
                     return;

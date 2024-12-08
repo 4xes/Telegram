@@ -163,7 +163,6 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.tgnet.tl.TL_fragment;
-import org.telegram.tgnet.tl.TL_payments;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -272,6 +271,7 @@ import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoryViewer;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.DualCameraView;
+import org.telegram.ui.Stories.recorder.SourceView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.bots.AffiliateProgramFragment;
 import org.telegram.ui.bots.BotBiometry;
@@ -3198,12 +3198,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     }
 
                                     @Override
-                                    public StoryRecorder.SourceView getView(long dialogId) {
+                                    public SourceView getView(long dialogId) {
                                         if (dialogId != getDialogId()) {
                                             return null;
                                         }
                                         updateAvatarRoundRadius();
-                                        return StoryRecorder.SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
+                                        return SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
                                     }
                                 })
                                 .open(null);
@@ -3406,15 +3406,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
 
                         @Override
-                        public StoryRecorder.SourceView getView(long dialogId) {
+                        public SourceView getView(long dialogId) {
                             if (dialogId != getDialogId()) {
                                 return null;
                             }
                             updateAvatarRoundRadius();
-                            return StoryRecorder.SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
+                            return SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
                         }
                     })
-                    .open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true);
+                    .open(SourceView.fromFloatingButton(floatingButtonContainer), true);
             }
         };
         sharedMediaLayout.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.MATCH_PARENT));
@@ -5389,15 +5389,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
 
                         @Override
-                        public StoryRecorder.SourceView getView(long dialogId) {
+                        public SourceView getView(long dialogId) {
                             if (dialogId != getDialogId()) {
                                 return null;
                             }
                             updateAvatarRoundRadius();
-                            return StoryRecorder.SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
+                            return SourceView.fromAvatarImage(avatarImage, ChatObject.isForum(currentChat));
                         }
                     });
-            recorder.open(StoryRecorder.SourceView.fromFloatingButton(floatingButtonContainer), true);
+            recorder.open(SourceView.fromFloatingButton(floatingButtonContainer), true);
         });
 
         floatingButton = new RLottieImageView(context);

@@ -251,11 +251,11 @@ import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.Stories.PublicStoriesList;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.PreviewView;
+import org.telegram.ui.Stories.recorder.SourceView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.bots.BotAdView;
 import org.telegram.ui.bots.BotCommandsMenuView;
-import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.bots.WebViewRequestProps;
 
@@ -36071,9 +36071,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     protected void onShareStory(View cell) {
-                        StoryRecorder.SourceView sourceView = null;
+                        SourceView sourceView = null;
                         if (cell instanceof ShareDialogCell) {
-                            sourceView = StoryRecorder.SourceView.fromShareCell((ShareDialogCell) cell);
+                            sourceView = SourceView.fromShareCell((ShareDialogCell) cell);
                         }
                         final ArrayList<MessageObject> messageObjects = new ArrayList<>();
                         MessageObject.GroupedMessages groupedMessages = messageObject.getGroupId() != 0 ? groupedMessagesMap.get(messageObject.getGroupId()) : null;
@@ -36102,9 +36102,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 dismiss();
                                 editor.replaceSourceView(null);
                             } else {
-                                StoryRecorder.SourceView sourceView2 = null;
+                                SourceView sourceView2 = null;
                                 if (cell instanceof ShareDialogCell && cell.isAttachedToWindow()) {
-                                    sourceView2 = StoryRecorder.SourceView.fromShareCell((ShareDialogCell) cell);
+                                    sourceView2 = SourceView.fromShareCell((ShareDialogCell) cell);
                                 }
                                 editor.replaceSourceView(sourceView2);
                             }

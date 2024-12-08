@@ -310,11 +310,6 @@ public class StoryEntry {
                             canvas.translate(-fileBitmap.getWidth() / 2.0f, -fileBitmap.getHeight() / 2.0f);
                             canvas.drawBitmap(fileBitmap, 0, 0, null);
                             canvas.restore();
-//                            final float s = (float) width / fileBitmap.getWidth();
-//                            tempMatrix.preScale(s, s);
-//                            tempMatrix.postScale(scale, scale);
-//                            canvas.drawBitmap(fileBitmap, tempMatrix, bitmapPaint);
-//                            fileBitmap.recycle();
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
@@ -427,9 +422,6 @@ public class StoryEntry {
 
             final float scaleX = maxWidth / (float) bitmap.getWidth(), scaleY = maxHeight / (float) bitmap.getHeight();
             float s = Math.max(scaleX, scaleY);
-//            if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
-//                scale = Math.min(scale * 2, 1);
-//            }
             final int w = (int) (bitmap.getWidth() * s), h = (int) (bitmap.getHeight() * s);
 
             Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
@@ -440,16 +432,10 @@ public class StoryEntry {
             final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
             paint.setShader(shader);
 
-            int blurRadius = Utilities.clamp(Math.round(1f / s), 8, 0);
-
             matrix.reset();
             matrix.postScale(s, s);
             shader.setLocalMatrix(matrix);
             canvas.drawRect(0, 0, w, h, paint);
-
-//            if (allowBlur && blurRadius > 0) {
-//                Utilities.stackBlurBitmap(scaledBitmap, blurRadius);
-//            }
 
             return scaledBitmap;
         } else {
