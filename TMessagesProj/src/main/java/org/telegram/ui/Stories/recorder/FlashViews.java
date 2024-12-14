@@ -62,11 +62,12 @@ public class FlashViews {
 
     @Nullable
     private final WindowManager windowManager;
+    @Nullable
     private final View windowView;
     @Nullable
     private final WindowManager.LayoutParams windowViewParams;
 
-    public FlashViews(Context context, @Nullable WindowManager windowManager, View windowView, @Nullable WindowManager.LayoutParams windowViewParams) {
+    public FlashViews(Context context, @Nullable WindowManager windowManager, @Nullable View windowView, @Nullable WindowManager.LayoutParams windowViewParams) {
         this.context = context;
         this.windowManager = windowManager;
         this.windowView = windowView;

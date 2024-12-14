@@ -1556,6 +1556,13 @@ public class AndroidUtilities {
         return bm;
     }
 
+    public static Bitmap drawView(View v) {
+        Bitmap bm = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bm);
+        v.draw(canvas);
+        return bm;
+    }
+
     private static void snapshotTextureViews(int rootX, int rootY, int[] loc, Canvas canvas, View v) {
         if (v instanceof TextureView) {
             TextureView tv = (TextureView) v;

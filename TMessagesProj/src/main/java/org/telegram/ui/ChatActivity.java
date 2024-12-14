@@ -17515,7 +17515,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         } else if ((requestCode == BasePermissionsActivity.REQUEST_CODE_ATTACH_CONTACT || requestCode == 30) && chatAttachAlert != null) {
             chatAttachAlert.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
         } else if ((requestCode == 17 || requestCode == 18) && chatAttachAlert != null) {
-            chatAttachAlert.getPhotoLayout().checkCamera(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
+            chatAttachAlert.getPhotoLayout().checkCameraPermission(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
             chatAttachAlert.getPhotoLayout().checkStorage();
         } else if (requestCode == 21) {
             if (getParentActivity() == null) {

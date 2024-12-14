@@ -1268,6 +1268,196 @@ public class StoryEntry {
         }
     }
 
+    public void getVideoEditedInfoCollage(@NonNull Utilities.Callback<VideoEditedInfo> whenDone) {
+        if (!wouldBeVideo()) {
+            whenDone.run(null);
+            return;
+        }
+        final String videoPath = file == null ? null : file.getAbsolutePath();
+        final int[][] params = new int[Math.max(1, isCollage() ? collageContent.size() : 0)][AnimatedFileDrawable.PARAM_NUM_COUNT];
+        params[0] = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
+        Runnable fill = () -> {
+            VideoEditedInfo info = new VideoEditedInfo();
+
+            info.isStory = true;
+            info.fromCamera = fromCamera;
+            info.originalWidth = width;
+            info.originalHeight = height;
+            info.resultWidth = resultWidth;
+            info.resultHeight = resultHeight;
+            info.paintPath = paintFile == null ? null : paintFile.getPath();
+            info.messagePath = messageFile == null ? null : messageFile.getPath();
+            info.messageVideoMaskPath = messageVideoMaskFile == null ? null : messageVideoMaskFile.getPath();
+            info.backgroundPath = backgroundFile == null ? null : backgroundFile.getPath();
+
+            long generalOffset = 0;
+            final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
+            if (isVideo && videoPath != null && !isCollage()) {
+                info.originalPath = videoPath;
+                info.isPhoto = false;
+                info.framerate = Math.min(59, params[0][AnimatedFileDrawable.PARAM_NUM_FRAMERATE]);
+                int videoBitrate = MediaController.getVideoBitrate(videoPath);
+                info.originalBitrate = videoBitrate == -1 ? params[0][AnimatedFileDrawable.PARAM_NUM_BITRATE] : videoBitrate;
+                if (info.originalBitrate < 1_000_000 && (mediaEntities != null && !mediaEntities.isEmpty())) {
+                    info.bitrate = 2_000_000;
+                    info.originalBitrate = -1;
+                } else if (info.originalBitrate < 500_000) {
+                    info.bitrate = 2_500_000;
+                    info.originalBitrate = -1;
+                } else {
+                    info.bitrate = Utilities.clamp(info.originalBitrate, 3_000_000, 500_000);
+                }
+                FileLog.d("story bitrate, original = " + info.originalBitrate + " => " + info.bitrate);
+                info.originalDuration = (duration = params[0][AnimatedFileDrawable.PARAM_NUM_DURATION]) * 1000L;
+                info.startTime = (long) (left * duration) * 1000L;
+                info.endTime = (long) (right * duration) * 1000L;
+                info.estimatedDuration = info.endTime - info.startTime;
+                info.volume = videoVolume;
+                info.muted = muted;
+                info.estimatedSize = (long) (params[0][AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE] + params[0][AnimatedFileDrawable.PARAM_NUM_DURATION] / 1000.0f * encoderBitrate / 8);
+                info.estimatedSize = Math.max(file.length(), info.estimatedSize);
+                info.filterState = filterState;
+                info.blurPath = paintBlurFile == null ? null : paintBlurFile.getPath();
+            } else {
+                if (filterFile != null) {
+                    info.originalPath = filterFile.getAbsolutePath();
+                } else {
+                    info.originalPath = videoPath;
+                }
+                info.isPhoto = true;
+                info.collage = collage;
+                if (isCollage()) {
+                    boolean hasVideo = false;
+                    for (int i = 0; i < collageContent.size(); ++i) {
+                        StoryEntry e = collageContent.get(i);
+                        if (e.isVideo) {
+                            hasVideo = true;
+                            e.width = Math.max(e.width, params[i][AnimatedFileDrawable.PARAM_NUM_WIDTH]);
+                            e.height = Math.max(e.height, params[i][AnimatedFileDrawable.PARAM_NUM_HEIGHT]);
+                            e.duration = Math.max(e.duration, params[i][AnimatedFileDrawable.PARAM_NUM_DURATION]);
+                        }
+                    }
+                    info.collageParts = VideoEditedInfo.Part.toParts(this);
+                    if (!hasVideo) {
+                        info.estimatedDuration = info.originalDuration = duration = averageDuration;
+                    } else {
+                        long maxPartDuration = 0;
+                        VideoEditedInfo.Part maxPart = null;
+                        for (VideoEditedInfo.Part part : info.collageParts) {
+                            if (part.isVideo && part.duration > maxPartDuration) {
+                                maxPartDuration = part.duration;
+                                maxPart = part;
+                            }
+                        }
+                        if (maxPart != null) {
+                            info.estimatedDuration = info.originalDuration = duration = (long) (maxPart.duration * (maxPart.right - maxPart.left));
+                            generalOffset = -(maxPart.offset + (long) (maxPart.left * maxPart.duration));
+                            maxPart.offset = generalOffset;
+                            for (VideoEditedInfo.Part part : info.collageParts) {
+                                if (part.isVideo && part != maxPart) {
+                                    part.offset += generalOffset;
+                                }
+                            }
+                        }
+                    }
+                } else if (round != null) {
+                    info.estimatedDuration = info.originalDuration = duration = (long) ((roundRight - roundLeft) * roundDuration);
+                } else if (audioPath != null) {
+                    info.estimatedDuration = info.originalDuration = duration = (long) ((audioRight - audioLeft) * audioDuration);
+                } else {
+                    info.estimatedDuration = info.originalDuration = duration = averageDuration;
+                }
+                info.startTime = -1;
+                info.endTime = -1;
+                info.muted = true;
+                info.originalBitrate = -1;
+                info.volume = 1f;
+                info.bitrate = -1;
+                info.framerate = 30;
+                info.estimatedSize = (long) (duration / 1000.0f * encoderBitrate / 8);
+                info.filterState = null;
+            }
+            info.account = currentAccount;
+            info.wallpaperPeerId = backgroundWallpaperPeerId;
+            info.isDark = isDark;
+            info.avatarStartTime = -1;
+
+            info.cropState = new MediaController.CropState();
+            info.cropState.useMatrix = new Matrix();
+            info.cropState.useMatrix.set(matrix);
+
+            info.mediaEntities = mediaEntities;
+
+            info.gradientTopColor = gradientTopColor;
+            info.gradientBottomColor = gradientBottomColor;
+            info.forceFragmenting = true;
+
+            info.hdrInfo = hdrInfo;
+
+            info.mixedSoundInfos.clear();
+            if (isCollage() && !muted) {
+                for (VideoEditedInfo.Part part : info.collageParts) {
+                    if (part.isVideo && part.volume > 0.0f && !part.muted) {
+                        final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(part.path);
+                        soundInfo.volume = part.volume;
+                        soundInfo.audioOffset = (long) (part.left * part.duration) * 1000L;
+                        soundInfo.startTime = (long) (part.offset) * 1000L;
+                        soundInfo.duration = (long) ((part.right - part.left) * part.duration) * 1000L;
+                        info.mixedSoundInfos.add(soundInfo);
+                    }
+                }
+            }
+            if (round != null) {
+                final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(round.getAbsolutePath());
+                soundInfo.volume = roundVolume;
+                soundInfo.audioOffset = (long) (roundLeft * roundDuration) * 1000L;
+                if (isVideo) {
+                    soundInfo.startTime = (long) (roundOffset - left * duration) * 1000L;
+                } else {
+                    soundInfo.startTime = 0;
+                }
+                soundInfo.startTime += generalOffset;
+                soundInfo.duration = (long) ((roundRight - roundLeft) * roundDuration) * 1000L;
+                info.mixedSoundInfos.add(soundInfo);
+            }
+            if (audioPath != null) {
+                final MediaCodecVideoConvertor.MixedSoundInfo soundInfo = new MediaCodecVideoConvertor.MixedSoundInfo(audioPath);
+                soundInfo.volume = audioVolume;
+                soundInfo.audioOffset = (long) (audioLeft * audioDuration) * 1000L;
+                if (isVideo) {
+                    soundInfo.startTime = (long) (audioOffset - left * duration) * 1000L;
+                } else {
+                    soundInfo.startTime = 0;
+                }
+                soundInfo.startTime += generalOffset;
+                soundInfo.duration = (long) ((audioRight - audioLeft) * audioDuration) * 1000L;
+                info.mixedSoundInfos.add(soundInfo);
+            }
+
+            whenDone.run(info);
+        };
+        if (isCollage()) {
+            final String[] paths = new String[collageContent.size()];
+            for (int i = 0; i < collageContent.size(); ++i) {
+                paths[i] = collageContent.get(i).file == null ? null : collageContent.get(i).file.getAbsolutePath();
+                params[i] = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
+            }
+            Utilities.globalQueue.postRunnable(() -> {
+                for (int i = 0; i < paths.length; ++i)
+                    if (paths[i] != null)
+                        AnimatedFileDrawable.getVideoInfo(paths[i], params[i]);
+                AndroidUtilities.runOnUIThread(fill);
+            });
+        } else if (file == null) {
+            fill.run();
+        } else {
+            Utilities.globalQueue.postRunnable(() -> {
+                AnimatedFileDrawable.getVideoInfo(videoPath, params[0]);
+                AndroidUtilities.runOnUIThread(fill);
+            });
+        }
+    }
+
     public static File makeCacheFile(final int account, boolean video) {
         return makeCacheFile(account, video ? "mp4" : "jpg");
     }

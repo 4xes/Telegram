@@ -99,6 +99,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.messenger.camera.CameraView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -116,6 +117,7 @@ import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Business.ChatAttachAlertQuickRepliesLayout;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Attach.CameraIconView;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GradientClip;
 import org.telegram.ui.LaunchActivity;
@@ -3879,9 +3881,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 nextAttachLayout.setTranslationX(width);
                 if (currentAttachLayout instanceof ChatAttachAlertPhotoLayout) {
                     ChatAttachAlertPhotoLayout photoLayout = (ChatAttachAlertPhotoLayout) currentAttachLayout;
-                    if (photoLayout.cameraView != null) {
-                        photoLayout.cameraView.setVisibility(View.INVISIBLE);
-                        photoLayout.cameraIcon.setVisibility(View.INVISIBLE);
+                    View cameraView = photoLayout.getCameraContainer();
+                    CameraIconView cameraIcon = photoLayout.getCameraIcon();
+                    if (cameraView != null) {
+                        cameraView.setVisibility(View.INVISIBLE);
+                        cameraIcon.setVisibility(View.INVISIBLE);
                         photoLayout.cameraCell.setVisibility(View.VISIBLE);
                     }
                 }
@@ -3889,9 +3893,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 currentAttachLayout.setTranslationX(-width);
                 if (nextAttachLayout == photoLayout) {
                     ChatAttachAlertPhotoLayout photoLayout = (ChatAttachAlertPhotoLayout) nextAttachLayout;
-                    if (photoLayout.cameraView != null) {
-                        photoLayout.cameraView.setVisibility(View.VISIBLE);
-                        photoLayout.cameraIcon.setVisibility(View.VISIBLE);
+                    View cameraView = photoLayout.getCameraContainer();
+                    CameraIconView cameraIcon = photoLayout.getCameraIcon();
+                    if (cameraView != null) {
+                        cameraView.setVisibility(View.VISIBLE);
+                        cameraIcon.setVisibility(View.VISIBLE);
                     }
                 }
             }

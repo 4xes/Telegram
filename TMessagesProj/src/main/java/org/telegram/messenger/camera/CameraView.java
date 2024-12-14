@@ -496,8 +496,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         pixelH = getMeasuredHeight();
         if (pixelDualW <= 0) {
             pixelDualW = getMeasuredWidth();
-            pixelDualH = getMeasuredHeight();
+            pixelDualH = pixelDualH();
         }
+    }
+
+    protected float pixelDualH() {
+        return getMeasuredHeight();
     }
 
     public float getTextureHeight(float width, float height) {

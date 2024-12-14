@@ -266,7 +266,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     private Runnable onDoneButtonClickedListener;
     private Runnable onCancelButtonClickedListener;
 
-    private StoryRecorder.WindowView parent;
+    private PaintParent parent;
 
     private AnimatorSet keyboardAnimator;
     public final KeyboardNotifier keyboardNotifier;
@@ -297,8 +297,18 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }
     }
 
+    public abstract static class PaintParent extends SizeNotifierFrameLayout {
+        public PaintParent(Context context) {
+            super(context);
+        }
+
+        abstract int getBottomPaddingForPaint();
+        abstract int getPaddingUnderContainer();
+        abstract void drawBlurBitmap(Bitmap bitmap, float amount);
+    }
+
     @SuppressLint("NotifyDataSetChanged")
-    public PaintView(Context context, boolean fileFromGallery, File file, boolean isVideo, boolean isBot, StoryRecorder.WindowView parent, Activity activity, int currentAccount, Bitmap bitmap, Bitmap blurBitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, StoryEntry entry, int viewWidth, int viewHeight, MediaController.CropState cropState, Runnable onInit, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider, PreviewView.TextureViewHolder videoTextureHolder, PreviewView previewView) {
+    public PaintView(Context context, boolean fileFromGallery, File file, boolean isVideo, boolean isBot, PaintParent parent, Activity activity, int currentAccount, Bitmap bitmap, Bitmap blurBitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, StoryEntry entry, int viewWidth, int viewHeight, MediaController.CropState cropState, Runnable onInit, BlurringShader.BlurManager blurManager, Theme.ResourcesProvider resourcesProvider, PreviewView.TextureViewHolder videoTextureHolder, PreviewView previewView) {
         super(context, activity, true);
         setDelegate(this);
         this.blurManager = blurManager;
@@ -1070,7 +1080,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         }
 
         keyboardNotifier = new KeyboardNotifier(parent, keyboardHeight -> {
-            keyboardHeight = Math.max(keyboardHeight - parent.getBottomPadding2(), emojiPadding - parent.getPaddingUnderContainer());
+            keyboardHeight = Math.max(keyboardHeight - parent.getBottomPaddingForPaint(), emojiPadding - parent.getPaddingUnderContainer());
             keyboardHeight = Math.max(0, keyboardHeight);
 
             notifyHeightChanged();
@@ -5040,7 +5050,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
     @Override
     public int measureKeyboardHeight() {
-        return keyboardNotifier.getKeyboardHeight() - parent.getBottomPadding2();
+        return keyboardNotifier.getKeyboardHeight() - parent.getBottomPaddingForPaint();
     }
 
     @Override

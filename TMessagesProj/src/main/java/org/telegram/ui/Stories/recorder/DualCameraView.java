@@ -11,6 +11,9 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
+import androidx.annotation.Nullable;
+
+import com.google.android.exoplayer2.util.Log;
 import com.google.common.primitives.Floats;
 import com.google.zxing.common.detector.MathUtils;
 
@@ -27,6 +30,7 @@ import org.telegram.messenger.camera.CameraView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Components.Attach.AttachCameraDelegate;
 
 public class DualCameraView extends CameraView {
 
@@ -97,9 +101,12 @@ public class DualCameraView extends CameraView {
     private float[] vertex = new float[2];
     private float[] verticesSrc, verticesDst;
 
-    public DualCameraView(Context context, boolean frontface, boolean lazy) {
+    private AttachCameraDelegate attachCameraDelegate;
+
+    public DualCameraView(Context context, boolean frontface, boolean lazy, AttachCameraDelegate attachCameraDelegate) {
         super(context, frontface, lazy);
         dualAvailable = dualAvailableStatic(context);
+        this.attachCameraDelegate = attachCameraDelegate;
     }
 
     public static boolean dualAvailableDefault(Context context, boolean withWhitelist) {
@@ -255,7 +262,6 @@ public class DualCameraView extends CameraView {
             float w = getMeasuredWidth() * .43f;
             float h = getMeasuredHeight() * .43f;
             float px = Math.min(getMeasuredWidth(), getMeasuredWidth()) * .025f;
-            float py = px * 2;
 
             matrix.postScale(w / getMeasuredWidth(), h / getMeasuredHeight());
             matrix.postTranslate(getMeasuredWidth() - px - w, px);
@@ -275,15 +281,33 @@ public class DualCameraView extends CameraView {
         invMatrix.mapPoints(vertex);
         int shape = getDualShape() % 3;
         boolean square = shape == 0 || shape == 1 || shape == 3;
-        float H = square ? 9 / 16f : 1f;
+        float aspect = getAspectDual();
+        float H = square ? aspect : 1f;
         return vertex[0] >= -1 && vertex[0] <= 1 && vertex[1] >= -H && vertex[1] <= H;
     }
+
+    private float getAspectDual() {
+        float aspect = 9f / 16f;
+        if (attachCameraDelegate != null) {
+            if (getMeasuredWidth() < getMeasuredHeight()) {
+                aspect = (float) getMeasuredWidth() / getMeasuredHeight();
+            } else {
+                aspect = (float) getMeasuredHeight() / getMeasuredWidth();
+            }
+        }
+        return aspect;
+    }
+
+    PointF tapPoint = new PointF();
 
     private boolean checkTap(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             tapTime = System.currentTimeMillis();
-            tapX = ev.getX();
-            tapY = ev.getY();
+            tapPoint.x = ev.getX();
+            tapPoint.y = ev.getY();
+            rotateTouch(tapPoint);
+            tapX = tapPoint.x;
+            tapY = tapPoint.y;
             lastFocusToPoint = null;
             if (longpressRunnable != null) {
                 AndroidUtilities.cancelRunOnUIThread(longpressRunnable);
@@ -335,9 +359,22 @@ public class DualCameraView extends CameraView {
         tapTime = -1;
     }
 
+    private boolean isScreenHorizontalOrientation() {
+        return attachCameraDelegate != null && getMeasuredWidth() > getMeasuredHeight();
+    }
+
+    private void rotateTouch(PointF touch) {
+        if (isScreenHorizontalOrientation()) {
+            float x = ((float) getMeasuredHeight() - touch.y) * ((float) getMeasuredWidth() / getMeasuredHeight());
+            float y = touch.x * ((float) getMeasuredHeight() / getMeasuredWidth());
+            touch.x = x;
+            touch.y = y;
+        }
+    }
+
     private boolean touchEvent(MotionEvent ev) {
-        boolean r = false;
-        r = checkTap(ev) || r;
+        boolean r;
+        r = checkTap(ev);
         if (isDual()) {
             Matrix matrix = getDualPosition();
 
@@ -353,6 +390,7 @@ public class DualCameraView extends CameraView {
                 touch.x = ev.getX(0);
                 touch.y = ev.getY(0);
             }
+            rotateTouch(touch);
             if (multitouch != currentMultitouch) {
                 lastTouch.x = touch.x;
                 lastTouch.y = touch.y;
@@ -421,15 +459,33 @@ public class DualCameraView extends CameraView {
                         snappedRotation = false;
                     }
                 }
-                if (cx < 0) {
-                    finalMatrix.postTranslate(-cx, 0);
-                } else if (cx > getWidth()) {
-                    finalMatrix.postTranslate(getWidth() - cx, 0);
-                }
-                if (cy < 0) {
-                    finalMatrix.postTranslate(0, -cy);
-                } else if (cy > getHeight() - AndroidUtilities.dp(150)) {
-                    finalMatrix.postTranslate(0, getHeight() - AndroidUtilities.dp(150) - cy);
+                if (!isScreenHorizontalOrientation()) {
+                    if (cx < 0) {
+                        finalMatrix.postTranslate(-cx, 0);
+                    } else if (cx > getWidth()) {
+                        finalMatrix.postTranslate(getWidth() - cx, 0);
+                    }
+                    if (cy < 0) {
+                        finalMatrix.postTranslate(0, -cy);
+                    } else if (cy > getHeight() - AndroidUtilities.dp(150)) {
+                        finalMatrix.postTranslate(0, getHeight() - AndroidUtilities.dp(150) - cy);
+                    }
+                } else {
+                    Log.e("MATRIX", "move "+ cx + "," + cy);
+                    if (cx < 0) {
+                        finalMatrix.postTranslate(-cx, 0);
+                        Log.e("MATRIX", "move0");
+                    } else if (cx > getHeight() + AndroidUtilities.dp(150)) {
+                        finalMatrix.postTranslate(getHeight() + AndroidUtilities.dp(150) - cx, 0);
+                        Log.e("MATRIX", "move1");
+                    }
+                    if (cy < 0) {
+                        finalMatrix.postTranslate(0, -cy);
+                        Log.e("MATRIX", "move2");
+                    } else if (cy > getWidth() - AndroidUtilities.dp(150)) {
+                        finalMatrix.postTranslate(0, getWidth() - AndroidUtilities.dp(150) - cy);
+                        Log.e("MATRIX", "move3");
+                    }
                 }
                 finalMatrix.postConcat(toGL);
                 matrix.set(finalMatrix);
@@ -476,6 +532,15 @@ public class DualCameraView extends CameraView {
         return r;
     }
 
+    @Override
+    protected float pixelDualH() {
+        if (attachCameraDelegate != null) {
+            return getMeasuredHeight() * (16f / 9f);
+        } else {
+            return super.pixelDualH();
+        }
+    }
+
     protected void onEntityDraggedTop(boolean value) {
     }
 
@@ -487,8 +552,10 @@ public class DualCameraView extends CameraView {
     }
 
     private void extractPointsData(Matrix matrix) {
+        //
         vertices[0] = 0;
         vertices[1] = 0;
+
         matrix.mapPoints(vertices);
         cx = vertices[0];
         cy = vertices[1];
@@ -514,7 +581,7 @@ public class DualCameraView extends CameraView {
         }
         int shape = getDualShape() % 3;
         boolean square = shape == 0 || shape == 1 || shape == 3;
-        float H = square ? 9 / 16f : 1f;
+        float H = square ? getAspectDual() : 1f;
         verticesSrc[0] = -1;
         verticesSrc[1] = -H;
         verticesSrc[2] = 1;
@@ -571,7 +638,8 @@ public class DualCameraView extends CameraView {
         return dualAvailable;
     }
 
-    private Matrix getSavedDualMatrix() {
+    @Nullable
+    protected Matrix getSavedDualMatrix() {
         String str = MessagesController.getGlobalMainSettings().getString("dualmatrix", null);
         if (str == null) {
             return null;
@@ -598,11 +666,11 @@ public class DualCameraView extends CameraView {
         return dualAvailableStatic(getContext()) && MessagesController.getGlobalMainSettings().getBoolean("dualcam", dualAvailableDefault(ApplicationLoader.applicationContext, false));
     }
 
-    private void resetSavedDual() {
+    public void resetSavedDual() {
         MessagesController.getGlobalMainSettings().edit().putBoolean("dualcam", false).remove("dualmatrix").apply();
     }
 
-    private void saveDual() {
+    public void saveDual() {
         SharedPreferences.Editor edit = MessagesController.getGlobalMainSettings().edit();
         edit.putBoolean("dualcam", isDual());
         if (isDual()) {

@@ -6637,7 +6637,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
         if ((currentActivityType == TYPE_IDENTITY || currentActivityType == TYPE_ADDRESS) && chatAttachAlert != null) {
             if (requestCode == 17) {
-                chatAttachAlert.getPhotoLayout().checkCamera(false);
+                chatAttachAlert.getPhotoLayout().checkCameraPermission(false);
             } else if (requestCode == 21) {
                 if (getParentActivity() == null) {
                     return;

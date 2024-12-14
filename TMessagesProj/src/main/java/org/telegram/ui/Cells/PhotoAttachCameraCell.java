@@ -11,7 +11,6 @@ package org.telegram.ui.Cells;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -19,19 +18,17 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.Attach.CameraThumbUtils;
 import org.telegram.ui.Components.LayoutHelper;
-
-import java.io.File;
 
 @SuppressLint("NewApi")
 public class PhotoAttachCameraCell extends FrameLayout {
 
     private final Theme.ResourcesProvider resourcesProvider;
-    private ImageView imageView;
-    private ImageView backgroundView;
+    private final ImageView imageView;
+    private final ImageView backgroundView;
     private int itemSize;
 
     public PhotoAttachCameraCell(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -40,7 +37,6 @@ public class PhotoAttachCameraCell extends FrameLayout {
 
         backgroundView = new ImageView(context);
         backgroundView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        //backgroundView.setAdjustViewBounds(false);
         addView(backgroundView, LayoutHelper.createFrame(80, 80));
 
         imageView = new ImageView(context);
@@ -78,13 +74,7 @@ public class PhotoAttachCameraCell extends FrameLayout {
     }
 
     public void updateBitmap() {
-        Bitmap bitmap = null;
-        try {
-            File file = new File(ApplicationLoader.getFilesDirFixed(), "cthumb.jpg");
-            bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-        } catch (Throwable ignore) {
-
-        }
+        Bitmap bitmap = CameraThumbUtils.loadThumb();
         if (bitmap != null) {
             backgroundView.setImageBitmap(bitmap);
         } else {

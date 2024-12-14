@@ -215,6 +215,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     public static boolean isVisible() {
         return instance != null && instance.isShown;
     }
+    @SuppressLint("WrongConstant")
     public StoryRecorder(Activity activity, int currentAccount) {
         this.activity = activity;
         this.currentAccount = currentAccount;
@@ -844,7 +845,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
-    public class WindowView extends SizeNotifierFrameLayout {
+    public class WindowView extends PaintView.PaintParent {
 
         private final GestureDetectorFixDoubleTap gestureDetector;
         private final ScaleGestureDetector scaleGestureDetector;
@@ -860,10 +861,13 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             return getHeight() - containerView.getBottom() + underControls;
         }
 
-        public int getBottomPadding2() {
+
+        @Override
+        public int getBottomPaddingForPaint() {
             return getHeight() - containerView.getBottom();
         }
 
+        @Override
         public int getPaddingUnderContainer() {
             return getHeight() - insetBottom - containerView.getBottom();
         }
@@ -1000,8 +1004,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         public boolean dispatchKeyEventPreIme(KeyEvent event) {
             if (event != null && event.getKeyCode()
                     == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
-                onBackPressed();
-                return true;
+                return onBackPressed();
             }
             return super.dispatchKeyEventPreIme(event);
         }
@@ -1402,6 +1405,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             }
         }
 
+        @Override
         public void drawBlurBitmap(Bitmap bitmap, float amount) {
             Canvas canvas = new Canvas(bitmap);
             canvas.drawColor(0xff000000);
@@ -1866,7 +1870,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             }
         });
 
-        collageLayoutView = new CollageLayoutView2(context, blurManager, containerView, resourcesProvider) {
+        collageLayoutView = new CollageLayoutView2(context, blurManager, containerView, resourcesProvider, null) {
             @Override
             protected void onLayoutUpdate(CollageLayout layout) {
                 collageListView.setVisible(false, true);
@@ -3858,7 +3862,6 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             if (themeButton != null) {
                 themeButton.setAlpha(page == PAGE_PREVIEW && (outputEntry != null && outputEntry.isRepostMessage) ? 1f : 0);
             }
-//            privacySelector.setAlpha(page == PAGE_PREVIEW ? 1f : 0);
             timelineView.setAlpha(page == PAGE_PREVIEW ? 1f : 0);
             coverTimelineView.setAlpha(page == PAGE_COVER ? 1f : 0f);
             titleTextView.setAlpha(page == PAGE_PREVIEW || page == PAGE_COVER ? 1f : 0f);
@@ -5654,7 +5657,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (cameraView != null || getContext() == null) {
             return;
         }
-        cameraView = new DualCameraView(getContext(), getCameraFace(), false) {
+        cameraView = new DualCameraView(getContext(), getCameraFace(), false, null) {
             @Override
             public void onEntityDraggedTop(boolean value) {
                 previewHighlight.show(true, value, actionBarContainer);

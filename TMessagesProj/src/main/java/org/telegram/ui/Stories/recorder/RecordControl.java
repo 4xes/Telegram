@@ -12,10 +12,12 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.Xfermode;
@@ -43,6 +45,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.Attach.AttachCameraDelegate;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -84,6 +87,10 @@ public class RecordControl extends View implements FlashViews.Invertable {
         this.delegate = delegate;
     }
 
+    public void setAttachCameraDelegate(AttachCameraDelegate attachCameraDelegate) {
+        this.attachCameraDelegate = attachCameraDelegate;
+    }
+
     private Delegate delegate;
 
     private final ImageReceiver galleryImage = new ImageReceiver();
@@ -91,6 +98,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private final Drawable flipDrawableWhite, flipDrawableBlack;
     private final Drawable unlockDrawable, lockDrawable;
     private final Drawable pauseDrawable;
+    private AttachCameraDelegate attachCameraDelegate;
 
     private final static int WHITE = 0xFFFFFFFF;
     private final static int RED = 0xFFF73131;
@@ -117,7 +125,8 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private boolean dual;
     private final AnimatedFloat dualT = new AnimatedFloat(this, 0, 330, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    private static final long MAX_DURATION = 60 * 1000L;
+    private static final long MINUTE = 60 * 1000L;
+    private static final long MAX_DURATION = MINUTE;
     private long recordingStart;
     private long lastDuration;
 
@@ -125,6 +134,8 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private final Point check1 = new Point(-dpf2(29/3.0f), dpf2(7/3.0f));
     private final Point check2 = new Point(-dpf2(8.5f/3.0f), dpf2(26/3.0f));
     private final Point check3 = new Point(dpf2(29/3.0f), dpf2(-11/3.0f));
+
+    private long maxDuration = MAX_DURATION;
 
     public RecordControl(Context context) {
         super(context);
@@ -243,6 +254,9 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private float cx, cy;
     private float leftCx, rightCx;
 
+    private final RectF flipButtonRect = new RectF();
+    private final RectF galleryButtonRect = new RectF();
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec);
@@ -254,7 +268,8 @@ public class RecordControl extends View implements FlashViews.Invertable {
         final float dist = Math.min(dp(135), width * .35f);
         leftCx = cx - dist;
         rightCx = cx + dist;
-
+        setBounds(flipButtonRect, rightCx, cy, dp(14));
+        galleryButtonRect.set(leftCx - dp(20), cy - dp(20), leftCx + dp(20), cy + dp(20));
         setDrawableBounds(flipDrawableWhite, rightCx, cy, dp(14));
         setDrawableBounds(flipDrawableBlack, rightCx, cy, dp(14));
         setDrawableBounds(unlockDrawable, leftCx, cy);
@@ -275,6 +290,10 @@ public class RecordControl extends View implements FlashViews.Invertable {
 
     private static void setDrawableBounds(Drawable drawable, float cx, float cy, float r) {
         drawable.setBounds((int) (cx - r), (int) (cy - r), (int) (cx + r), (int) (cy + r));
+    }
+
+    private static void setBounds(RectF rectF, float cx, float cy, float r) {
+        rectF.set((int) (cx - r), (int) (cy - r), (int) (cx + r), (int) (cy + r));
     }
 
     private final AnimatedFloat startModeIsVideoT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -434,7 +453,12 @@ public class RecordControl extends View implements FlashViews.Invertable {
 
         long duration = System.currentTimeMillis() - recordingStart;
         float recordEndT = recording ? 0 : 1f - recordingLongT;
-        float sweepAngle = duration / (float) MAX_DURATION * 360;
+        float sweepAngle;
+        if (maxDuration == Long.MAX_VALUE) {
+            sweepAngle = (duration % MINUTE)/ (float) MINUTE * 360;
+        } else {
+            sweepAngle = duration / (float) maxDuration * 360;
+        }
 
         float recordingLoading = this.recordingLoadingT.set(this.recordingLoading);
 
@@ -466,7 +490,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (duration / 1000L != lastDuration / 1000L) {
                 delegate.onVideoDuration(duration / 1000L);
             }
-            if (duration >= MAX_DURATION) {
+            if (duration >= maxDuration) {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;
@@ -695,8 +719,19 @@ public class RecordControl extends View implements FlashViews.Invertable {
             lockButton.setPressed(false);
         } else if (action == MotionEvent.ACTION_DOWN || touch) {
             recordButton.setPressed(isPressed(x, y, cx, cy, dp(60), false));
-            flipButton.setPressed(isPressed(x, y, rightCx, cy, dp(30), true) && !hasCheck());
-            lockButton.setPressed(isPressed(x, y, leftCx, cy, dp(30), false) && !hasCheck());
+            if (attachCameraDelegate != null) {
+                if (action == MotionEvent.ACTION_DOWN) {
+                    flipButton.setPressed(flipButtonRect.contains(event.getX(), y) && !hasCheck());
+                    lockButton.setPressed(galleryButtonRect.contains(event.getX(), y) && !hasCheck());
+                } else if (recording) {
+                    flipButton.setPressed(isPressed(x, y, rightCx, cy, dp(30), true) && !hasCheck());
+                    lockButton.setPressed(isPressed(x, y, leftCx, cy, dp(30), false) && !hasCheck());
+                }
+            } else {
+                flipButton.setPressed(isPressed(x, y, rightCx, cy, dp(30), true) && !hasCheck());
+                lockButton.setPressed(isPressed(x, y, leftCx, cy, dp(30), false) && !hasCheck());
+            }
+
         }
 
         boolean r = false;
@@ -824,5 +859,9 @@ public class RecordControl extends View implements FlashViews.Invertable {
             this.recordingLoadingT.set(false, true);
         }
         invalidate();
+    }
+
+    public void setMaxDuration(long maxDuration) {
+        this.maxDuration = maxDuration;
     }
 }

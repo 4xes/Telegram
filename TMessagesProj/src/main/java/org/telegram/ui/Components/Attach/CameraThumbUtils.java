@@ -1,8 +1,12 @@
 package org.telegram.ui.Components.Attach;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.view.TextureView;
 
+import androidx.annotation.Nullable;
+
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.camera.CameraView;
@@ -10,9 +14,16 @@ import org.telegram.messenger.camera.CameraView;
 import java.io.File;
 import java.io.FileOutputStream;
 
-public class CameraUtils {
+public class CameraThumbUtils {
 
     public static void saveThumb(CameraView cameraView) {
+        saveThumb(cameraView, null);
+    }
+
+    public static void saveThumb(CameraView cameraView, Runnable whenDone) {
+        if (cameraView == null || cameraView.getTextureView() == null) {
+            return;
+        }
         try {
             TextureView textureView = cameraView.getTextureView();
             Bitmap bitmap = textureView.getBitmap();
@@ -33,6 +44,29 @@ public class CameraUtils {
             }
         } catch (Throwable ignore) {
 
+        } finally {
+            if (whenDone != null) {
+                AndroidUtilities.runOnUIThread(whenDone);
+            }
+        }
+    }
+
+    public static void saveThumbInQueue(CameraView cameraView, Runnable whenDone) {
+        Utilities.themeQueue.postRunnable(() -> {
+            saveThumb(cameraView, whenDone);
+        });
+    }
+
+    @Nullable
+    public static Bitmap loadThumb() {
+        try {
+            File file = new File(ApplicationLoader.getFilesDirFixed(), SAVE_THUMB);
+            if (!file.exists()) {
+                return null;
+            }
+            return BitmapFactory.decodeFile(file.getAbsolutePath());
+        } catch (Throwable ignore) {
+            return null;
         }
     }
 

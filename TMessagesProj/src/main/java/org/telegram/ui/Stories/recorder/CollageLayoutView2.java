@@ -46,6 +46,7 @@ import org.telegram.messenger.camera.CameraView;
 import org.telegram.messenger.video.VideoPlayerHolderBase;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.Attach.AttachCameraDelegate;
 import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
@@ -78,14 +79,18 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
     private final Matrix gradientMatrix;
 
     private final BlurringShader.BlurManager blurManager;
+    protected final AttachCameraDelegate attachCameraDelegate;
 
-    public CollageLayoutView2(Context context, BlurringShader.BlurManager blurManager, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider) {
+    public CollageLayoutView2(Context context, BlurringShader.BlurManager blurManager, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, AttachCameraDelegate attachCameraDelegate) {
         super(context);
         this.blurManager = blurManager;
         this.containerView = containerView;
         this.resourcesProvider = resourcesProvider;
+        this.attachCameraDelegate = attachCameraDelegate;
 
-        setBackgroundColor(0xFF1F1F1F);
+        if (attachCameraDelegate == null) {
+            setBackgroundColor(0xFF1F1F1F);
+        }
 
         final Part firstPartView = new Part();
         firstPartView.setPart(currentLayout.parts.get(0), false);
@@ -93,7 +98,6 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         if (attached) {
             firstPartView.imageReceiver.onAttachedToWindow();
         }
-//        addView(firstPartView);
         parts.add(firstPartView);
         currentPart = firstPartView;
         nextPart = null;
@@ -106,6 +110,10 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
         highlightPaint.setShader(gradient);
 
         setWillNotDraw(false);
+    }
+
+    protected boolean isCollapsed() {
+        return attachCameraDelegate != null && !attachCameraDelegate.isCameraExpanded();
     }
 
     @Nullable
@@ -327,6 +335,7 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         super.dispatchDraw(canvas);
+
         if (!hasLayout() && !reordering && !this.reorderingTouch && animatedRows.get() == currentLayout.h && animatedColumns[0].get() == currentLayout.columns[0]) {
             setCameraNeedsBlur(false);
             return;

@@ -675,7 +675,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
         if (chatAttachAlert != null) {
             if (requestCode == 17) {
-                chatAttachAlert.getPhotoLayout().checkCamera(false);
+                chatAttachAlert.getPhotoLayout().checkCameraPermission(false);
                 chatAttachAlert.getPhotoLayout().checkStorage();
             } else if (requestCode == BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE) {
                 chatAttachAlert.getPhotoLayout().checkStorage();
