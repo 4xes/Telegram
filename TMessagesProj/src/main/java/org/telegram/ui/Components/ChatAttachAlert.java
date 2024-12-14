@@ -610,7 +610,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     public static class AttachAlertLayout extends FrameLayout {
 
         protected final Theme.ResourcesProvider resourcesProvider;
-        protected ChatAttachAlert parentAlert;
+        public ChatAttachAlert parentAlert;
 
         public AttachAlertLayout(ChatAttachAlert alert, Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -834,7 +834,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     public EditTextEmoji topCommentTextView;
     public ImageView topCommentMoveButton;
 
-    protected int avatarPicker;
+    public int avatarPicker;
     protected boolean avatarSearch;
     protected boolean typeButtonsAvailable;
 
@@ -847,7 +847,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private long selectedId;
 
-    protected float cornerRadius = 1.0f;
+    public float cornerRadius = 1.0f;
 
     public ActionBar actionBar;
     private View actionBarShadow;
@@ -873,7 +873,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private boolean enterCommentEventSent;
 
-    protected RecyclerListView buttonsRecyclerView;
+    public RecyclerListView buttonsRecyclerView;
     private LinearLayoutManager buttonsLayoutManager;
     private ButtonsAdapter buttonsAdapter;
 
@@ -899,8 +899,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private boolean plainTextEnabled = true;
 
     protected int maxSelectedPhotos = -1;
-    protected boolean allowOrder = true;
-    protected boolean openWithFrontFaceCamera;
+    public boolean allowOrder = true;
+    public boolean openWithFrontFaceCamera;
     private float captionEditTextTopOffset;
     private float chatActivityEnterViewAnimateFromTop;
     private ValueAnimator topBackgroundAnimator;
@@ -909,14 +909,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
 
-    protected ChatAttachViewDelegate delegate;
+    public ChatAttachViewDelegate delegate;
 
     public int[] scrollOffsetY = new int[2];
     private int previousScrollOffsetY;
     private float fromScrollY;
     private float toScrollY;
 
-    protected boolean paused;
+    public boolean paused;
 
     private final Paint attachButtonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float bottomPannelTranslation;
@@ -1292,7 +1292,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private ArrayList<android.graphics.Rect> exclusionRects = new ArrayList<>();
     private android.graphics.Rect exclustionRect = new Rect();
 
-    float currentPanTranslationY;
+    public float currentPanTranslationY;
 
     public ChatAttachAlert(Context context, final BaseFragment parentFragment, boolean forceDarkTheme, boolean showingFromDialog) {
         this(context, parentFragment, forceDarkTheme, showingFromDialog, true, null);
@@ -2806,10 +2806,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     writeButton.invalidate();
                 }
 
-//                if (!captionLimitBulletinShown && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && !UserConfig.getInstance(currentAccount).isPremium() && codepointCount > MessagesController.getInstance(currentAccount).captionLengthLimitDefault && codepointCount < MessagesController.getInstance(currentAccount).captionLengthLimitPremium) {
-//                    captionLimitBulletinShown = true;
-//                    showCaptionLimitBulletin(parentFragment);
-//                }
             }
         });
         captionContainer.addView(commentTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 84, 0));
@@ -3634,7 +3630,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     @Override
     protected boolean shouldOverlayCameraViewOverNavBar() {
-        return currentAttachLayout == photoLayout && photoLayout.cameraExpanded;
+        return currentAttachLayout == photoLayout && photoLayout.isCameraExpanded();
     }
 
     @Override
@@ -5125,7 +5121,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         currentAttachLayout.onContainerTranslationUpdated(currentPanTranslationY);
         if (allowDrawContent != value) {
             allowDrawContent = value;
-            if (currentAttachLayout == photoLayout && photoLayout != null && !photoLayout.cameraExpanded) {
+            if (currentAttachLayout == photoLayout && photoLayout != null && !photoLayout.isCameraExpanded()) {
                 photoLayout.pauseCamera(!allowDrawContent || sent);
             }
         }
