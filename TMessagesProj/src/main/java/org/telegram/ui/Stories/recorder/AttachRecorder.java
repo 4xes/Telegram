@@ -7,7 +7,9 @@ import static org.telegram.messenger.AndroidUtilities.rectTmp;
 import static org.telegram.messenger.AndroidUtilities.rectTmp2;
 import static org.telegram.messenger.AndroidUtilities.snapshotView;
 import static org.telegram.messenger.AndroidUtilities.touchSlop;
+import static org.telegram.messenger.AndroidUtilities.updateViewVisibilityAnimated;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.Components.Bulletin.DURATION_PROLONG;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -102,12 +104,15 @@ import org.telegram.ui.Components.Attach.CollageAttachLayoutView;
 import org.telegram.ui.Components.Attach.CounterTextView;
 import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GestureDetectorFixDoubleTap;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ProgressView;
+import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.ThanosEffect;
 import org.telegram.ui.Components.WaveDrawable;
@@ -138,6 +143,7 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
 
     private final int currentAccount;
     private boolean cameraPhotoRecyclerViewIgnoreLayout = true;
+    private RadialProgressView radialProgressView;
 
     private final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
@@ -189,6 +195,10 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
             attachDelegate.stopCameraPreview();
         });
         containerView.addView(counterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 38));
+
+        radialProgressView = new RadialProgressView(context);
+        containerView.addView(radialProgressView);
+        radialProgressView.setVisibility(View.GONE);
     }
 
     public void checkVisibleViewer() {
@@ -220,6 +230,7 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
     }
 
     public void onClose(boolean animated) {
+        clearCollage();
         showControls(false, animated);
         unlock();
         removeNotificationObservers();
@@ -713,6 +724,11 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
             int cx = (w - counterTextView.getMeasuredWidth()) / 2;
             counterTextView.layout(cx, t, cx + counterTextView.getMeasuredWidth(), b);
 
+            cx = w / 2;
+            int cy = h / 2;
+            int halfProgress = radialProgressView.getMeasuredHeight() / 2;
+            radialProgressView.layout(cx - halfProgress, cy - halfProgress, cx + halfProgress, cy + halfProgress);
+
             flashViews.foregroundView.layout(0, 0, w, h);
             for (int i = 0; i < getChildCount(); ++i) {
                 View child = getChildAt(i);
@@ -754,6 +770,7 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
                 measureChildExactly(navbarContainer, dp(48), H);
             }
             measureChild(counterTextView, widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(38), View.MeasureSpec.EXACTLY));
+            measureChildExactly(radialProgressView, dp(56), dp(56));
 
             cameraPhotoRecyclerViewIgnoreLayout = true;
             if (isPortrait) {
@@ -1421,6 +1438,11 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
             entry.getVideoEditedInfo(info -> {
                 messageObject.videoEditedInfo = info;
                 Log.e("COLLAGE", "scheduleVideoMessage");
+
+                collageLayoutView.setPreview(true);
+                recordControl.setVisibility(View.GONE);
+                radialProgressView.setVisibility(VISIBLE);
+                collageHintTextView.setAlpha(0.0f);
                 MediaController.getInstance().scheduleVideoConvert(messageObject, false, false, false);
             });
         }
@@ -1906,12 +1928,22 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
             lastGallerySelectedAlbum = null;
             return true;
         } else if( collageLayoutView.hasContent()) {
-            collageLayoutView.clear(true);
-            updateActionBarButtons(true);
+            clearCollage();
+
             return true;
         } {
             return false;
         }
+    }
+
+    public void clearCollage() {
+        radialProgressView.setVisibility(View.GONE);
+        collageVideoMessage = null;
+        collageLayoutView.setPreview(false);
+        collageLayoutView.clear(true);
+        collageHintTextView.setVisibility(VISIBLE);
+        recordControl.setVisibility(VISIBLE);
+        updateActionBarButtons(true);
     }
 
     private AnimatorSet pageAnimator;
@@ -2708,12 +2740,16 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
         return MessagesController.getGlobalMainSettings().getBoolean("attach_camera", false);
     }
 
+    public void updateGallery() {
+        if (recordControl != null) {
+            recordControl.updateGalleryImage();
+        }
+    }
+
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.albumsDidLoad) {
-            if (recordControl != null) {
-                recordControl.updateGalleryImage();
-            }
+            updateGallery();
             if (lastGallerySelectedAlbum != null && MediaController.allMediaAlbums != null) {
                 for (int a = 0; a < MediaController.allMediaAlbums.size(); a++) {
                     MediaController.AlbumEntry entry = MediaController.allMediaAlbums.get(a);
@@ -2727,22 +2763,19 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
         if (id == NotificationCenter.fileLoaded) {
             final String path = (String) args[0];
             Log.e("COLLAGE", (String) path);
-//            if (attachFileName != null && attachFileName.equals(path)) {
-//                file = (File) args[1];
-//                checkVideo();
-//            }
         }
         if (id == NotificationCenter.fileLoadFailed) {
-            Log.e("COLLAGE", "FileLoadFailed");
         } else if (id == NotificationCenter.fileLoadProgressChanged) {
-            Log.e("COLLAGE", "FileLoadProgressChange");
         } else if (id == NotificationCenter.filePreparingStarted) {
-            Log.e("COLLAGE", "FilePreparingStarted");
         } else if (id == NotificationCenter.filePreparingFailed) {
             MessageObject messageObject = (MessageObject) args[0];
-            Log.e("COLLAGE", "FilePreparingFailed");
             if (collageVideoMessage == messageObject) {
-                //todo show error
+                clearCollage();
+                BulletinFactory.of(attachDelegate.getAlert().parentAlert.getContainer(), resourcesProvider)
+                        .createSimpleBulletin(R.raw.error, "Error processing collage")
+                        .setDuration(DURATION_PROLONG)
+                        .show(true);
+                collageVideoMessage = null;
             }
         } else if (id == NotificationCenter.fileNewChunkAvailable) {
             MessageObject messageObject = (MessageObject) args[0];
@@ -2751,9 +2784,9 @@ public class AttachRecorder implements NotificationCenter.NotificationCenterDele
                 long finalSize = (Long) args[3];
                 float progress = (float) args[4];
 
-                //TODO setLoading
-                //photoProgressViews[0].setProgress(progress,true);
+                radialProgressView.setProgress(progress);
                 if (finalSize != 0) {
+                    clearCollage();
                     attachDelegate.getAlert().onRecordedVideo(collageThumbPath, (long) messageObject.getDuration(), new File(finalPath));
                 }
             }

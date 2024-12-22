@@ -524,6 +524,7 @@ public class AttachCameraManager implements AttachCameraDelegate {
         if (parentAlert.isShowing() && !parentAlert.isDismissed() && !PhotoViewer.getInstance().isVisible()) {
             checkCameraPermissionAndShow(false);
         }
+        attachRecorder.updateGallery();
     }
 
     private void enableFullscreen() {

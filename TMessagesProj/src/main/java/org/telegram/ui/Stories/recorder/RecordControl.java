@@ -51,6 +51,7 @@ import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Point;
+import org.telegram.ui.Components.RadialProgressView;
 
 import java.util.ArrayList;
 
@@ -425,6 +426,10 @@ public class RecordControl extends View implements FlashViews.Invertable {
         canvas.scale(scale, scale, cx, cy);
         mainPaint.setAlpha(0xFF);
         canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, mainPaint);
+//        if (collage > 0 & collageProgress > 0) {
+//            outlinePaint.setAlpha(0xFF);
+//            canvas.drawArc(AndroidUtilities.rectTmp, -90, 360 * collageProgress, false, outlinePaint);
+//        }
         if (check > 0) {
             checkPaint.setStrokeWidth(dp(4));
             checkPath.rewind();
