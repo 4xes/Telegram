@@ -146,6 +146,7 @@ public class StarGiftPatterns {
         43.33f, 1, 18.66f, .3186f
     };
 
+
     public static void drawProfilePattern(Canvas canvas, Drawable pattern, float w, float h, float alpha, float full) {
         if (alpha <= 0.0f) return;
 
@@ -206,6 +207,111 @@ public class StarGiftPatterns {
             );
             pattern.setAlpha((int) (0xFF * alpha * thisAlpha));
             pattern.draw(canvas);
+        }
+    }
+
+    // Заранее подготовленные значения чувствительности
+    private static final float[] sensitivityLevels = {
+            0.15f, 0.2f, 0.25f, 0.28f, 0.3f
+    };
+
+    /* ----------------------------------------------------
+     *  Fox-ring pattern   (all values — dp)
+     * --------------------------------------------------*/
+    private static final int   OUTER_COUNT =  8;   // точек на внешнем кольце
+    private static final int   INNER_COUNT = 10;   // точек на внутреннем кольце
+
+    private static final float RING_SCALE = 0.5f;  // 1.0 = как есть, >1 = дальше, <1 = ближе
+
+    private static float A_OUTER = 240f * RING_SCALE;
+    private static float B_OUTER = 160f * RING_SCALE;
+    private static float A_INNER = 155f * RING_SCALE;
+    private static float B_INNER = 105f * RING_SCALE;
+
+    // смещение начала (в градусах) — кручём овал, чтобы точки
+    // совпали с макетом:   0° = вправо, 90° = вверх
+    private static final float OUTER_OFFSET_DEG = -20f;
+    private static final float INNER_OFFSET_DEG =   9f;
+
+    // размеры / прозрачность одинаковые для всех точек,
+    // но при желании их тоже можно вынести в отдельные константы
+    private static final float SIZE_DP   = 20f;
+    private static final float ALPHA     = 0.25f;
+    private static final float SENS_OUT  = sensitivityLevels[2];   // внешнее кольцо
+    private static final float SENS_IN   = sensitivityLevels[1];   // внутреннее
+
+    /* ----------------------------------------------------
+     *  Строим массив patternPoints динамически
+     * --------------------------------------------------*/
+    private static final float[] patternPoints = buildPattern();
+
+    /** Собирает patternPoints вида  {x, y, size, alpha, sensitivity … }  */
+    private static float[] buildPattern() {
+        java.util.ArrayList<Float> pts = new java.util.ArrayList<>(
+                (OUTER_COUNT + INNER_COUNT) * 5);
+
+        addRing(pts, OUTER_COUNT, A_OUTER, B_OUTER,
+                OUTER_OFFSET_DEG, SIZE_DP, ALPHA, SENS_OUT);
+        addRing(pts, INNER_COUNT, A_INNER, B_INNER,
+                INNER_OFFSET_DEG, SIZE_DP, ALPHA, SENS_IN);
+
+        // превратим List<Float> в float[]
+        float[] res = new float[pts.size()];
+        for (int i = 0; i < res.length; i++) res[i] = pts.get(i);
+        return res;
+    }
+
+    /** Добавляет в список точки одного кольца-овала  */
+    private static void addRing(java.util.List<Float> pts,
+                                int count, float a, float b,
+                                float startDeg,
+                                float size, float alpha, float sensitivity) {
+        final double step = 2 * Math.PI / count;
+        final double offset = Math.toRadians(startDeg);
+
+        for (int i = 0; i < count; i++) {
+            double ang = offset + i * step;
+            float  x   =  (float) (Math.cos(ang) * a);
+            float  y   =  (float) (Math.sin(ang) * b);
+
+            pts.add(x);           // смещение по-X относительно центра
+            pts.add(y);           // смещение по-Y
+            pts.add(size);        // диаметр иконки
+            pts.add(alpha);       // локальная прозрачность
+            pts.add(sensitivity); // «чувствительность» (порог появления)
+        }
+    }
+
+    public static void drawProfilePattern(Canvas canvas, Drawable drawable, float width, float height, float visibility) {
+        float midX = width / 2f;
+        float midY = AndroidUtilities.lerp(height / (2f / visibility), -dp(16), 1f - visibility);
+
+        for (int i = 0; i < patternPoints.length; i += 5) {
+            float offsetX = patternPoints[i];
+            float offsetY = patternPoints[i + 1];
+            float baseSize = patternPoints[i + 2];
+            float localAlpha = patternPoints[i + 3];
+            float threshold = patternPoints[i + 4];
+
+            float remaining = 1f - threshold;
+            if (remaining == 0f) remaining = 1f;
+
+            float progress = Math.max(0f, (1f - visibility - threshold)) / remaining;
+            float factor = Math.min(progress / threshold, 1f);
+
+            float x = visibility == 0f ? 0f : AndroidUtilities.lerp(offsetX, 0f, factor);
+            float y = visibility == 0f ? 0f : AndroidUtilities.lerp(offsetY, 0f, factor);
+
+            float finalSize = dpf2(baseSize * visibility);
+            float posX = midX + dpf2(x) - finalSize / 2f;
+            float posY = midY + dpf2(y) - finalSize / 2f;
+
+            drawable.setBounds(
+                    (int) posX, (int) posY,
+                    (int) (posX + finalSize), (int) (posY + finalSize)
+            );
+            drawable.setAlpha((int) (255 * visibility * localAlpha));
+            drawable.draw(canvas);
         }
     }
 

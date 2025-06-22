@@ -15,7 +15,6 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
@@ -318,106 +317,119 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             invalidate();
     }
 
-    public final AnimatedFloat animatedCount = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
-
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         if (gifts.isEmpty() || expandProgress >= 1.0f) return;
 
         final float ax = avatarContainer.getX();
         final float ay = avatarContainer.getY();
-        final float aw = (avatarContainer.getWidth()) * avatarContainer.getScaleX();
-        final float ah = (avatarContainer.getHeight()) * avatarContainer.getScaleY();
+        final float aw = avatarContainer.getWidth() * avatarContainer.getScaleX();
+        final float acx = ax + aw / 2.0f;
+        final float cacx = Math.min(acx, dp(48));
+
+        final float closedAlpha = Utilities.clamp01(
+                (expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50)
+        );
+
+        float progress = 1 - (avatarContainer.getScaleX() / 1.3f);
+        progress = Math.max(progress, 0f);
+
+        final float progressSq = progress * progress;
+        final float f1 = Math.min(15f * progressSq, 1);
+        final float f2 = Math.min(20f * progressSq, 1);
+        final float f3 = Math.min(50f * progressSq, 1);
+
+        final float avatarCenterX = ax + avatarContainer.getWidth() / 2f;
+        final float avatarCenterY = ay + avatarContainer.getMeasuredHeight() / 2f;
+        final float avatarSize = avatarContainer.getMeasuredWidth() * avatarContainer.getScaleX();
 
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
-        final float acx = ax + aw / 2.0f;
-        final float cacx = Math.min(acx, dp(48));
-        final float acy = ay + ah / 2.0f;
-        final float ar = Math.min(aw, ah) / 2.0f + dp(6);
-        final float cx = getWidth() / 2.0f;
-
-        final float closedAlpha = Utilities.clamp01((float) (expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
-
         for (int i = 0; i < gifts.size(); ++i) {
             final Gift gift = gifts.get(i);
             final float alpha = gift.animatedFloat.set(1.0f);
-            final float scale = lerp(0.5f, 1.0f, alpha);
-            final int index = i; // gifts.size() == maxCount ? i - 1 : i;
-            if (index == 0) {
-                gift.draw(
-                    canvas,
-                    (float) (acx + ar * Math.cos(-65 / 180.0f * Math.PI)),
-                    (float) (acy + ar * Math.sin(-65 / 180.0f * Math.PI)),
-                    scale, -65 + 90,
-                    alpha * (1.0f - expandProgress), lerp(0.9f, 0.25f, actionBarProgress)
-                );
-            } else if (index == 1) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .27f, dp(62)), cx, 0.5f * actionBarProgress), acy - dp(52),
-                    scale, -4.0f,
-                    alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 2) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .46f, dp(105)), cx, 0.5f * actionBarProgress), acy - dp(72),
-                    scale, 8.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 3) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .60f, dp(136)), cx, 0.5f * actionBarProgress), acy - dp(46),
-                    scale, 3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 4) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .08f, dp(21.6f)), cx, 0.5f * actionBarProgress), acy - dp(82f),
-                    scale, -3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 5) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .745f, dp(186)), cx, 0.5f * actionBarProgress), acy - dp(39),
-                    scale, 2.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 6) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .38f, dp(102)), expandY - dp(12),
-                    scale, 0,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 7) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .135f, dp(36)), expandY - dp(17.6f),
-                    scale, -5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 8) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .76f, dp(178)), expandY - dp(21.66f),
-                    scale, 5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
+            final float scale = lerp(0.5f, 1.0f, alpha) * (1 - progress);
+            float newX, newY, rotation, drawAlpha;
+
+            switch (i) {
+                case 0:
+                    newX = AndroidUtilities.lerp(ax - dp(24), avatarCenterX + avatarSize, f3);
+                    newX = Math.min(newX, avatarCenterX);
+                    newY = AndroidUtilities.lerp(ay, avatarCenterY, f3);
+                    newY = Math.min(newY, avatarCenterY);
+                    if (progress > 0.3f) newY = -dp(20);
+                    drawAlpha = alpha * (1 - progress) * (1 - expandProgress);
+                    rotation = 0;
+                    break;
+                case 1:
+                    newX = AndroidUtilities.lerp(ax + avatarSize + dp(24), ax - avatarSize, f2);
+                    newX = Math.max(newX, avatarCenterX);
+                    newY = AndroidUtilities.lerp(ay, avatarCenterY, f2);
+                    newY = Math.min(newY, avatarCenterY);
+                    if (progress > 0.3f) newY = -dp(20);
+                    drawAlpha = alpha * alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = -4.0f;
+                    break;
+                case 2:
+                    newX = AndroidUtilities.lerp(ax - dp(54), ax + avatarSize, Math.abs(f1));
+                    newX = Math.min(newX, avatarCenterX);
+                    newY = AndroidUtilities.lerp(ay + avatarSize / 2f - dp(4), avatarCenterY, f1);
+                    newY = Math.max(newY, avatarCenterY);
+                    if (progress > 0.3f) newY = -dp(20);
+                    drawAlpha = alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = 8.0f;
+                    break;
+                case 3:
+                    newX = AndroidUtilities.lerp(ax + avatarSize + dp(54), ax, Math.abs(f1));
+                    newX = Math.max(newX, avatarCenterX);
+                    newY = AndroidUtilities.lerp(ay + avatarSize / 2f - dp(4), avatarCenterY, f1);
+                    newY = Math.max(newY, avatarCenterY);
+                    if (progress > 0.3f) newY = -dp(20);
+                    drawAlpha = alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = 3.0f;
+                    break;
+                case 4:
+                    newX = AndroidUtilities.lerp(ax - dp(30), avatarCenterX + avatarSize, f2);
+                    newX = Math.min(newX, avatarCenterX);
+                    newY = AndroidUtilities.lerp(ay + avatarSize - dp(8), ay - avatarContainer.getMeasuredHeight() / 2f, f2);
+                    newY = Math.max(newY, ay + dp(24));
+                    if (progress > 0.3f) newY = -dp(20);
+                    drawAlpha = alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = -3.0f;
+                    break;
+                case 5:
+                    newX = AndroidUtilities.lerp(ax + avatarSize + dp(30), ax - avatarSize, f3);
+                    newX = Math.max(newX, avatarCenterX);
+                    newY = AndroidUtilities.lerp(ay + avatarSize - dp(8), ay - avatarContainer.getMeasuredHeight() / 2f, f2);
+                    newY = Math.max(newY, ay + dp(24));
+                    if (progress > 0.3f) newY = -dp(20);
+                    drawAlpha = alpha * (1 - progress) * closedAlpha;
+                    rotation = 2.0f;
+                    break;
+                case 6:
+                    newX = cacx + Math.min(getWidth() * .38f, dp(102));
+                    newY = expandY - dp(12);
+                    drawAlpha = alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = 0;
+                    break;
+                case 7:
+                    newX = cacx + Math.min(getWidth() * .135f, dp(36));
+                    newY = expandY - dp(17.6f);
+                    drawAlpha = alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = -5.0f;
+                    break;
+                case 8:
+                    newX = cacx + Math.min(getWidth() * .76f, dp(178));
+                    newY = expandY - dp(21.66f);
+                    drawAlpha = alpha * (1 - expandProgress) * (1 - actionBarProgress) * closedAlpha;
+                    rotation = 5.0f;
+                    break;
+                default:
+                    continue;
             }
+
+            gift.draw(canvas, newX, newY, scale, rotation, drawAlpha, 1.0f);
         }
 
         canvas.restore();

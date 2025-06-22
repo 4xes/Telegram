@@ -5389,6 +5389,13 @@
     <string name="SendAGift">Send a Gift</string>
     <string name="ProfileSendAGift">Send a Gift</string>
     <string name="ProfileSendAGiftToChannel">Send a Gift</string>
+    <string name="ProfileGift">Gift</string>
+    <string name="ProfileJoin">Join</string>
+    <string name="ProfileLeave">Leave</string>
+    <string name="ProfileLiveStream">Live Stream</string>
+    <string name="ProfileReport">Report</string>
+    <string name="ProfileShare">Share</string>
+    <string name="ProfileVideo">Video</string>
     <string name="GiftPremiumActivateForFree">Activate For Free</string>
     <string name="GiftPremiumActivateErrorTitle">You already have Telegram Premium</string>
     <string name="GiftPremiumActivateErrorText">You can activate this gift code after %1$s or **send the link** to a friend.</string>
